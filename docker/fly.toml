@@ -25,10 +25,10 @@ primary_region = "dfw"
     soft_limit = 50
 
 [[http_service.checks]]
-  grace_period = "10s"
+  grace_period = "30s"
   interval = "30s"
   method = "GET"
-  path = "/health"
+  path = "/api/healthcheck"
   timeout = "10s"
 
 [[vm]]
