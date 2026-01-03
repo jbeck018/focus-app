@@ -1,0 +1,73 @@
+# Fly.io Configuration for TrailBase Backend
+# Copy this to fly.toml and customize for your app
+
+app = "focus-app-prod"
+primary_region = "dfw"
+
+[build]
+  builder = "heroku"
+  # OR use Docker:
+  # builder = "docker"
+
+[env]
+  # Environment variables
+  LOG_LEVEL = "info"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 8000
+  force_https = false
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  max_per_region = 1
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 50
+
+  # Define routes
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    timeout = "10s"
+    tls_skip_verify = false
+    type = "http"
+
+  # HTTP service ports
+  [[http_service.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = false
+
+  [[http_service.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+    force_https = true
+
+# Resource allocation
+[[vm]]
+  memory = "1gb"
+  cpus = 1
+
+# Volume (optional - for database)
+# [[mounts]]
+#   source = "trailbase_data"
+#   destination = "/data"
+#   initial_size = "10gb"
+
+# PostgreSQL add-on (optional)
+# [[addons]]
+#   type = "postgres"
+
+# Redis add-on (optional)
+# [[addons]]
+#   type = "redis"
+
+# Monitoring and metrics
+[metrics]
+  port = 9090
+  path = "/metrics"

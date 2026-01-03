@@ -1,0 +1,331 @@
+GITHUB ACTIONS CI/CD ARCHITECTURE
+==================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Developer Workflow                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  Feature Branch          Main Branch            Release Tag
+       |                      |                      |
+       v                      v                      v
+   ┌─────────┐          ┌──────────┐           ┌─────────┐
+   │ Feature │          │   main   │           │  v1.0.0 │
+   │ develop │          │  branch  │           │   tag   │
+   └─────────┘          └──────────┘           └─────────┘
+       |                      |                      |
+       +──────────────────────┼──────────────────────+
+                              |
+                              v
+                     ┌─────────────────┐
+                     │  Git Push Event │
+                     └─────────────────┘
+                              |
+            ┌─────────┬────────┼────────┬─────────┐
+            |         |        |        |         |
+            v         v        v        v         v
+       ┌────────┐ ┌─────────────────────────────────┐
+       │   CI   │ │   Is PR?                        │
+       │Workflow│ │   ├─ YES → PR Preview Deploy    │
+       └────────┘ │   └─ NO  → Check Branch        │
+                  │          ├─ main → Deploy      │
+                  │          └─ tag  → Release     │
+                  └─────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       CI Workflow (main branch)                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+     Pull Request or Push to main
+               |
+               v
+        ┌─────────────┐
+        │ Concurrency │  (Cancels previous runs)
+        └─────────────┘
+               |
+     ┌─────────┴─────────┬──────────┬───────────┐
+     |         |         |          |           |
+     v         v         v          v           v
+  ┌────┐  ┌────────┐  ┌────────┐  ┌────────┐ ┌──────────┐
+  │Lint│  │TypeCheck│ │FrontEnd │ │Rust    │ │Build     │
+  │    │  │        │  │Tests   │ │Tests   │ │Check     │
+  └────┘  └────────┘  └────────┘  └────────┘ └──────────┘
+     |         |         |          |           |
+     └─────────┴─────────┴──────────┴───────────┘
+                         |
+                         v
+                  ┌────────────────┐
+                  │   Summary Job  │
+                  │  (All Passed?) │
+                  └────────────────┘
+                         |
+                   ┌─────┴─────┐
+                   |           |
+                   v           v
+                [PASS]       [FAIL]
+                   |           |
+           Continue to      Block PR
+            next stage       Merge
+
+Caching:
+  - pnpm: ~/.pnpm-store (85-95% hit)
+  - Rust: .cargo/registry (70-80% hit)
+  - Turbo: For monorepo packages
+Duration: 3-5 minutes
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                  Release Desktop Workflow (tags)                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+      git tag v1.0.0 && git push origin v1.0.0
+                         |
+                         v
+         ┌───────────────────────────────┐
+         │  Extract version from tag     │
+         │  v1.0.0 → version=1.0.0      │
+         └───────────────────────────────┘
+                         |
+        ┌────────┬───────┼────────┬─────────────┐
+        |        |       |        |             |
+        v        v       v        v             v
+    ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌───────────┐
+    │macOS │ │macOS │ │Windows│ │Linux │ │Artifacts &│
+    │arm64 │ │x86_64│ │x86_64 │ │x86_64│ │Release    │
+    └──────┘ └──────┘ └──────┘ └──────┘ └───────────┘
+       |        |        |        |          |
+    Codesign  Codesign Optional   |       Create
+       |        |        |        |       GitHub
+       v        v        v        v       Release
+    ┌────────────────────────────────┐
+    │   All Platforms Built & Signed │
+    │   Artifacts Ready for Upload   │
+    └────────────────────────────────┘
+               |
+               v
+    ┌────────────────────────────────┐
+    │  Create GitHub Release         │
+    │  Upload all artifacts          │
+    │  Generate updater manifest     │
+    └────────────────────────────────┘
+
+Platforms (Parallel):
+  ├─ macOS arm64:    6-8 min
+  ├─ macOS x86_64:   6-8 min
+  ├─ Windows x86_64: 8-12 min
+  └─ Linux x86_64:   5-7 min
+Total (parallel): 15-25 minutes
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│              Backend Deploy Workflow (docker/ changes)                   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+   Push to main with docker/ changes
+                |
+                v
+       ┌────────────────┐
+       │Docker Build    │
+       │ & Push GHCR    │
+       └────────────────┘
+                |
+         ┌──────┴──────┐
+         |             |
+         v             v
+    ┌───────┐      ┌─────────┐
+    │  Fly  │      │ Deploy  │
+    │  API  │      │ to Fly  │
+    └───────┘      └─────────┘
+         |             |
+         └──────┬──────┘
+                |
+                v
+       ┌────────────────┐
+       │ Wait for Ready │
+       │ (Fly status)   │
+       └────────────────┘
+                |
+                v
+       ┌────────────────┐
+       │ Health Check   │
+       │ GET /health    │
+       └────────────────┘
+                |
+          ┌─────┴──────────┐
+          |                |
+          v                v
+       [PASS]           [FAIL]
+          |                |
+      Success         Automatic
+          |           Rollback
+          v                |
+    ┌──────────────┐       v
+    │  Keep Live   │   ┌──────────┐
+    │  Running     │   │ Restore  │
+    └──────────────┘   │ Previous │
+                       │ Release  │
+                       └──────────┘
+
+Duration: 5-10 minutes
+Cache Hit: 70-80%
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                Preview Deploy Workflow (PR Preview)                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  PR created with docker/ changes
+                |
+         ┌──────┴──────┐
+         |             |
+         v             v
+    ┌─────────┐   ┌──────────┐
+    │ Deploy  │   │ Monitor  │
+    │ Preview │   │ PR Close │
+    └─────────┘   └──────────┘
+         |             |
+         v             v
+  ┌──────────────┐ ┌─────────────┐
+  │Deploy Image  │ │ On PR Close │
+  │to preview-   │ │ Destroy     │
+  │pr-<number>   │ │ preview app │
+  └──────────────┘ └─────────────┘
+         |
+         v
+  ┌──────────────────┐
+  │ Comment PR with  │
+  │ Preview URL      │
+  │ Health verified  │
+  └──────────────────┘
+         |
+         v
+  ┌──────────────────┐
+  │ User tests app   │
+  │ at preview URL   │
+  └──────────────────┘
+
+Auto-Cleanup: When PR closes, preview app is destroyed
+Cost: ~$2-5 per active preview
+Resources: 512MB RAM, 1 CPU (minimal)
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Artifact Flow                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+         Tauri Build
+              |
+    ┌─────────┼─────────┐
+    |         |         |
+    v         v         v
+ macOS     Windows    Linux
+   |         |        |
+   ├─.dmg    ├─.msi   ├─.deb
+   ├─.tar.gz ├─.exe   └─.AppImage
+   └─.app    └─.zip
+
+              |
+    ┌─────────┴─────────┐
+    |                   |
+    v                   v
+GitHub Releases    Tauri Updater
+  Upload all       Manifest
+  artifacts        (JSON)
+  
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      Secret Management                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+GitHub Secrets (Repository Level)
+    |
+    ├─ TAURI_SIGNING_PRIVATE_KEY
+    ├─ TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+    ├─ APPLE_CERTIFICATE
+    ├─ APPLE_CERTIFICATE_PASSWORD
+    ├─ APPLE_SIGNING_IDENTITY
+    ├─ APPLE_ID
+    ├─ APPLE_TEAM_ID
+    ├─ APPLE_PASSWORD
+    ├─ WINDOWS_SIGN_CERT (optional)
+    ├─ WINDOWS_SIGN_CERT_PASSWORD (optional)
+    ├─ FLY_API_TOKEN
+    └─ FLY_APP_NAME
+
+Workflow Access:
+    |
+    ├─ CI:       No secrets needed
+    ├─ Release:  Tauri + Apple secrets
+    ├─ Deploy:   Fly.io secrets
+    └─ Preview:  Fly.io secrets
+
+Rotation: GitHub UI, OIDC-ready
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     Caching Strategy                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Source Code Change → Dependency Change → Full Rebuild
+          |                  |                |
+          v                  v                v
+    Cache Hit          Cache Miss      Cache Clear
+   Hit Rate: 85%     Hit Rate: 70%    Hit Rate: 0%
+   Time: -2min       Time: -1min      Time: +3min
+
+Cache Hierarchy:
+    1. pnpm store (hashFile: pnpm-lock.yaml) → 85-95% hit
+    2. Rust target (.cargo/registry) → 70-80% hit
+    3. Docker layers (GitHub Actions) → 60-75% hit
+    4. Turbo cache → 70-85% hit
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      Timeline Example                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Monday 09:00 AM
+  Developer pushes code
+  CI workflow triggers
+  └─ 4 minutes later: All checks pass
+
+Monday 02:00 PM
+  Backend changes pushed
+  Deploy workflow triggers
+  └─ 8 minutes later: Backend live on Fly.io
+
+Wednesday 10:00 AM
+  PR created for feature
+  Preview deploy triggers
+  └─ 7 minutes later: PR comment with preview URL
+
+Thursday 03:00 PM
+  PR reviewed and merged
+  Preview auto-cleanup triggers
+  └─ 2 minutes later: Preview app destroyed
+
+Friday 11:00 AM
+  Create release tag v1.0.0
+  Release workflow triggers
+  └─ 22 minutes later: Release published
+     Desktop apps available for download
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Cost & Performance                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Monthly Cost:
+  GitHub Actions: 300 min / 2000 min free = $0
+  Fly.io: Free tier = $0
+  GHCR: Free for public = $0
+  Total: $0 (completely free!)
+
+Performance:
+  CI:             3-5 min (with cache: 2-3 min)
+  Release:        15-25 min (all platforms parallel)
+  Deploy:         5-10 min
+  Preview:        5-10 min per PR
+  Monthly Usage:  ~300 minutes (15% of free tier)
+
+Optimization:
+  ✓ Parallel matrix builds
+  ✓ Intelligent caching
+  ✓ Concurrency groups (no duplicates)
+  ✓ Conditional job execution
+  ✓ Resource-optimized preview apps
+
+═══════════════════════════════════════════════════════════════════════════
+COMPLETE END-TO-END AUTOMATION
+═══════════════════════════════════════════════════════════════════════════

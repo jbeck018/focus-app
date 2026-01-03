@@ -1,0 +1,346 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - "docker/**"
+      - ".github/workflows/preview.yml"
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/trailbase
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  determine-action:
+    name: Determine Action
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.action.outputs.should-deploy }}
+      should-cleanup: ${{ steps.action.outputs.should-cleanup }}
+    steps:
+      - name: Determine if deploy or cleanup
+        id: action
+        run: |
+          if [[ "${{ github.event.action }}" == "closed" ]]; then
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "should-cleanup=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+            echo "should-cleanup=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-preview:
+    name: Build Preview Image
+    runs-on: ubuntu-latest
+    needs: determine-action
+    if: needs.determine-action.outputs.should-deploy == 'true'
+    outputs:
+      image-url: ${{ steps.image.outputs.url }}
+      image-digest: ${{ steps.image.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=pr
+            type=sha,prefix=pr-${{ github.event.pull_request.number }}-
+
+      - name: Build and push preview image
+        id: image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image info
+        run: |
+          echo "Preview image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.image.outputs.digest }}"
+
+  deploy-preview:
+    name: Deploy Preview to Fly.io
+    runs-on: ubuntu-latest
+    needs: [determine-action, build-preview]
+    if: needs.determine-action.outputs.should-deploy == 'true'
+    outputs:
+      app-url: ${{ steps.deploy.outputs.app-url }}
+      app-name: ${{ steps.deploy.outputs.app-name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create preview app config
+        id: config
+        shell: bash
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PREVIEW_APP_NAME="preview-pr-${PR_NUMBER}"
+          PREVIEW_ORG="${{ secrets.FLY_ORG }}"
+
+          echo "app-name=${PREVIEW_APP_NAME}" >> $GITHUB_OUTPUT
+          echo "org=${PREVIEW_ORG}" >> $GITHUB_OUTPUT
+
+          # Create minimal fly.toml for preview
+          cat > fly-preview.toml << EOF
+          app = "${PREVIEW_APP_NAME}"
+          primary_region = "dfw"
+
+          [build]
+            image = "${{ needs.build-preview.outputs.image-url }}"
+
+          [env]
+            ENVIRONMENT = "preview"
+            PR_NUMBER = "${PR_NUMBER}"
+
+          [http_service]
+            internal_port = 8000
+            force_https = false
+            auto_stop_machines = true
+            auto_start_machines = true
+            min_machines_running = 1
+            max_per_region = 1
+
+          [http_service.concurrency]
+            type = "connections"
+            hard_limit = 100
+            soft_limit = 50
+
+          [[services.ports]]
+            port = 80
+            handlers = ["http"]
+            force_https = false
+
+          [[services.ports]]
+            port = 443
+            handlers = ["tls", "http"]
+            force_https = true
+
+          [[vm]]
+            memory = "512mb"
+            cpus = 1
+          EOF
+
+      - name: Check if preview app exists
+        id: check
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          APP_NAME="${{ steps.config.outputs.app-name }}"
+          if flyctl apps list --json | jq -e ".[] | select(.Name == \"${APP_NAME}\")" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✓ App already exists, will update"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✓ New preview app will be created"
+          fi
+
+      - name: Create preview app (if new)
+        if: steps.check.outputs.exists == 'false'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          APP_NAME="${{ steps.config.outputs.app-name }}"
+          ORG="${{ steps.config.outputs.org }}"
+
+          if [[ -n "$ORG" ]]; then
+            flyctl apps create "${APP_NAME}" --org "${ORG}" || true
+          else
+            flyctl apps create "${APP_NAME}" || true
+          fi
+
+      - name: Deploy to preview app
+        id: deploy
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          APP_NAME="${{ steps.config.outputs.app-name }}"
+
+          flyctl deploy \
+            --config fly-preview.toml \
+            --app "${APP_NAME}" \
+            --image "${{ needs.build-preview.outputs.image-url }}" \
+            --strategy immediate \
+            --now
+
+          APP_URL="https://${APP_NAME}.fly.dev"
+          echo "app-url=${APP_URL}" >> $GITHUB_OUTPUT
+          echo "app-name=${APP_NAME}" >> $GITHUB_OUTPUT
+          echo "✓ Preview deployed: ${APP_URL}"
+
+      - name: Wait for preview deployment
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          APP_NAME="${{ steps.config.outputs.app-name }}"
+          echo "Waiting for preview app to be ready..."
+
+          for i in {1..30}; do
+            STATUS=$(flyctl status --app "${APP_NAME}" --json | jq -r '.status' 2>/dev/null || echo "unknown")
+            echo "Status check $i: $STATUS"
+
+            if [[ "$STATUS" == "ok" ]] || [[ "$STATUS" == "running" ]]; then
+              echo "✓ Preview app is ready"
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "✗ Preview app failed to become ready"
+          exit 1
+
+  health-check-preview:
+    name: Health Check Preview
+    runs-on: ubuntu-latest
+    needs: deploy-preview
+    if: success()
+    steps:
+      - name: Check preview health
+        run: |
+          APP_URL="${{ needs.deploy-preview.outputs.app-url }}"
+          echo "Checking health of: ${APP_URL}"
+
+          for i in {1..30}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${APP_URL}/health" 2>/dev/null || echo "000")
+            echo "Health check attempt $i: $HTTP_CODE"
+
+            if [[ "$HTTP_CODE" == "200" ]]; then
+              echo "✓ Preview health check passed"
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "✗ Preview health check failed"
+          exit 1
+
+  comment-on-pr:
+    name: Comment PR with Preview URL
+    runs-on: ubuntu-latest
+    needs: [deploy-preview, health-check-preview]
+    if: success()
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const appUrl = "${{ needs.deploy-preview.outputs.app-url }}";
+            const appName = "${{ needs.deploy-preview.outputs.app-name }}";
+
+            const body = `## Preview Deployment
+
+            Your preview environment is ready!
+
+            | Property | Value |
+            |----------|-------|
+            | **URL** | [${appUrl}](${appUrl}) |
+            | **App** | ${appName} |
+            | **Status** | ✓ Healthy |
+            | **Image** | ${{ needs.deploy-preview.outputs.image-url }} |
+
+            ### How to use
+            - Test your changes at the preview URL
+            - The preview will be automatically cleaned up when this PR is closed
+            - Preview apps auto-pause when idle to save resources
+
+            **Note**: Preview deployments are temporary and will be removed after PR closure.
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  cleanup-preview:
+    name: Cleanup Preview Deployment
+    runs-on: ubuntu-latest
+    needs: determine-action
+    if: needs.determine-action.outputs.should-cleanup == 'true'
+    steps:
+      - name: Install Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Destroy preview app
+        id: cleanup
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        continue-on-error: true
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PREVIEW_APP_NAME="preview-pr-${PR_NUMBER}"
+
+          echo "Destroying preview app: ${PREVIEW_APP_NAME}"
+
+          # Check if app exists before destroying
+          if flyctl apps list --json | jq -e ".[] | select(.Name == \"${PREVIEW_APP_NAME}\")" > /dev/null 2>&1; then
+            flyctl apps destroy "${PREVIEW_APP_NAME}" --yes || echo "Failed to destroy app"
+          else
+            echo "App ${PREVIEW_APP_NAME} does not exist, nothing to clean up"
+          fi
+
+          echo "✓ Preview app cleaned up"
+
+      - name: Comment cleanup on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Preview Cleanup
+
+              The preview deployment has been automatically removed.
+
+              PR Number: ${{ github.event.pull_request.number }}
+              App: preview-pr-${{ github.event.pull_request.number }}
+              Status: ✓ Destroyed
+              `
+            });
+
+  preview-summary:
+    name: Preview Summary
+    runs-on: ubuntu-latest
+    needs: [determine-action]
+    if: always()
+    steps:
+      - name: Print summary
+        run: |
+          if [[ "${{ needs.determine-action.outputs.should-deploy }}" == "true" ]]; then
+            echo "Preview Deploy Initiated"
+          elif [[ "${{ needs.determine-action.outputs.should-cleanup }}" == "true" ]]; then
+            echo "Preview Cleanup Initiated"
+          fi

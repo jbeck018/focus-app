@@ -1,0 +1,35 @@
+# TrailBase configuration for FocusFlow
+
+[server]
+host = "0.0.0.0"
+port = 4000
+
+[auth]
+# Enable email/password authentication
+email_password_enabled = true
+# JWT settings
+access_token_ttl_seconds = 900      # 15 minutes
+refresh_token_ttl_seconds = 604800  # 7 days
+# OAuth providers (configure when ready)
+# google_client_id = ""
+# google_client_secret = ""
+
+[database]
+# SQLite database file
+path = "/data/focusflow.db"
+# Enable WAL mode for better concurrency
+wal_mode = true
+
+[cors]
+# Allow requests from desktop app and production
+allowed_origins = ["tauri://localhost", "http://localhost:1420", "https://focusflow-backend.fly.dev"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allowed_headers = ["Content-Type", "Authorization"]
+
+[admin]
+# Enable admin dashboard at /admin
+enabled = true
+
+[logging]
+level = "info"
+format = "json"

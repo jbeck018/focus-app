@@ -1,0 +1,27 @@
+{
+  "name": "focusflow-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "FocusFlow - Privacy-first productivity app",
+  "scripts": {
+    "dev": "pnpm --filter @focusflow/desktop dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "check": "turbo run check",
+    "tauri": "pnpm --filter @focusflow/desktop tauri",
+    "desktop:dev": "pnpm --filter @focusflow/desktop tauri dev",
+    "desktop:build": "pnpm --filter @focusflow/desktop tauri build",
+    "trailbase:up": "docker compose -f docker/docker-compose.yml up -d",
+    "trailbase:down": "docker compose -f docker/docker-compose.yml down",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

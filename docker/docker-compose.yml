@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  trailbase:
+    image: trailbase/trailbase:latest
+    container_name: focusflow-trailbase
+    ports:
+      - "4000:4000"
+    volumes:
+      - trailbase-data:/data
+      - ./trailbase-config:/config
+    environment:
+      - TRAILBASE_DATA_DIR=/data
+      - TRAILBASE_CONFIG_DIR=/config
+      - TRAILBASE_LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  trailbase-data:
+    driver: local
