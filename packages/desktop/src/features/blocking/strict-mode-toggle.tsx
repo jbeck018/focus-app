@@ -71,7 +71,7 @@ export function StrictModeToggle() {
           <Switch
             checked={strictMode?.enabled ?? false}
             onCheckedChange={handleToggle}
-            disabled={strictMode?.enabled && !strictMode?.canDisable}
+            disabled={strictMode?.enabled && !strictMode.canDisable}
           />
         </div>
       </CardHeader>

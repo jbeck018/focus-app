@@ -39,8 +39,8 @@ export function SessionCompletionChart({ data, onDataPointClick }: SessionComple
     return total > 0 ? Math.round((totalCompleted / total) * 100) : 0;
   }, [data]);
 
-  const handleClick = (dataPoint: any) => {
-    if (onDataPointClick && dataPoint) {
+  const handleClick = (dataPoint: { date?: string } | null) => {
+    if (onDataPointClick && dataPoint?.date) {
       const original = data.find((d) => formatDate(d.date) === dataPoint.date);
       if (original) {
         onDataPointClick(original);
@@ -128,20 +128,33 @@ export function SessionCompletionChart({ data, onDataPointClick }: SessionComple
 }
 
 // Custom tooltip component
-function CustomTooltip({ active, payload, label }: any) {
+interface TooltipPayloadEntry {
+  dataKey: string;
+  value?: number;
+  color: string;
+  name: string;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadEntry[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) {
     return null;
   }
 
-  const completed = payload.find((p: any) => p.dataKey === "completed")?.value ?? 0;
-  const abandoned = payload.find((p: any) => p.dataKey === "abandoned")?.value ?? 0;
+  const completed = payload.find((p) => p.dataKey === "completed")?.value ?? 0;
+  const abandoned = payload.find((p) => p.dataKey === "abandoned")?.value ?? 0;
   const total = completed + abandoned;
   const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg">
       <p className="mb-2 font-semibold">{label}</p>
-      {payload.map((entry: any, index: number) => (
+      {payload.map((entry, index) => (
         <div key={index} className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-xs">

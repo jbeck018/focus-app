@@ -44,8 +44,8 @@ export function DistractionsChart({
     return type === "app" ? "hsl(var(--chart-1))" : "hsl(var(--chart-2))";
   };
 
-  const handleClick = (dataPoint: any) => {
-    if (onDataPointClick && dataPoint) {
+  const handleClick = (dataPoint: { fullName?: string } | null) => {
+    if (onDataPointClick && dataPoint?.fullName) {
       const original = data.find((d) => d.name === dataPoint.fullName);
       if (original) {
         onDataPointClick(original);
@@ -151,7 +151,21 @@ function TrendIndicator({ trend }: { trend: "up" | "down" | "stable" }) {
 }
 
 // Custom tooltip component
-function CustomTooltip({ active, payload }: any) {
+interface TooltipPayloadItem {
+  payload: {
+    fullName: string;
+    type: string;
+    value: number;
+    trend: "up" | "down" | "stable";
+  };
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+}
+
+function CustomTooltip({ active, payload }: CustomTooltipProps) {
   if (!active || !payload?.length) {
     return null;
   }

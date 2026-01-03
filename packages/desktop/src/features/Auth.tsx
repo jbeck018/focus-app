@@ -158,7 +158,7 @@ function RegisterForm({ onSuccess }: { onSuccess?: () => void }) {
     );
   };
 
-  const displayError = localError || error;
+  const displayError = localError ?? error;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mt-4">

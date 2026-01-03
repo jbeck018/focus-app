@@ -35,10 +35,8 @@ export function AchievementCard({
   showProgress = true,
   className,
 }: AchievementCardProps) {
-  const rarityColor =
-    rarityColors[achievement.rarity as keyof typeof rarityColors] || rarityColors.common;
-  const categoryLabel =
-    categoryLabels[achievement.category as keyof typeof categoryLabels] || achievement.category;
+  const rarityColor = rarityColors[achievement.rarity as keyof typeof rarityColors];
+  const categoryLabel = categoryLabels[achievement.category as keyof typeof categoryLabels];
 
   if (compact) {
     return (

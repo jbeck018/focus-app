@@ -99,7 +99,7 @@ export function ChatHistoryPanel({
 
           {isError && (
             <ErrorState
-              message={error?.message ?? "Failed to load conversations"}
+              message={(error as Error | undefined)?.message ?? "Failed to load conversations"}
               onRetry={refetch}
             />
           )}

@@ -70,12 +70,15 @@ export function BlockingSchedule() {
   };
 
   // Group schedules by day
-  const schedulesByDay = Array.isArray(schedules)
-    ? schedules.reduce<Record<number, typeof schedules>>((acc, schedule) => {
-        if (!acc[schedule.dayOfWeek]) {
-          acc[schedule.dayOfWeek] = [];
+  type ScheduleArray = NonNullable<typeof schedules>;
+  const schedulesByDay: Partial<Record<number, ScheduleArray>> = Array.isArray(schedules)
+    ? schedules.reduce<Partial<Record<number, ScheduleArray>>>((acc, schedule) => {
+        const daySchedules = acc[schedule.dayOfWeek];
+        if (daySchedules === undefined) {
+          acc[schedule.dayOfWeek] = [schedule];
+        } else {
+          daySchedules.push(schedule);
         }
-        acc[schedule.dayOfWeek].push(schedule);
         return acc;
       }, {})
     : {};
@@ -166,8 +169,8 @@ export function BlockingSchedule() {
           ) : (
             <div className="space-y-4">
               {DAY_NAMES.map((dayName, dayIndex) => {
-                const daySchedules = schedulesByDay?.[dayIndex];
-                if (!daySchedules || daySchedules.length === 0) return null;
+                const daySchedules = schedulesByDay[dayIndex];
+                if (daySchedules === undefined || daySchedules.length === 0) return null;
 
                 return (
                   <div key={dayIndex} className="space-y-2">

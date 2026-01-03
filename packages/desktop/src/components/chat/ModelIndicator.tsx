@@ -181,7 +181,7 @@ export function ModelIndicator({
             <div className="space-y-1">
               <p className="font-medium">{formatModelName(getModelFromConfig(activeProvider))}</p>
               <p className="text-xs text-muted-foreground">
-                {activeProvider?.provider || "No provider"} - {statusInfo.label}
+                {activeProvider?.provider ?? "No provider"} - {statusInfo.label}
               </p>
               {hasError && llmStatus?.error && (
                 <p className="text-xs text-destructive">{llmStatus.error}</p>
@@ -255,7 +255,7 @@ export function ModelIndicator({
                 {formatModelName(getModelFromConfig(activeProvider)) || "No model configured"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Provider: {activeProvider?.provider || "None"}
+                Provider: {activeProvider?.provider ?? "None"}
               </p>
             </div>
 

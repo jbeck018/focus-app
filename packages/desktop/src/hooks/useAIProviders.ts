@@ -152,7 +152,7 @@ export function useActiveProvider() {
  * ```
  */
 export function useAvailableModels(provider: ProviderType | null, options?: { enabled?: boolean }) {
-  const { enabled = true } = options || {};
+  const { enabled = true } = options ?? {};
 
   return useQuery({
     queryKey:
@@ -420,7 +420,7 @@ export function useModelDownloadProgress(
         // Update query cache to reflect error
         queryClient.setQueryData(aiProviderQueryKeys.downloadStatus, {
           isDownloading: false,
-          modelName: event.payload.model || currentStatus?.modelName,
+          modelName: event.payload.model ?? currentStatus?.modelName,
           error: event.payload.error,
         });
 
@@ -480,7 +480,7 @@ export function useAIProviderManager() {
     providers: providers.data,
     activeProvider: activeProvider.data,
     isLoading: providers.isLoading || activeProvider.isLoading,
-    error: providers.error || activeProvider.error,
+    error: providers.error ?? activeProvider.error,
 
     // Mutations
     setProvider,

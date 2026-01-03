@@ -138,7 +138,7 @@ export function TutorialStep({
       {/* Tutorial cards */}
       <div className="space-y-3">
         {TUTORIAL_TOPICS.map((topic) => {
-          const Icon = ICON_MAP[topic.icon as keyof typeof ICON_MAP] || Timer;
+          const Icon = ICON_MAP[topic.icon as keyof typeof ICON_MAP];
           const isViewed = viewedTutorials.includes(topic.id);
           const isPro = ["calendar", "ai-coach"].includes(topic.id);
 
@@ -308,5 +308,5 @@ function TutorialContent({ topicId }: TutorialContentProps) {
     ),
   };
 
-  return content[topicId as keyof typeof content] || null;
+  return content[topicId as keyof typeof content];
 }

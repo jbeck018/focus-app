@@ -22,11 +22,8 @@ const rarityBackgrounds = {
  * Show a custom toast notification for unlocked achievement
  */
 export function showAchievementToast(achievement: Achievement) {
-  const rarityColor =
-    rarityColors[achievement.rarity as keyof typeof rarityColors] || rarityColors.common;
-  const rarityBg =
-    rarityBackgrounds[achievement.rarity as keyof typeof rarityBackgrounds] ||
-    rarityBackgrounds.common;
+  const rarityColor = rarityColors[achievement.rarity as keyof typeof rarityColors];
+  const rarityBg = rarityBackgrounds[achievement.rarity as keyof typeof rarityBackgrounds];
 
   toast.custom(
     (t) => (

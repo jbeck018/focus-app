@@ -92,7 +92,7 @@ export const useAuthStore = create<AuthStoreState>()(
           set({
             user,
             isAuthenticated: !!user,
-            subscriptionTier: user?.subscription_tier || "free",
+            subscriptionTier: user?.subscription_tier ?? "free",
           }),
 
         setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),

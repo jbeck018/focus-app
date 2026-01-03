@@ -99,12 +99,10 @@ function InsightsView() {
 
                 return (
                   <div key={insight.trigger_type} className="flex items-center gap-3">
-                    <span className="text-xl">{info?.emoji ?? "❓"}</span>
+                    <span className="text-xl">{info.emoji}</span>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">
-                          {info?.label ?? insight.trigger_type}
-                        </span>
+                        <span className="text-sm font-medium">{info.label}</span>
                         <span className="text-xs text-muted-foreground">
                           {insight.frequency} ({percentage}%)
                         </span>
@@ -198,10 +196,10 @@ function HistoryView() {
           <Card key={entry.id}>
             <CardContent className="py-4">
               <div className="flex items-start gap-3">
-                <span className="text-2xl">{triggerInfo?.emoji ?? "❓"}</span>
+                <span className="text-2xl">{triggerInfo.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">{triggerInfo?.label ?? entry.trigger_type}</span>
+                    <span className="font-medium">{triggerInfo.label}</span>
                     {emotionInfo && (
                       <span className="text-sm text-muted-foreground">
                         • {emotionInfo.emoji} {emotionInfo.label}

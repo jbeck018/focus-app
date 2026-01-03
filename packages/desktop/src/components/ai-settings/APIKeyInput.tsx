@@ -101,8 +101,8 @@ export function APIKeyInput({
           onTestSuccess?.();
         } else {
           setTestStatus("error");
-          setErrorMessage(result.error || "Connection failed");
-          onTestError?.(result.error || "Connection failed");
+          setErrorMessage(result.error ?? "Connection failed");
+          onTestError?.(result.error ?? "Connection failed");
         }
       },
       onError: (error) => {

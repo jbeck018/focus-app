@@ -83,7 +83,7 @@ export function StreakStats({ className }: StreakStatsProps) {
             <div>
               <div className="text-sm font-medium text-muted-foreground">Current Streak</div>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-4xl font-bold">{currentStreak?.currentCount || 0}</span>
+                <span className="text-4xl font-bold">{currentStreak?.currentCount ?? 0}</span>
                 <span className="text-lg text-muted-foreground">days</span>
               </div>
               {currentStreak?.isInGracePeriod && (
@@ -98,7 +98,7 @@ export function StreakStats({ className }: StreakStatsProps) {
               <div className="text-sm font-medium text-muted-foreground">Longest Streak</div>
               <div className="mt-1 flex items-baseline justify-end gap-2">
                 <span className="text-3xl font-bold text-muted-foreground">
-                  {currentStreak?.longestCount || 0}
+                  {currentStreak?.longestCount ?? 0}
                 </span>
                 <span className="text-muted-foreground">days</span>
               </div>
@@ -139,7 +139,7 @@ export function StreakStats({ className }: StreakStatsProps) {
             <StatCard
               label="Total Sessions"
               value={stats.totalSessions}
-              subtitle={`${(stats.averageSessionsPerDay ?? 0).toFixed(1)}/day avg`}
+              subtitle={`${stats.averageSessionsPerDay.toFixed(1)}/day avg`}
               icon="🎯"
               color="green"
             />

@@ -61,7 +61,7 @@ export function AchievementGallery() {
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Total Points</CardDescription>
-            <CardTitle className="text-3xl text-amber-500">{stats?.totalPoints || 0}</CardTitle>
+            <CardTitle className="text-3xl text-amber-500">{stats?.totalPoints ?? 0}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -75,16 +75,16 @@ export function AchievementGallery() {
           <CardHeader className="pb-3">
             <CardDescription>Unlocked</CardDescription>
             <CardTitle className="text-3xl">
-              {stats?.unlockedCount || 0}
+              {stats?.unlockedCount ?? 0}
               <span className="text-lg text-muted-foreground">
-                /{stats?.totalAchievements || 0}
+                /{stats?.totalAchievements ?? 0}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Progress value={stats?.completionPercentage || 0} className="h-2" />
+            <Progress value={stats?.completionPercentage ?? 0} className="h-2" />
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.round(stats?.completionPercentage || 0)}% complete
+              {Math.round(stats?.completionPercentage ?? 0)}% complete
             </p>
           </CardContent>
         </Card>
@@ -93,7 +93,7 @@ export function AchievementGallery() {
           <CardHeader className="pb-3">
             <CardDescription>Legendary</CardDescription>
             <CardTitle className="text-3xl text-amber-500">
-              {achievementsByRarity?.legendary || 0}
+              {achievementsByRarity?.legendary ?? 0}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -108,7 +108,7 @@ export function AchievementGallery() {
           <CardHeader className="pb-3">
             <CardDescription>Epic</CardDescription>
             <CardTitle className="text-3xl text-purple-500">
-              {achievementsByRarity?.epic || 0}
+              {achievementsByRarity?.epic ?? 0}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -129,7 +129,7 @@ export function AchievementGallery() {
               const count =
                 achievements?.filter(
                   (a) => (category.value === "all" || a.category === category.value) && a.unlocked
-                ).length || 0;
+                ).length ?? 0;
 
               return (
                 <TabsTrigger

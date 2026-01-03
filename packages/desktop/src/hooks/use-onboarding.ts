@@ -169,7 +169,7 @@ export function useOnboarding(): UseOnboardingReturn {
       });
 
       if (!response.success) {
-        throw new Error(response.error || "Failed to complete onboarding");
+        throw new Error(response.error ?? "Failed to complete onboarding");
       }
 
       // Mark as complete

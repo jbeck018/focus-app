@@ -47,8 +47,8 @@ export function FocusTrendChart({
     [data, totalMinutes]
   );
 
-  const handleClick = (dataPoint: any) => {
-    if (onDataPointClick && dataPoint) {
+  const handleClick = (dataPoint: { date?: string } | null) => {
+    if (onDataPointClick && dataPoint?.date) {
       const original = data.find((d) => formatDate(d.date) === dataPoint.date);
       if (original) {
         onDataPointClick(original);
@@ -137,7 +137,22 @@ export function FocusTrendChart({
 }
 
 // Custom tooltip component
-function CustomTooltip({ active, payload, label }: any) {
+interface TooltipPayloadEntry {
+  name: string;
+  value: number;
+  color: string;
+  payload: {
+    dayOfWeek?: string;
+  };
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadEntry[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) {
     return null;
   }
@@ -145,7 +160,7 @@ function CustomTooltip({ active, payload, label }: any) {
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg">
       <p className="mb-2 font-semibold">{label}</p>
-      {payload.map((entry: any, index: number) => (
+      {payload.map((entry, index) => (
         <div key={index} className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-xs">

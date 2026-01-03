@@ -26,6 +26,13 @@ export function MilestoneCelebration({
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
+  const handleDismiss = React.useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onDismiss();
+    }, 500);
+  }, [onDismiss]);
+
   useEffect(() => {
     // Trigger entrance animation
     setTimeout(() => setIsVisible(true), 100);
@@ -36,14 +43,7 @@ export function MilestoneCelebration({
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, []);
-
-  const handleDismiss = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onDismiss();
-    }, 500);
-  };
+  }, [handleDismiss]);
 
   const animationType = getAnimationType(milestone.tier);
 
@@ -117,13 +117,18 @@ export function MilestoneCelebration({
 }
 
 function ConfettiAnimation() {
-  const confettiPieces = Array.from({ length: 50 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 2,
-    duration: 3 + Math.random() * 2,
-    color: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6"][Math.floor(Math.random() * 5)],
-  }));
+  const confettiPieces = useMemo(
+    () =>
+      Array.from({ length: 50 }, (_, i) => ({
+        id: i,
+        // Use deterministic values based on index for consistent rendering
+        x: (i * 13 + 17) % 100,
+        delay: (i % 20) / 10,
+        duration: 3 + (i % 10) / 5,
+        color: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6"][i % 5],
+      })),
+    []
+  );
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -137,7 +142,7 @@ function ConfettiAnimation() {
               backgroundColor: piece.color,
               animationDelay: `${piece.delay}s`,
               animationDuration: `${piece.duration}s`,
-              "--rotation": `${Math.random() * 360}deg`,
+              "--rotation": `${(piece.id * 37) % 360}deg`,
             } as React.CSSProperties
           }
         />
@@ -147,12 +152,17 @@ function ConfettiAnimation() {
 }
 
 function FireworksAnimation() {
-  const fireworks = Array.from({ length: 8 }, (_, i) => ({
-    id: i,
-    x: 20 + Math.random() * 60,
-    y: 20 + Math.random() * 40,
-    delay: Math.random() * 1.5,
-  }));
+  const fireworks = useMemo(
+    () =>
+      Array.from({ length: 8 }, (_, i) => ({
+        id: i,
+        // Use deterministic values based on index for consistent rendering
+        x: 20 + ((i * 19) % 60),
+        y: 20 + ((i * 11) % 40),
+        delay: (i % 15) / 10,
+      })),
+    []
+  );
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -189,8 +199,8 @@ function SparkleAnimation() {
       Array.from({ length: 30 }, (_, i) => ({
         id: i,
         // Use deterministic values based on index for consistent rendering
-        x: ((i * 17 + 7) % 100),
-        y: ((i * 23 + 13) % 100),
+        x: (i * 17 + 7) % 100,
+        y: (i * 23 + 13) % 100,
         delay: (i % 20) / 10,
         size: 2 + (i % 5),
       })),

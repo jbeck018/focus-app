@@ -85,7 +85,7 @@ export function useLlmStatus(options?: {
     enabled = true,
     refetchInterval = 60000, // Check every minute
     staleTime = 30000, // Cache for 30 seconds
-  } = options || {};
+  } = options ?? {};
 
   const query = useQuery({
     queryKey: llmQueryKeys.status,
@@ -126,7 +126,7 @@ export function useLlmStatus(options?: {
  * ```
  */
 export function useLlmConnection(options?: { enabled?: boolean; refetchInterval?: number }) {
-  const { enabled = true, refetchInterval = 60000 } = options || {};
+  const { enabled = true, refetchInterval = 60000 } = options ?? {};
 
   const query = useQuery({
     queryKey: ["llm", "connection"],
@@ -206,7 +206,7 @@ export function useRefreshLlmStatus() {
  * ```
  */
 export function useModelDetails(options?: { enabled?: boolean }) {
-  const { enabled = true } = options || {};
+  const { enabled = true } = options ?? {};
 
   return useQuery({
     queryKey: llmQueryKeys.modelDetails,

@@ -14,6 +14,7 @@ import { StreakCalendar } from "./streak-calendar";
 import { StreakStats } from "./streak-stats";
 import { StreakFreezeModal } from "./streak-freeze-modal";
 import { MilestoneCelebration } from "./streak-milestone-celebration";
+import type { StreakMilestone } from "@focusflow/types";
 import {
   useCurrentStreak,
   useStreakMilestones,
@@ -33,7 +34,7 @@ export function StreakDashboard({ className }: StreakDashboardProps) {
   const notifications = useStreakNotifications();
 
   const [showFreezeModal, setShowFreezeModal] = useState(false);
-  const [celebratingMilestone, setCelebratingMilestone] = useState<any>(null);
+  const [celebratingMilestone, setCelebratingMilestone] = useState<StreakMilestone | null>(null);
 
   // Check for newly achieved milestones
   useEffect(() => {
@@ -44,7 +45,11 @@ export function StreakDashboard({ className }: StreakDashboardProps) {
     );
 
     if (justAchieved && !celebratingMilestone) {
-      setCelebratingMilestone(justAchieved);
+      // Schedule state update for next tick to avoid cascading renders
+      const timer = setTimeout(() => {
+        setCelebratingMilestone(justAchieved);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [milestones, celebratingMilestone]);
 
@@ -61,7 +66,7 @@ export function StreakDashboard({ className }: StreakDashboardProps) {
           {/* Current Streak Badge */}
           <div className="text-center">
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold">{currentStreak?.currentCount || 0}</span>
+              <span className="text-5xl font-bold">{currentStreak?.currentCount ?? 0}</span>
               <span className="text-xl text-muted-foreground">days</span>
             </div>
             <div className="mt-1 text-sm text-muted-foreground">Current Streak</div>
@@ -142,7 +147,7 @@ export function StreakDashboard({ className }: StreakDashboardProps) {
               <MilestoneCard
                 key={milestone.tier}
                 milestone={milestone}
-                currentCount={currentStreak?.currentCount || 0}
+                currentCount={currentStreak?.currentCount ?? 0}
               />
             ))}
           </div>
@@ -174,7 +179,7 @@ export function StreakDashboard({ className }: StreakDashboardProps) {
 }
 
 interface MilestoneCardProps {
-  milestone: any;
+  milestone: StreakMilestone;
   currentCount: number;
 }
 

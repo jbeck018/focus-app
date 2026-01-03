@@ -136,7 +136,7 @@ export function BlockingCategories() {
       ) : (
         <div className="space-y-6">
           {/* Predefined Categories */}
-          {predefinedCategories && predefinedCategories.length > 0 && (
+          {predefinedCategories.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium">Predefined Categories</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -180,7 +180,7 @@ export function BlockingCategories() {
           )}
 
           {/* Custom Categories */}
-          {customCategories && customCategories.length > 0 && (
+          {customCategories.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium">Custom Categories</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

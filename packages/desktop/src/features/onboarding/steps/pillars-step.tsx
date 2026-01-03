@@ -141,7 +141,7 @@ export function PillarsStep({
       {/* Pillars grid */}
       <div className="grid grid-cols-1 gap-4 mt-6">
         {INDISTRACTABLE_PILLARS.map((pillar, index) => {
-          const Icon = ICON_MAP[pillar.icon as keyof typeof ICON_MAP] || Brain;
+          const Icon = ICON_MAP[pillar.icon as keyof typeof ICON_MAP];
           const isExpanded = expandedPillar === pillar.id;
 
           return (

@@ -5,9 +5,10 @@
  * Remove this file in production - it's for reference only.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StreakDashboard } from "./streak-dashboard";
 import { MilestoneCelebration } from "./streak-milestone-celebration";
+import type { StreakMilestone } from "@focusflow/types";
 import {
   useStreaks,
   useUpdateStreakHistory,
@@ -35,7 +36,7 @@ export function Example1_FullDashboard() {
 export function Example2_SessionCompleteHandler() {
   const updateStreak = useUpdateStreakHistory();
 
-  const handleSessionComplete = async () => {
+  const handleSessionComplete = () => {
     // Your existing session completion logic
     console.log("Session completed!");
 
@@ -74,7 +75,7 @@ export function Example3_StreakWidget() {
     <div className="rounded-lg border bg-card p-4">
       <div className="text-sm text-muted-foreground">Current Streak</div>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-3xl font-bold">{currentStreak?.currentCount || 0}</span>
+        <span className="text-3xl font-bold">{currentStreak?.currentCount ?? 0}</span>
         <span className="text-muted-foreground">days</span>
       </div>
       {currentStreak?.isInGracePeriod && (
@@ -127,7 +128,7 @@ export function Example4_StreakNotifications() {
  */
 export function Example5_MilestoneHandler() {
   const { milestones } = useStreaks();
-  const [celebrating, setCelebrating] = useState<any>(null);
+  const [celebrating, setCelebrating] = useState<StreakMilestone | null>(null);
 
   useEffect(() => {
     if (!milestones) return;
@@ -138,7 +139,11 @@ export function Example5_MilestoneHandler() {
     );
 
     if (justAchieved && !celebrating) {
-      setCelebrating(justAchieved);
+      // Schedule state update for next tick to avoid cascading renders
+      const timer = setTimeout(() => {
+        setCelebrating(justAchieved);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [milestones, celebrating]);
 
@@ -165,7 +170,7 @@ export function Example6_CustomLayout() {
       <div className="rounded-lg border bg-card p-6">
         <h3 className="text-lg font-semibold">Your Streak</h3>
         <div className="mt-4 flex items-baseline gap-2">
-          <span className="text-5xl font-bold">{currentStreak?.currentCount || 0}</span>
+          <span className="text-5xl font-bold">{currentStreak?.currentCount ?? 0}</span>
           <span className="text-xl text-muted-foreground">days</span>
         </div>
         {freezes && freezes.totalAvailable > 0 && (
@@ -215,6 +220,12 @@ export function Example7_FocusTimerIntegration() {
   const [isRunning, setIsRunning] = useState(false);
   const updateStreak = useUpdateStreakHistory();
 
+  const handleTimerComplete = useCallback(() => {
+    console.log("Timer completed!");
+    // Update streak history
+    updateStreak.mutate();
+  }, [updateStreak]);
+
   useEffect(() => {
     if (!isRunning || timeLeft <= 0) return;
 
@@ -230,13 +241,7 @@ export function Example7_FocusTimerIntegration() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isRunning, timeLeft]);
-
-  const handleTimerComplete = () => {
-    console.log("Timer completed!");
-    // Update streak history
-    updateStreak.mutate();
-  };
+  }, [isRunning, timeLeft, handleTimerComplete]);
 
   return (
     <div className="rounded-lg border bg-card p-6">
@@ -268,7 +273,7 @@ export function Example8_ManualRefresh() {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm text-muted-foreground">Current Streak</div>
-          <div className="text-2xl font-bold">{currentStreak?.currentCount || 0} days</div>
+          <div className="text-2xl font-bold">{currentStreak?.currentCount ?? 0} days</div>
         </div>
         <button
           onClick={() => refetch()}

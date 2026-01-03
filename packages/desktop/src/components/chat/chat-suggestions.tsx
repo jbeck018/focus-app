@@ -77,7 +77,7 @@ function ChatSuggestions({
     <div
       className={cn("animate-in fade-in-0 slide-in-from-bottom-2 duration-300", className)}
       role="group"
-      aria-label={title || "Suggested prompts"}
+      aria-label={title ?? "Suggested prompts"}
     >
       {title && <p className="text-xs font-medium text-muted-foreground mb-2">{title}</p>}
 

@@ -27,7 +27,7 @@ export function StreakCalendar({ months = 12, className }: StreakCalendarProps) 
     const weeks: HeatmapCell[][] = [];
     let currentWeek: HeatmapCell[] = [];
 
-    (heatmapData.cells || []).forEach((cell, index) => {
+    heatmapData.cells.forEach((cell, index) => {
       const date = new Date(cell.date);
       const dayOfWeek = date.getDay();
 
@@ -41,7 +41,7 @@ export function StreakCalendar({ months = 12, className }: StreakCalendarProps) 
       if (weeks.length === 0 && currentWeek.length === 0 && dayOfWeek > 0) {
         for (let i = 0; i < dayOfWeek; i++) {
           currentWeek.push({
-            date: "" as any, // Empty placeholder for calendar layout
+            date: "", // Empty placeholder for calendar layout
             sessionsCount: 0,
             focusMinutes: 0,
             intensity: 0,
@@ -81,7 +81,7 @@ export function StreakCalendar({ months = 12, className }: StreakCalendarProps) 
     });
 
     return labels;
-  }, [calendarGrid]);
+  }, [calendarGrid, heatmapData]);
 
   if (isLoading) {
     return (

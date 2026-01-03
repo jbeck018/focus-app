@@ -196,7 +196,7 @@ export function useStreaks() {
       currentStreak.isLoading || heatmap.isLoading || weekStats.isLoading || milestones.isLoading,
 
     // Error states
-    error: currentStreak.error || heatmap.error || weekStats.error || milestones.error,
+    error: currentStreak.error ?? heatmap.error ?? weekStats.error ?? milestones.error,
 
     // Mutations
     useFreeze: useFreeze.mutate,
@@ -237,10 +237,10 @@ export function useStreakNotifications() {
     new Date(currentStreak.lastActivityDate).toDateString() !== new Date().toDateString();
 
   return {
-    shouldNotifyGracePeriod: shouldNotifyGracePeriod || false,
-    shouldNotifyRiskBroken: shouldNotifyRiskBroken || false,
-    gracePeriodEndsAt: currentStreak?.gracePeriodEndsAt || null,
-    currentCount: currentStreak?.currentCount || 0,
+    shouldNotifyGracePeriod: shouldNotifyGracePeriod ?? false,
+    shouldNotifyRiskBroken: shouldNotifyRiskBroken ?? false,
+    gracePeriodEndsAt: currentStreak?.gracePeriodEndsAt ?? null,
+    currentCount: currentStreak?.currentCount ?? 0,
   };
 }
 

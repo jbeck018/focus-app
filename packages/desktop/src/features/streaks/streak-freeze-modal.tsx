@@ -36,7 +36,7 @@ export function StreakFreezeModal({
 
   const [selectedFreezeId, setSelectedFreezeId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
-    suggestedDate || new Date().toISOString().split("T")[0]
+    suggestedDate ?? new Date().toISOString().split("T")[0]
   );
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -67,7 +67,7 @@ export function StreakFreezeModal({
   const selectedFreeze =
     freezes?.weeklyFreeze?.id === selectedFreezeId
       ? freezes.weeklyFreeze
-      : (freezes?.earnedFreezes || []).find((f) => f.id === selectedFreezeId);
+      : (freezes?.earnedFreezes ?? []).find((f) => f.id === selectedFreezeId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -136,12 +136,16 @@ export function StreakFreezeModal({
                     <FreezeOption
                       freeze={freezes.weeklyFreeze}
                       isSelected={selectedFreezeId === freezes.weeklyFreeze.id}
-                      onSelect={() => setSelectedFreezeId(freezes.weeklyFreeze!.id)}
+                      onSelect={() => {
+                        if (freezes.weeklyFreeze) {
+                          setSelectedFreezeId(freezes.weeklyFreeze.id);
+                        }
+                      }}
                     />
                   )}
 
                   {/* Earned Freezes */}
-                  {(freezes?.earnedFreezes || []).map((freeze) => (
+                  {(freezes?.earnedFreezes ?? []).map((freeze) => (
                     <FreezeOption
                       key={freeze.id}
                       freeze={freeze}
@@ -209,8 +213,10 @@ interface FreezeOptionProps {
 }
 
 function FreezeOption({ freeze, isSelected, onSelect }: FreezeOptionProps) {
-  const isExpiring =
-    freeze.expiresAt && new Date(freeze.expiresAt).getTime() - Date.now() < 24 * 60 * 60 * 1000;
+  const [now] = useState(() => Date.now());
+  const isExpiring = freeze.expiresAt
+    ? new Date(freeze.expiresAt).getTime() - now < 24 * 60 * 60 * 1000
+    : false;
 
   return (
     <button

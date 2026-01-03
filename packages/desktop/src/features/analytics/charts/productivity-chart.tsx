@@ -49,8 +49,8 @@ export function ProductivityChart({
     return { label: "Needs Improvement", color: "hsl(var(--destructive))" };
   }, [averageScore]);
 
-  const handleClick = (dataPoint: any) => {
-    if (onDataPointClick && dataPoint) {
+  const handleClick = (dataPoint: { date?: string } | null) => {
+    if (onDataPointClick && dataPoint?.date) {
       const original = data.find((d) => formatDate(d.date) === dataPoint.date);
       if (original) {
         onDataPointClick(original);
@@ -151,7 +151,21 @@ export function ProductivityChart({
 }
 
 // Custom tooltip component
-function CustomTooltip({ active, payload, label }: any) {
+interface TooltipPayload {
+  value?: number;
+  payload?: {
+    focusMinutes?: number;
+    distractionsBlocked?: number;
+  };
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayload[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) {
     return null;
   }

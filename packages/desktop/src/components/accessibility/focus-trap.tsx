@@ -87,13 +87,13 @@ export function FocusTrap({
         // Shift + Tab: moving backwards
         if (document.activeElement === firstElement) {
           event.preventDefault();
-          lastElement?.focus();
+          lastElement.focus();
         }
       } else {
         // Tab: moving forwards
         if (document.activeElement === lastElement) {
           event.preventDefault();
-          firstElement?.focus();
+          firstElement.focus();
         }
       }
     },

@@ -149,7 +149,21 @@ export function TimeOfDayChart({
 }
 
 // Custom tooltip component
-function CustomTooltip({ active, payload }: any) {
+interface TooltipPayload {
+  payload: {
+    name: string;
+    value: number;
+    sessions: number;
+    percentage: number;
+  };
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayload[];
+}
+
+function CustomTooltip({ active, payload }: CustomTooltipProps) {
   if (!active || !payload?.length) {
     return null;
   }

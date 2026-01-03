@@ -31,8 +31,8 @@ export function CalendarHeatmap({
     // Add empty days for the first week
     for (let i = 0; i < firstDayOfWeek; i++) {
       currentWeek.push({
-        date: "" as any,
-        focusMinutes: 0 as any,
+        date: "",
+        focusMinutes: 0,
         sessions: 0,
         intensity: 0,
         hasData: false,
@@ -53,8 +53,8 @@ export function CalendarHeatmap({
     if (currentWeek.length > 0) {
       while (currentWeek.length < 7) {
         currentWeek.push({
-          date: "" as any,
-          focusMinutes: 0 as any,
+          date: "",
+          focusMinutes: 0,
           sessions: 0,
           intensity: 0,
           hasData: false,
@@ -69,13 +69,16 @@ export function CalendarHeatmap({
   const stats = useMemo(() => {
     const activeDays = data.filter((d) => d.hasData).length;
     const totalMinutes = data.reduce((sum, d) => sum + d.focusMinutes, 0);
-    const maxDay = data.reduce((max, d) => (d.focusMinutes > max.focusMinutes ? d : max), data[0]);
+    const maxDay =
+      data.length > 0
+        ? data.reduce((max, d) => (d.focusMinutes > max.focusMinutes ? d : max), data[0])
+        : null;
 
     return {
       activeDays,
       totalMinutes,
-      maxDay: maxDay?.date ?? null,
-      maxMinutes: maxDay?.focusMinutes ?? 0,
+      maxDay: maxDay ? maxDay.date : null,
+      maxMinutes: maxDay ? maxDay.focusMinutes : 0,
     };
   }, [data]);
 

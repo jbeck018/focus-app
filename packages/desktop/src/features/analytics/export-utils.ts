@@ -86,7 +86,7 @@ function summaryToCSV(analytics: AnalyticsDashboardData): string {
     ["Average Productivity Score", analytics.summary.averageProductivityScore],
     ["Current Streak (days)", analytics.summary.currentStreak],
     ["Longest Streak (days)", analytics.summary.longestStreak],
-    ["Most Productive Day", analytics.summary.mostProductiveDay || "N/A"],
+    ["Most Productive Day", analytics.summary.mostProductiveDay ?? "N/A"],
     [
       "Most Productive Hour",
       analytics.summary.mostProductiveHour !== null
@@ -168,10 +168,8 @@ async function captureChartAsPNG(elementId: string): Promise<Blob | null> {
 
 async function captureDashboardAsPNG(): Promise<Blob | null> {
   // Find the main dashboard container
-  const dashboard = document.querySelector(
-    '[data-export-container="analytics-dashboard"]'
-  ) as HTMLElement;
-  if (!dashboard) {
+  const dashboard = document.querySelector('[data-export-container="analytics-dashboard"]');
+  if (!dashboard || !(dashboard instanceof HTMLElement)) {
     console.error("Dashboard container not found");
     return null;
   }

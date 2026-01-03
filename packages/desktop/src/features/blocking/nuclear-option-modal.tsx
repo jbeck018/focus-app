@@ -51,8 +51,8 @@ export function NuclearOptionModal() {
   // Calculate progress percentage
   const progressPercentage =
     nuclearOption?.active &&
-    typeof nuclearOption?.remainingSeconds === "number" &&
-    typeof nuclearOption?.durationMinutes === "number"
+    typeof nuclearOption.remainingSeconds === "number" &&
+    typeof nuclearOption.durationMinutes === "number"
       ? ((nuclearOption.durationMinutes * 60 - nuclearOption.remainingSeconds) /
           (nuclearOption.durationMinutes * 60)) *
         100

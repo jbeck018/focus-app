@@ -47,7 +47,7 @@ function ChatInput({
   inputRef: externalRef,
 }: ChatInputProps) {
   const internalRef = React.useRef<HTMLTextAreaElement>(null);
-  const inputRef = externalRef || internalRef;
+  const inputRef = externalRef ?? internalRef;
 
   // Auto-resize textarea
   React.useEffect(() => {

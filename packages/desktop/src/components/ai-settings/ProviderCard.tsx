@@ -245,7 +245,7 @@ export function ProviderCardCompact({
           )}
         </div>
         <p className="text-xs text-muted-foreground truncate">
-          {provider.currentModel || provider.description}
+          {provider.currentModel ?? provider.description}
         </p>
       </div>
 

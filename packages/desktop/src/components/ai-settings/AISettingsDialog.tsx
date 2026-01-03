@@ -151,8 +151,8 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
 
   // Merge API models with recommended models
   const models = React.useMemo(() => {
-    const recommended = RECOMMENDED_MODELS[selectedProvider] || [];
-    const fetched = availableModels || [];
+    const recommended = RECOMMENDED_MODELS[selectedProvider];
+    const fetched = availableModels ?? [];
 
     // For OpenRouter, use fetched models exclusively
     if (selectedProvider === "openrouter") {
@@ -176,12 +176,19 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
       setSelectedProvider(activeProvider.provider as ProviderType);
 
       // Extract model based on provider type
+      interface LocalProvider {
+        model_path?: string;
+      }
+      interface CloudProvider {
+        model?: string;
+      }
+
       const model =
         activeProvider.provider === "local"
-          ? (activeProvider as any).model_path
-          : (activeProvider as any).model;
+          ? (activeProvider as LocalProvider).model_path
+          : (activeProvider as CloudProvider).model;
 
-      setSelectedModel(model || "");
+      setSelectedModel(model ?? "");
       setApiKey(""); // Don't prefill API key for security
     } else if (open && !activeProvider) {
       setSelectedProvider("local");
@@ -194,7 +201,7 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
   React.useEffect(() => {
     if (models.length > 0 && !selectedModel) {
       const recommended = models.find((m) => m.recommended);
-      setSelectedModel(recommended?.id || models[0].id);
+      setSelectedModel(recommended?.id ?? models[0].id);
     }
   }, [models, selectedModel]);
 
@@ -280,8 +287,10 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
             model_path: selectedModel,
           };
           break;
-        default:
-          throw new Error(`Unsupported provider: ${selectedProvider}`);
+        default: {
+          const exhaustive: never = selectedProvider;
+          throw new Error(`Unsupported provider: ${exhaustive as string}`);
+        }
       }
 
       await setProvider.mutateAsync(config);
@@ -376,24 +385,32 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
                 </Select>
                 {selectedModel && (
                   <p className="text-sm text-muted-foreground">
-                    {models.find((m) => m.id === selectedModel)?.description}
-                    {models.find((m) => m.id === selectedModel)?.sizeMb &&
-                      ` - ${(models.find((m) => m.id === selectedModel)!.sizeMb! / 1024).toFixed(1)} GB`}
+                    {(() => {
+                      const model = models.find((m) => m.id === selectedModel);
+                      const sizeMb = model?.sizeMb;
+                      return (
+                        <>
+                          {model?.description}
+                          {sizeMb ? ` - ${(sizeMb / 1024).toFixed(1)} GB` : ""}
+                        </>
+                      );
+                    })()}
                   </p>
                 )}
               </div>
 
               {/* Show download progress or error */}
-              {(downloadStatus?.isDownloading || downloadStatus?.error) && (
+              {(downloadStatus?.isDownloading ?? downloadStatus?.error) && (
                 <ModelDownloadProgress
                   progress={downloadStatus.progress}
                   error={downloadStatus.error}
                   isDownloading={downloadStatus.isDownloading}
-                  modelName={downloadStatus.modelName || selectedModel}
+                  modelName={downloadStatus.modelName ?? selectedModel}
                   onRetry={async () => {
-                    if (downloadStatus.modelName || selectedModel) {
+                    const modelToDownload = downloadStatus.modelName ?? selectedModel;
+                    if (modelToDownload) {
                       try {
-                        await downloadModel.mutateAsync(downloadStatus.modelName || selectedModel);
+                        await downloadModel.mutateAsync(modelToDownload);
                         toast.success("Model download restarted");
                       } catch (error) {
                         const message =

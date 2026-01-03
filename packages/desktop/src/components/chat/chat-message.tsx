@@ -274,7 +274,7 @@ function renderMarkdown(text: string): React.ReactNode {
           4: "text-sm font-semibold mt-2 mb-1",
           5: "text-sm font-medium mt-1 mb-1",
           6: "text-xs font-medium mt-1 mb-1",
-        }[level] || "";
+        }[level] ?? "";
 
       elements.push(
         React.createElement(
@@ -311,7 +311,7 @@ function renderMarkdown(text: string): React.ReactNode {
     }
 
     // If we had a list and now we don't, flush it
-    if (inList && !ulMatch && !olMatch && line.trim() !== "") {
+    if (inList && line.trim() !== "") {
       flushList(i);
     }
 

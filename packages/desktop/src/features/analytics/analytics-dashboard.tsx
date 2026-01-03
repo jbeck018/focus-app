@@ -60,7 +60,7 @@ export function AnalyticsDashboard() {
       if (format === "csv") {
         await exportToCSV(analytics);
         toast.success("Analytics exported to CSV successfully");
-      } else if (format === "png") {
+      } else {
         await exportToPNG(analytics);
         toast.success("Dashboard exported to PNG successfully");
       }
@@ -206,7 +206,7 @@ export function AnalyticsDashboard() {
       )}
 
       {/* Charts */}
-      {analytics && !isLoading && (
+      {analytics && (
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -239,8 +239,7 @@ export function AnalyticsDashboard() {
               <TimeOfDayChart data={analytics.timeOfDay} />
               <DistractionsChart data={analytics.topDistractions} maxItems={10} />
             </div>
-            {analytics.summary.mostProductiveHour !== undefined &&
-             analytics.summary.mostProductiveHour !== null && (
+            {analytics.summary.mostProductiveHour !== null && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Insights</CardTitle>
