@@ -22,8 +22,11 @@ const rarityBackgrounds = {
  * Show a custom toast notification for unlocked achievement
  */
 export function showAchievementToast(achievement: Achievement) {
-  const rarityColor = rarityColors[achievement.rarity as keyof typeof rarityColors] || rarityColors.common;
-  const rarityBg = rarityBackgrounds[achievement.rarity as keyof typeof rarityBackgrounds] || rarityBackgrounds.common;
+  const rarityColor =
+    rarityColors[achievement.rarity as keyof typeof rarityColors] || rarityColors.common;
+  const rarityBg =
+    rarityBackgrounds[achievement.rarity as keyof typeof rarityBackgrounds] ||
+    rarityBackgrounds.common;
 
   toast.custom(
     (t) => (
@@ -37,9 +40,7 @@ export function showAchievementToast(achievement: Achievement) {
         {/* Sparkle animation for legendary/epic */}
         {(achievement.rarity === "legendary" || achievement.rarity === "epic") && (
           <div className="absolute inset-0 pointer-events-none">
-            <Sparkles
-              className={`absolute top-2 right-2 w-4 h-4 animate-pulse ${rarityColor}`}
-            />
+            <Sparkles className={`absolute top-2 right-2 w-4 h-4 animate-pulse ${rarityColor}`} />
             <Sparkles
               className={`absolute bottom-3 left-3 w-3 h-3 animate-pulse delay-150 ${rarityColor}`}
             />
@@ -52,7 +53,7 @@ export function showAchievementToast(achievement: Achievement) {
             className={`
               flex items-center justify-center w-12 h-12 rounded-full
               bg-white dark:bg-slate-900 shadow-md text-2xl
-              ring-2 ${rarityColor.replace('text-', 'ring-')}
+              ring-2 ${rarityColor.replace("text-", "ring-")}
             `}
           >
             {achievement.icon}
@@ -62,18 +63,12 @@ export function showAchievementToast(achievement: Achievement) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <Trophy className={`w-4 h-4 ${rarityColor}`} />
-              <h3 className="font-bold text-sm text-foreground">
-                Achievement Unlocked!
-              </h3>
+              <h3 className="font-bold text-sm text-foreground">Achievement Unlocked!</h3>
             </div>
 
-            <h4 className="font-semibold text-base mb-1 text-foreground">
-              {achievement.name}
-            </h4>
+            <h4 className="font-semibold text-base mb-1 text-foreground">{achievement.name}</h4>
 
-            <p className="text-sm text-muted-foreground mb-2">
-              {achievement.description}
-            </p>
+            <p className="text-sm text-muted-foreground mb-2">{achievement.description}</p>
 
             <div className="flex items-center gap-3">
               <span
@@ -86,8 +81,7 @@ export function showAchievementToast(achievement: Achievement) {
                 {achievement.rarity}
               </span>
               <span className="text-xs font-bold text-amber-500 flex items-center gap-1">
-                <Trophy className="w-3 h-3" />
-                +{achievement.points} points
+                <Trophy className="w-3 h-3" />+{achievement.points} points
               </span>
             </div>
           </div>

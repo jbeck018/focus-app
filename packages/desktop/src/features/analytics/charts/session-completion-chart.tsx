@@ -71,7 +71,12 @@ export function SessionCompletionChart({ data, onDataPointClick }: SessionComple
               tick={{ fontSize: 12 }}
               tickLine={{ stroke: "hsl(var(--muted-foreground))" }}
               className="text-muted-foreground"
-              label={{ value: "Sessions", angle: -90, position: "insideLeft", style: { fontSize: 12 } }}
+              label={{
+                value: "Sessions",
+                angle: -90,
+                position: "insideLeft",
+                style: { fontSize: 12 },
+              }}
             />
             <Tooltip
               content={<CustomTooltip />}
@@ -82,10 +87,7 @@ export function SessionCompletionChart({ data, onDataPointClick }: SessionComple
                 fontSize: "12px",
               }}
             />
-            <Legend
-              wrapperStyle={{ fontSize: "12px" }}
-              iconType="rect"
-            />
+            <Legend wrapperStyle={{ fontSize: "12px" }} iconType="rect" />
             <Bar
               dataKey="completed"
               stackId="a"
@@ -105,9 +107,7 @@ export function SessionCompletionChart({ data, onDataPointClick }: SessionComple
         <div className="mt-4 grid grid-cols-3 gap-4 text-center text-xs">
           <div>
             <p className="text-muted-foreground">Total Sessions</p>
-            <p className="text-lg font-semibold">
-              {data.reduce((sum, d) => sum + d.total, 0)}
-            </p>
+            <p className="text-lg font-semibold">{data.reduce((sum, d) => sum + d.total, 0)}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Completed</p>
@@ -129,7 +129,7 @@ export function SessionCompletionChart({ data, onDataPointClick }: SessionComple
 
 // Custom tooltip component
 function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload || !payload.length) {
+  if (!active || !payload?.length) {
     return null;
   }
 
@@ -143,10 +143,7 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="mb-2 font-semibold">{label}</p>
       {payload.map((entry: any, index: number) => (
         <div key={index} className="flex items-center gap-2">
-          <div
-            className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
+          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-xs">
             {entry.name}: <span className="font-medium">{entry.value}</span>
           </span>

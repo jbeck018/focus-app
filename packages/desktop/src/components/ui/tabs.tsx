@@ -82,7 +82,10 @@ function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPr
       data-slot="tabs-content"
       role="tabpanel"
       tabIndex={0}
-      className={cn("flex-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md", className)}
+      className={cn(
+        "flex-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md",
+        className
+      )}
       {...props}
     />
   );

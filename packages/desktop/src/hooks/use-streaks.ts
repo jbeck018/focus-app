@@ -53,9 +53,7 @@ async function getAvailableFreezes(): Promise<AvailableFreezes> {
   return invoke("get_available_freezes");
 }
 
-async function useStreakFreeze(
-  request: UseStreakFreezeRequest
-): Promise<StreakHistoryEntry> {
+async function useStreakFreeze(request: UseStreakFreezeRequest): Promise<StreakHistoryEntry> {
   return invoke("use_streak_freeze", { request });
 }
 
@@ -195,17 +193,10 @@ export function useStreaks() {
 
     // Loading states
     isLoading:
-      currentStreak.isLoading ||
-      heatmap.isLoading ||
-      weekStats.isLoading ||
-      milestones.isLoading,
+      currentStreak.isLoading || heatmap.isLoading || weekStats.isLoading || milestones.isLoading,
 
     // Error states
-    error:
-      currentStreak.error ||
-      heatmap.error ||
-      weekStats.error ||
-      milestones.error,
+    error: currentStreak.error || heatmap.error || weekStats.error || milestones.error,
 
     // Mutations
     useFreeze: useFreeze.mutate,
@@ -236,16 +227,14 @@ export function useStreakNotifications() {
   const { data: currentStreak } = useCurrentStreak();
 
   const shouldNotifyGracePeriod =
-    currentStreak?.isInGracePeriod &&
-    currentStreak?.gracePeriodEndsAt !== null;
+    currentStreak?.isInGracePeriod && currentStreak.gracePeriodEndsAt !== null;
 
   const shouldNotifyRiskBroken =
     currentStreak &&
     currentStreak.currentCount > 0 &&
     !currentStreak.isInGracePeriod &&
-    currentStreak?.lastActivityDate !== null &&
-    new Date(currentStreak.lastActivityDate).toDateString() !==
-      new Date().toDateString();
+    currentStreak.lastActivityDate !== null &&
+    new Date(currentStreak.lastActivityDate).toDateString() !== new Date().toDateString();
 
   return {
     shouldNotifyGracePeriod: shouldNotifyGracePeriod || false,
@@ -272,15 +261,11 @@ export function useNextMilestone() {
     return null;
   }
 
-  const progress =
-    (currentStreak.currentCount / nextMilestone.daysRequired) * 100;
+  const progress = (currentStreak.currentCount / nextMilestone.daysRequired) * 100;
 
   return {
     milestone: nextMilestone,
     progress: Math.min(progress, 100),
-    daysRemaining: Math.max(
-      0,
-      nextMilestone.daysRequired - currentStreak.currentCount
-    ),
+    daysRemaining: Math.max(0, nextMilestone.daysRequired - currentStreak.currentCount),
   };
 }

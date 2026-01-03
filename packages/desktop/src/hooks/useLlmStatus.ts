@@ -101,7 +101,7 @@ export function useLlmStatus(options?: {
   return {
     ...query,
     status: query.data,
-    isAvailable: Boolean(query.data?.available && !query.data?.error),
+    isAvailable: Boolean(query.data?.available && !query.data.error),
   };
 }
 
@@ -125,14 +125,8 @@ export function useLlmStatus(options?: {
  * }
  * ```
  */
-export function useLlmConnection(options?: {
-  enabled?: boolean;
-  refetchInterval?: number;
-}) {
-  const {
-    enabled = true,
-    refetchInterval = 60000,
-  } = options || {};
+export function useLlmConnection(options?: { enabled?: boolean; refetchInterval?: number }) {
+  const { enabled = true, refetchInterval = 60000 } = options || {};
 
   const query = useQuery({
     queryKey: ["llm", "connection"],
@@ -177,10 +171,10 @@ export function useRefreshLlmStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<LlmStatus> => {
       return invoke<LlmStatus>("refresh_llm_status");
     },
-    onSuccess: (data) => {
+    onSuccess: (data: LlmStatus) => {
       // Update the cache with fresh data
       queryClient.setQueryData(llmQueryKeys.status, data);
     },
@@ -211,9 +205,7 @@ export function useRefreshLlmStatus() {
  * }
  * ```
  */
-export function useModelDetails(options?: {
-  enabled?: boolean;
-}) {
+export function useModelDetails(options?: { enabled?: boolean }) {
   const { enabled = true } = options || {};
 
   return useQuery({
@@ -237,7 +229,7 @@ export function useClearLlmCache() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<void> => {
       await invoke("clear_llm_cache");
     },
     onSuccess: () => {
@@ -287,12 +279,10 @@ export function useClearLlmCache() {
  * }
  * ```
  */
-export function useLlmStatusManager(options?: {
-  enabled?: boolean;
-  refetchInterval?: number;
-}) {
+export function useLlmStatusManager(options?: { enabled?: boolean; refetchInterval?: number }) {
   const { status, isLoading, error, refetch, isAvailable } = useLlmStatus(options);
-  const { mutate: refresh } = useRefreshLlmStatus();
+  const refreshMutation = useRefreshLlmStatus();
+  const refresh = refreshMutation.mutate;
 
   return {
     // Raw data

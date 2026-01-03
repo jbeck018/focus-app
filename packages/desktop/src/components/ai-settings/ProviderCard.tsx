@@ -112,9 +112,7 @@ export function ProviderCard({
             <div
               className={cn(
                 "rounded-lg p-2.5 shrink-0",
-                provider.id === "local"
-                  ? "bg-primary/10"
-                  : "bg-blue-500/10"
+                provider.id === "local" ? "bg-primary/10" : "bg-blue-500/10"
               )}
             >
               {getProviderIcon(provider.id)}
@@ -122,9 +120,7 @@ export function ProviderCard({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <CardTitle className="text-base leading-tight">
-                  {provider.name}
-                </CardTitle>
+                <CardTitle className="text-base leading-tight">{provider.name}</CardTitle>
                 {isActive && (
                   <Badge variant="default" className="text-xs">
                     Active
@@ -152,8 +148,7 @@ export function ProviderCard({
         {/* Current model */}
         {provider.currentModel && (
           <div className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Model:</span>{" "}
-            {provider.currentModel}
+            <span className="font-medium text-foreground">Model:</span> {provider.currentModel}
           </div>
         )}
 
@@ -254,7 +249,10 @@ export function ProviderCardCompact({
         </p>
       </div>
 
-      <Badge variant={statusBadge.variant} className={cn("text-xs shrink-0", statusBadge.className)}>
+      <Badge
+        variant={statusBadge.variant}
+        className={cn("text-xs shrink-0", statusBadge.className)}
+      >
         {statusBadge.icon}
       </Badge>
     </button>

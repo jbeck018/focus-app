@@ -35,13 +35,7 @@ export function usePatternAnalysis() {
 // Get coach response for a message
 export function useCoachChat() {
   return useMutation({
-    mutationFn: async ({
-      message,
-      context,
-    }: {
-      message: string;
-      context?: UserContext;
-    }) => {
+    mutationFn: async ({ message, context }: { message: string; context?: UserContext }) => {
       return invoke<CoachResponse>("get_coach_response", { message, context });
     },
   });

@@ -27,13 +27,13 @@ interface FocusTrapProps {
 }
 
 const FOCUSABLE_ELEMENTS = [
-  'a[href]',
-  'button:not([disabled])',
-  'textarea:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
-].join(', ');
+].join(", ");
 
 export function FocusTrap({
   children,
@@ -77,7 +77,7 @@ export function FocusTrap({
   // Handle Tab and Shift+Tab
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent) => {
-      if (!enabled || event.key !== 'Tab' || !containerRef.current) return;
+      if (!enabled || event.key !== "Tab" || !containerRef.current) return;
 
       const focusableElements = getFocusableElements(containerRef.current);
       const firstElement = focusableElements[0];
@@ -105,11 +105,7 @@ export function FocusTrap({
   }
 
   return (
-    <div
-      ref={containerRef}
-      onKeyDown={handleKeyDown}
-      className={className}
-    >
+    <div ref={containerRef} onKeyDown={handleKeyDown} className={className}>
       {children}
     </div>
   );
@@ -117,12 +113,10 @@ export function FocusTrap({
 
 // Helper function to get all focusable elements
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS)
-  ).filter(
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS)).filter(
     (element) =>
-      !element.hasAttribute('disabled') &&
-      !element.hasAttribute('aria-hidden') &&
+      !element.hasAttribute("disabled") &&
+      !element.hasAttribute("aria-hidden") &&
       element.tabIndex !== -1
   );
 }

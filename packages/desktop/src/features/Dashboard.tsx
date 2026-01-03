@@ -95,7 +95,9 @@ export function Dashboard() {
             <Flame className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{calculateStreak(Array.isArray(weeklyStats) ? weeklyStats : [])} days</div>
+            <div className="text-2xl font-bold">
+              {calculateStreak(Array.isArray(weeklyStats) ? weeklyStats : [])} days
+            </div>
             <p className="text-xs text-muted-foreground">Keep it going!</p>
           </CardContent>
         </Card>

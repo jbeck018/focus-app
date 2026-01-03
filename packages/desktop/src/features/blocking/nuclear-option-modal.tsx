@@ -4,7 +4,15 @@ import { useState } from "react";
 import { Bomb, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -43,11 +51,12 @@ export function NuclearOptionModal() {
   // Calculate progress percentage
   const progressPercentage =
     nuclearOption?.active &&
-    typeof nuclearOption?.remainingSeconds === 'number' &&
-    typeof nuclearOption?.durationMinutes === 'number'
-    ? ((nuclearOption.durationMinutes * 60 - nuclearOption.remainingSeconds) /
-        (nuclearOption.durationMinutes * 60)) * 100
-    : 0;
+    typeof nuclearOption?.remainingSeconds === "number" &&
+    typeof nuclearOption?.durationMinutes === "number"
+      ? ((nuclearOption.durationMinutes * 60 - nuclearOption.remainingSeconds) /
+          (nuclearOption.durationMinutes * 60)) *
+        100
+      : 0;
 
   // Format remaining time
   const formatTime = (seconds: number): string => {
@@ -61,7 +70,9 @@ export function NuclearOptionModal() {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <Bomb className={`h-5 w-5 ${nuclearOption?.active ? "text-red-500" : "text-muted-foreground"}`} />
+            <Bomb
+              className={`h-5 w-5 ${nuclearOption?.active ? "text-red-500" : "text-muted-foreground"}`}
+            />
             <div>
               <CardTitle className="text-base">Nuclear Option</CardTitle>
               <CardDescription>
@@ -111,9 +122,7 @@ export function NuclearOptionModal() {
               <div className="space-y-1">
                 <p className="text-muted-foreground">Ends At</p>
                 <p className="font-medium">
-                  {nuclearOption.endsAt
-                    ? new Date(nuclearOption.endsAt).toLocaleTimeString()
-                    : "-"}
+                  {nuclearOption.endsAt ? new Date(nuclearOption.endsAt).toLocaleTimeString() : "-"}
                 </p>
               </div>
             </div>
@@ -145,8 +154,8 @@ export function NuclearOptionModal() {
                     Activate Nuclear Option
                   </DialogTitle>
                   <DialogDescription>
-                    This will lock all blocking irreversibly for the selected duration. There is
-                    no way to undo this action once activated.
+                    This will lock all blocking irreversibly for the selected duration. There is no
+                    way to undo this action once activated.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -180,8 +189,8 @@ export function NuclearOptionModal() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Warning</AlertTitle>
                     <AlertDescription>
-                      Once activated, this cannot be cancelled. Your device will remain locked
-                      for the full {selectedDuration} minute{selectedDuration !== 1 ? "s" : ""}.
+                      Once activated, this cannot be cancelled. Your device will remain locked for
+                      the full {selectedDuration} minute{selectedDuration !== 1 ? "s" : ""}.
                     </AlertDescription>
                   </Alert>
                 </div>

@@ -46,7 +46,11 @@ export function ConversationListItem({
   const handleDelete = React.useCallback(async () => {
     setIsDeleting(true);
     try {
-      await onDelete?.(conversation.id);
+      // onDelete may or may not be async - handle both cases
+      const result = onDelete?.(conversation.id);
+      if (result instanceof Promise) {
+        await result;
+      }
       setShowDeleteDialog(false);
     } finally {
       setIsDeleting(false);
@@ -143,9 +147,7 @@ export function ConversationListItem({
         </div>
 
         {/* Last Message Preview */}
-        <p className="text-xs text-muted-foreground line-clamp-2 pl-6">
-          {truncatedLastMessage}
-        </p>
+        <p className="text-xs text-muted-foreground line-clamp-2 pl-6">{truncatedLastMessage}</p>
 
         {/* Footer: Date and Message Count */}
         <div className="flex items-center justify-between text-xs text-muted-foreground/70 pl-6">
@@ -160,19 +162,19 @@ export function ConversationListItem({
           <DialogHeader>
             <DialogTitle>Delete Conversation</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{conversation.title}"? This action cannot be
-              undone and all messages in this conversation will be permanently deleted.
+              Are you sure you want to delete "{conversation.title}"? This action cannot be undone
+              and all messages in this conversation will be permanently deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
-            <Button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              variant="destructive"
-            >
+            <Button onClick={handleDelete} disabled={isDeleting} variant="destructive">
               {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

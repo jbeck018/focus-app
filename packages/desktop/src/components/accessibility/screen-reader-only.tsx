@@ -28,10 +28,7 @@ export function ScreenReaderOnly({
   ...props
 }: ScreenReaderOnlyProps) {
   return (
-    <Component
-      className={cn("sr-only", className)}
-      {...props}
-    >
+    <Component className={cn("sr-only", className)} {...props}>
       {children}
     </Component>
   );

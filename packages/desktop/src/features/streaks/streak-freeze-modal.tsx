@@ -64,17 +64,15 @@ export function StreakFreezeModal({
     }
   };
 
-  const selectedFreeze = freezes?.weeklyFreeze?.id === selectedFreezeId
-    ? freezes.weeklyFreeze
-    : (freezes?.earnedFreezes || []).find((f) => f.id === selectedFreezeId);
+  const selectedFreeze =
+    freezes?.weeklyFreeze?.id === selectedFreezeId
+      ? freezes.weeklyFreeze
+      : (freezes?.earnedFreezes || []).find((f) => f.id === selectedFreezeId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div
@@ -97,7 +95,7 @@ export function StreakFreezeModal({
             <div className="flex items-center justify-center py-8">
               <div className="text-sm text-muted-foreground">Loading freezes...</div>
             </div>
-          ) : freezes && freezes.totalAvailable === 0 ? (
+          ) : freezes?.totalAvailable === 0 ? (
             <div className="rounded-lg border border-dashed p-8 text-center">
               <div className="text-4xl">❄️</div>
               <div className="mt-4 text-sm font-medium">No freezes available</div>
@@ -116,9 +114,7 @@ export function StreakFreezeModal({
             <>
               {/* Date Selection */}
               <div className="mb-6">
-                <label className="block text-sm font-medium">
-                  Select Date to Apply Freeze
-                </label>
+                <label className="block text-sm font-medium">Select Date to Apply Freeze</label>
                 <input
                   type="date"
                   value={selectedDate}
@@ -133,9 +129,7 @@ export function StreakFreezeModal({
 
               {/* Available Freezes */}
               <div>
-                <label className="block text-sm font-medium">
-                  Choose Freeze to Use
-                </label>
+                <label className="block text-sm font-medium">Choose Freeze to Use</label>
                 <div className="mt-2 space-y-2">
                   {/* Weekly Freeze */}
                   {freezes?.weeklyFreeze && (
@@ -164,8 +158,7 @@ export function StreakFreezeModal({
                   <div className="text-sm font-medium">Confirm Freeze Usage</div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Are you sure you want to use this {selectedFreeze.source} freeze for{" "}
-                    {new Date(selectedDate).toLocaleDateString()}? This action cannot be
-                    undone.
+                    {new Date(selectedDate).toLocaleDateString()}? This action cannot be undone.
                   </p>
                 </div>
               )}
@@ -193,11 +186,7 @@ export function StreakFreezeModal({
               disabled={!selectedFreezeId || useFreeze.isPending}
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {useFreeze.isPending
-                ? "Using Freeze..."
-                : showConfirm
-                  ? "Confirm"
-                  : "Use Freeze"}
+              {useFreeze.isPending ? "Using Freeze..." : showConfirm ? "Confirm" : "Use Freeze"}
             </button>
           )}
         </div>
@@ -221,8 +210,7 @@ interface FreezeOptionProps {
 
 function FreezeOption({ freeze, isSelected, onSelect }: FreezeOptionProps) {
   const isExpiring =
-    freeze.expiresAt &&
-    new Date(freeze.expiresAt).getTime() - Date.now() < 24 * 60 * 60 * 1000;
+    freeze.expiresAt && new Date(freeze.expiresAt).getTime() - Date.now() < 24 * 60 * 60 * 1000;
 
   return (
     <button
@@ -243,9 +231,7 @@ function FreezeOption({ freeze, isSelected, onSelect }: FreezeOptionProps) {
                 {freeze.source === "weekly" ? "Weekly Freeze" : "Earned Freeze"}
               </div>
               {freeze.source === "achievement" && (
-                <div className="text-xs text-muted-foreground">
-                  From milestone achievement
-                </div>
+                <div className="text-xs text-muted-foreground">From milestone achievement</div>
               )}
             </div>
           </div>
@@ -257,8 +243,7 @@ function FreezeOption({ freeze, isSelected, onSelect }: FreezeOptionProps) {
                 isExpiring ? "text-orange-500" : "text-muted-foreground"
               )}
             >
-              {isExpiring && "⚠️ "}Expires:{" "}
-              {new Date(freeze.expiresAt).toLocaleDateString()}
+              {isExpiring && "⚠️ "}Expires: {new Date(freeze.expiresAt).toLocaleDateString()}
             </div>
           )}
         </div>

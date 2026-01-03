@@ -35,17 +35,17 @@ export function AchievementCard({
   showProgress = true,
   className,
 }: AchievementCardProps) {
-  const rarityColor = rarityColors[achievement.rarity as keyof typeof rarityColors] || rarityColors.common;
-  const categoryLabel = categoryLabels[achievement.category as keyof typeof categoryLabels] || achievement.category;
+  const rarityColor =
+    rarityColors[achievement.rarity as keyof typeof rarityColors] || rarityColors.common;
+  const categoryLabel =
+    categoryLabels[achievement.category as keyof typeof categoryLabels] || achievement.category;
 
   if (compact) {
     return (
       <div
         className={cn(
           "flex items-center gap-3 p-3 rounded-lg border transition-all",
-          achievement.unlocked
-            ? "bg-card hover:bg-accent/50"
-            : "bg-muted/30 opacity-75",
+          achievement.unlocked ? "bg-card hover:bg-accent/50" : "bg-muted/30 opacity-75",
           className
         )}
       >
@@ -64,19 +64,19 @@ export function AchievementCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className={cn(
-              "font-semibold text-sm truncate",
-              !achievement.unlocked && "text-muted-foreground"
-            )}>
+            <h4
+              className={cn(
+                "font-semibold text-sm truncate",
+                !achievement.unlocked && "text-muted-foreground"
+              )}
+            >
               {achievement.name}
             </h4>
             <Badge variant="outline" className={cn("text-xs px-1.5 py-0", rarityColor)}>
               {achievement.rarity}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground truncate">
-            {achievement.description}
-          </p>
+          <p className="text-xs text-muted-foreground truncate">{achievement.description}</p>
           {showProgress && !achievement.unlocked && (
             <div className="mt-1.5 flex items-center gap-2">
               <Progress value={achievement.progressPercentage} className="h-1.5 flex-1" />
@@ -118,9 +118,7 @@ export function AchievementCard({
             <div
               className={cn(
                 "flex items-center justify-center w-16 h-16 rounded-full bg-accent text-4xl transition-all",
-                achievement.unlocked
-                  ? "ring-2 ring-primary/50 shadow-md"
-                  : "grayscale opacity-60"
+                achievement.unlocked ? "ring-2 ring-primary/50 shadow-md" : "grayscale opacity-60"
               )}
             >
               {achievement.unlocked ? (
@@ -133,15 +131,19 @@ export function AchievementCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3 mb-1">
-              <CardTitle className={cn(
-                "text-lg leading-tight",
-                !achievement.unlocked && "text-muted-foreground"
-              )}>
+              <CardTitle
+                className={cn(
+                  "text-lg leading-tight",
+                  !achievement.unlocked && "text-muted-foreground"
+                )}
+              >
                 {achievement.name}
               </CardTitle>
               <div className="flex items-center gap-1.5 text-amber-500 flex-shrink-0">
                 <Trophy className="w-4 h-4" />
-                <span className="text-sm font-bold whitespace-nowrap">{achievement.points} pts</span>
+                <span className="text-sm font-bold whitespace-nowrap">
+                  {achievement.points} pts
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -155,9 +157,7 @@ export function AchievementCard({
           </div>
         </div>
 
-        <CardDescription className="mt-2">
-          {achievement.description}
-        </CardDescription>
+        <CardDescription className="mt-2">{achievement.description}</CardDescription>
       </CardHeader>
 
       <CardContent className="pt-0 flex-1 flex flex-col justify-end">

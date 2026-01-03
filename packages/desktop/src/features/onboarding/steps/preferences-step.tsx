@@ -62,7 +62,8 @@ export function PreferencesStep({
         <div className="text-sm text-green-900 dark:text-green-100 space-y-1">
           <p className="font-medium">Pillar 2: Make Time for Traction</p>
           <p className="text-green-700 dark:text-green-300">
-            These defaults help you quickly start focus sessions. You can always adjust them per session.
+            These defaults help you quickly start focus sessions. You can always adjust them per
+            session.
           </p>
         </div>
       </div>
@@ -137,9 +138,7 @@ export function PreferencesStep({
               </button>
             ))}
           </div>
-          <p className="text-sm text-muted-foreground">
-            Recommended: 5 minutes for short breaks
-          </p>
+          <p className="text-sm text-muted-foreground">Recommended: 5 minutes for short breaks</p>
         </CardContent>
       </Card>
 

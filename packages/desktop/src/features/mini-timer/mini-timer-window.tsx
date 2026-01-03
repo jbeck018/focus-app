@@ -63,9 +63,7 @@ export function MiniTimerWindow() {
       (event) => {
         console.debug("[mini-timer] Session extended:", event.payload);
         setBackendState((prev) =>
-          prev
-            ? { ...prev, plannedDurationMinutes: event.payload.plannedDurationMinutes }
-            : null
+          prev ? { ...prev, plannedDurationMinutes: event.payload.plannedDurationMinutes } : null
         );
       }
     );
@@ -120,7 +118,7 @@ export function MiniTimerWindow() {
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
     setOpacity(0.8);
-    currentWindow.startDragging().catch((error) => {
+    currentWindow.startDragging().catch((error: unknown) => {
       console.error("Failed to start dragging:", error);
     });
   }, [currentWindow]);
@@ -138,18 +136,18 @@ export function MiniTimerWindow() {
             x: position.x,
             y: position.y,
           },
-        }).catch((error) => {
+        }).catch((error: unknown) => {
           console.error("Failed to save position:", error);
         });
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error("Failed to get position:", error);
       });
   }, [currentWindow]);
 
   // Handle double-click to open main window
   const handleDoubleClick = useCallback(() => {
-    invoke("focus_main_window").catch((error) => {
+    invoke("focus_main_window").catch((error: unknown) => {
       console.error("Failed to focus main window:", error);
     });
   }, []);
@@ -195,13 +193,7 @@ export function MiniTimerWindow() {
                 `}
               />
               <span className="text-xs font-medium text-white/80">
-                {hasActiveSession
-                  ? isPaused
-                    ? "Paused"
-                    : isBreak
-                      ? "Break"
-                      : "Focus"
-                  : "Idle"}
+                {hasActiveSession ? (isPaused ? "Paused" : isBreak ? "Break" : "Focus") : "Idle"}
               </span>
             </div>
 

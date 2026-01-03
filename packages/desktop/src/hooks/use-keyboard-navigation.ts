@@ -20,9 +20,9 @@
  * ```
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 
-export type Orientation = 'horizontal' | 'vertical' | 'both';
+export type Orientation = "horizontal" | "vertical" | "both";
 
 interface UseKeyboardNavigationOptions {
   itemCount: number;
@@ -45,15 +45,17 @@ export function useKeyboardNavigation({
   initialIndex = 0,
   onSelect,
   onEscape,
-  orientation = 'vertical',
+  orientation = "vertical",
   loop = true,
   enabled = true,
 }: UseKeyboardNavigationOptions): KeyboardNavigationHandlers {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
-  // Reset index if itemCount changes
+  // Reset index if itemCount changes - this is a necessary effect to sync state
+  // with external prop changes, which is a valid use case for setState in effect
   useEffect(() => {
-    if (currentIndex >= itemCount) {
+    if (currentIndex >= itemCount && itemCount > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentIndex(Math.max(0, itemCount - 1));
     }
   }, [itemCount, currentIndex]);
@@ -97,12 +99,12 @@ export function useKeyboardNavigation({
       const { key } = event;
 
       // Determine navigation keys based on orientation
-      const nextKeys = orientation === 'horizontal' ? ['ArrowRight'] : ['ArrowDown'];
-      const prevKeys = orientation === 'horizontal' ? ['ArrowLeft'] : ['ArrowUp'];
+      const nextKeys = orientation === "horizontal" ? ["ArrowRight"] : ["ArrowDown"];
+      const prevKeys = orientation === "horizontal" ? ["ArrowLeft"] : ["ArrowUp"];
 
-      if (orientation === 'both') {
-        nextKeys.push('ArrowRight', 'ArrowDown');
-        prevKeys.push('ArrowLeft', 'ArrowUp');
+      if (orientation === "both") {
+        nextKeys.push("ArrowRight", "ArrowDown");
+        prevKeys.push("ArrowLeft", "ArrowUp");
       }
 
       // Handle navigation
@@ -112,16 +114,16 @@ export function useKeyboardNavigation({
       } else if (prevKeys.includes(key)) {
         event.preventDefault();
         handlePrevious();
-      } else if (key === 'Home') {
+      } else if (key === "Home") {
         event.preventDefault();
         handleFirst();
-      } else if (key === 'End') {
+      } else if (key === "End") {
         event.preventDefault();
         handleLast();
-      } else if (key === 'Enter' || key === ' ') {
+      } else if (key === "Enter" || key === " ") {
         event.preventDefault();
         handleSelect();
-      } else if (key === 'Escape' && onEscape) {
+      } else if (key === "Escape" && onEscape) {
         event.preventDefault();
         onEscape();
       }
@@ -157,9 +159,6 @@ export function useKeyboardNavigation({
  * <button tabIndex={tabIndex}>Item {index}</button>
  * ```
  */
-export function useRovingTabIndex(
-  itemIndex: number,
-  currentIndex: number
-): number {
+export function useRovingTabIndex(itemIndex: number, currentIndex: number): number {
   return itemIndex === currentIndex ? 0 : -1;
 }

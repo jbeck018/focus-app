@@ -27,7 +27,7 @@ const SUGGESTED_APPS = [
   "Netflix",
   "Spotify",
   "Steam",
-  "Epic Games"
+  "Epic Games",
 ];
 
 // Common website suggestions for blocklisting
@@ -46,7 +46,7 @@ const SUGGESTED_WEBSITES = [
   "buzzfeed.com",
   "dailymail.co.uk",
   "cnn.com",
-  "bbc.com"
+  "bbc.com",
 ];
 
 interface BlocklistStepProps {
@@ -139,7 +139,8 @@ export function BlocklistStep({
         <div className="text-sm text-blue-900 dark:text-blue-100 space-y-1">
           <p className="font-medium">Pillar 3: Hack Back External Triggers</p>
           <p className="text-blue-700 dark:text-blue-300">
-            These blocks will only activate during your focus sessions. You can modify this list anytime.
+            These blocks will only activate during your focus sessions. You can modify this list
+            anytime.
           </p>
         </div>
       </div>
@@ -168,11 +169,7 @@ export function BlocklistStep({
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {selectedApps.map((app) => (
-                    <Badge
-                      key={app}
-                      variant="secondary"
-                      className="gap-1 px-3 py-1.5 text-sm"
-                    >
+                    <Badge key={app} variant="secondary" className="gap-1 px-3 py-1.5 text-sm">
                       {app}
                       <button
                         onClick={() => removeApp(app)}
@@ -233,11 +230,7 @@ export function BlocklistStep({
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {selectedWebsites.map((website) => (
-                    <Badge
-                      key={website}
-                      variant="secondary"
-                      className="gap-1 px-3 py-1.5 text-sm"
-                    >
+                    <Badge key={website} variant="secondary" className="gap-1 px-3 py-1.5 text-sm">
                       {website}
                       <button
                         onClick={() => removeWebsite(website)}

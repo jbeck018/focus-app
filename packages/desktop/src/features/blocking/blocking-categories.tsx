@@ -8,7 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   useBlockingCategories,
@@ -290,7 +297,13 @@ export function BlockingCategories() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => { resetForm(); setIsCreateDialogOpen(false); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetForm();
+                setIsCreateDialogOpen(false);
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={handleCreateCategory} disabled={createCategory.isPending}>

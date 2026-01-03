@@ -145,10 +145,9 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
   const [isSaving, setIsSaving] = React.useState(false);
 
   // Fetch available models for selected provider
-  const { data: availableModels, isLoading: modelsLoading } = useAvailableModels(
-    selectedProvider,
-    { enabled: open }
-  );
+  const { data: availableModels, isLoading: modelsLoading } = useAvailableModels(selectedProvider, {
+    enabled: open,
+  });
 
   // Merge API models with recommended models
   const models = React.useMemo(() => {
@@ -177,9 +176,10 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
       setSelectedProvider(activeProvider.provider as ProviderType);
 
       // Extract model based on provider type
-      const model = activeProvider.provider === "local"
-        ? (activeProvider as any).model_path
-        : (activeProvider as any).model;
+      const model =
+        activeProvider.provider === "local"
+          ? (activeProvider as any).model_path
+          : (activeProvider as any).model;
 
       setSelectedModel(model || "");
       setApiKey(""); // Don't prefill API key for security
@@ -209,20 +209,23 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
     }
   );
 
-  const handleProviderChange = React.useCallback((provider: ProviderType) => {
-    setSelectedProvider(provider);
-    setSelectedModel("");
-    setApiKey("");
+  const handleProviderChange = React.useCallback(
+    (provider: ProviderType) => {
+      setSelectedProvider(provider);
+      setSelectedModel("");
+      setApiKey("");
 
-    // Show warning when switching from local to cloud
-    const wasLocal = selectedProvider === "local";
-    const isCloud = provider !== "local";
-    if (wasLocal && isCloud) {
-      setShowCloudWarning(true);
-    } else {
-      setShowCloudWarning(false);
-    }
-  }, [selectedProvider]);
+      // Show warning when switching from local to cloud
+      const wasLocal = selectedProvider === "local";
+      const isCloud = provider !== "local";
+      if (wasLocal && isCloud) {
+        setShowCloudWarning(true);
+      } else {
+        setShowCloudWarning(false);
+      }
+    },
+    [selectedProvider]
+  );
 
   const handleSave = React.useCallback(async () => {
     if (!selectedModel) {
@@ -291,14 +294,7 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
     } finally {
       setIsSaving(false);
     }
-  }, [
-    selectedProvider,
-    selectedModel,
-    apiKey,
-    saveApiKey,
-    setProvider,
-    onOpenChange,
-  ]);
+  }, [selectedProvider, selectedModel, apiKey, saveApiKey, setProvider, onOpenChange]);
 
   const handleCancel = React.useCallback(() => {
     onOpenChange(false);
@@ -328,7 +324,11 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <Tabs value={selectedProvider} onValueChange={(v) => handleProviderChange(v as ProviderType)} className="mt-4">
+          <Tabs
+            value={selectedProvider}
+            onValueChange={(v) => handleProviderChange(v as ProviderType)}
+            className="mt-4"
+          >
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="local">Local</TabsTrigger>
               <TabsTrigger value="openai">OpenAI</TabsTrigger>
@@ -343,8 +343,8 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Privacy Notice</AlertTitle>
                 <AlertDescription>
-                  Cloud providers send your data to external servers. Local models keep
-                  everything private on your device.
+                  Cloud providers send your data to external servers. Local models keep everything
+                  private on your device.
                 </AlertDescription>
               </Alert>
             )}
@@ -396,7 +396,8 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
                         await downloadModel.mutateAsync(downloadStatus.modelName || selectedModel);
                         toast.success("Model download restarted");
                       } catch (error) {
-                        const message = error instanceof Error ? error.message : "Failed to restart download";
+                        const message =
+                          error instanceof Error ? error.message : "Failed to restart download";
                         toast.error(message);
                       }
                     }
@@ -415,7 +416,8 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
                       await downloadModel.mutateAsync(selectedModel);
                       toast.success("Model download started");
                     } catch (error) {
-                      const message = error instanceof Error ? error.message : "Failed to start download";
+                      const message =
+                        error instanceof Error ? error.message : "Failed to start download";
                       toast.error(message);
                     }
                   }}

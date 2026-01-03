@@ -40,10 +40,7 @@ interface UseOnboardingReturn {
   progress: number;
 
   // Data management
-  updateData: <K extends keyof OnboardingData>(
-    key: K,
-    value: OnboardingData[K]
-  ) => void;
+  updateData: <K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) => void;
   completeOnboarding: () => Promise<void>;
   skipOnboarding: () => void;
   resetOnboarding: () => void;
@@ -78,9 +75,9 @@ export function useOnboarding(): UseOnboardingReturn {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        setState(parsed.state || getInitialState());
-        setData(parsed.data || getInitialData());
+        const parsed = JSON.parse(saved) as { state?: OnboardingState; data?: OnboardingData };
+        setState(parsed.state ?? getInitialState());
+        setData(parsed.data ?? getInitialData());
       }
     } catch (err) {
       console.error("Failed to load onboarding state:", err);
@@ -90,10 +87,7 @@ export function useOnboarding(): UseOnboardingReturn {
   // Save state to localStorage whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ state, data })
-      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, data }));
     } catch (err) {
       console.error("Failed to save onboarding state:", err);
     }
@@ -170,10 +164,9 @@ export function useOnboarding(): UseOnboardingReturn {
         autoStartBreaks: data.autoStartBreaks,
       };
 
-      const response = await invoke<OnboardingCompleteResponse>(
-        "complete_onboarding",
-        { data: request }
-      );
+      const response = await invoke<OnboardingCompleteResponse>("complete_onboarding", {
+        data: request,
+      });
 
       if (!response.success) {
         throw new Error(response.error || "Failed to complete onboarding");
@@ -256,7 +249,7 @@ export function useNeedsOnboarding(): boolean {
         // Check localStorage first
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-          const parsed = JSON.parse(saved);
+          const parsed = JSON.parse(saved) as { state?: OnboardingState };
           if (parsed.state?.isComplete) {
             setNeedsOnboarding(false);
             setIsChecking(false);

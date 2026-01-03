@@ -49,12 +49,10 @@ export function WelcomeStep({
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white">
           <Sparkles className="h-10 w-10" />
         </div>
-        <h3 className="text-xl font-semibold">
-          Master Your Focus, Reclaim Your Time
-        </h3>
+        <h3 className="text-xl font-semibold">Master Your Focus, Reclaim Your Time</h3>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          FocusFlow is built on the proven Indistractable framework by Nir Eyal.
-          In the next few minutes, we'll help you set up your productivity system.
+          FocusFlow is built on the proven Indistractable framework by Nir Eyal. In the next few
+          minutes, we'll help you set up your productivity system.
         </p>
       </div>
 
@@ -107,9 +105,7 @@ export function WelcomeStep({
 
       {/* Time estimate */}
       <div className="text-center pt-4">
-        <p className="text-sm text-muted-foreground">
-          Setup takes about 3-5 minutes
-        </p>
+        <p className="text-sm text-muted-foreground">Setup takes about 3-5 minutes</p>
       </div>
     </StepWrapper>
   );
@@ -125,7 +121,9 @@ interface FeatureCardProps {
 function FeatureCard({ icon, title, description, color }: FeatureCardProps) {
   return (
     <div className="flex gap-3 p-4 rounded-lg border bg-card">
-      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
+      <div
+        className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${color}`}
+      >
         {icon}
       </div>
       <div className="space-y-1">

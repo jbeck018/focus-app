@@ -1,27 +1,15 @@
 // features/AICoach.tsx - AI Coach chat interface with modern chat components
 
+import * as React from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  useCoachChat,
-} from "@/hooks/useCoach";
+import { useCoachChat } from "@/hooks/useCoach";
 import { useLlmStatusManager } from "@/hooks/useLlmStatus";
-import {
-  useConversations,
-  useConversation,
-} from "@/hooks/useChatHistory";
+import { useConversations, useConversation } from "@/hooks/useChatHistory";
 import type { ChatMessage as ChatMessageType } from "@focusflow/types";
-import {
-  Bot,
-  Loader2,
-  Settings,
-  Cloud,
-  Lock,
-  AlertCircle,
-  Download,
-} from "lucide-react";
+import { Bot, Loader2, Settings, Cloud, Lock, AlertCircle, Download } from "lucide-react";
 
 // Import new chat components
 import {
@@ -77,9 +65,14 @@ export function AICoach() {
 
   // Determine provider state
   const isLocalProvider = provider === "local-llama";
-  const isCloudProvider = provider === "openai" || provider === "anthropic" || provider === "google" || provider === "openrouter";
+  const isCloudProvider =
+    provider === "openai" ||
+    provider === "anthropic" ||
+    provider === "google" ||
+    provider === "openrouter";
   const hasProvider = provider !== "none";
-  const isModelLoading = llmStatus?.model_status === "downloading" || llmStatus?.model_status === "loading";
+  const isModelLoading =
+    llmStatus?.model_status === "downloading" || llmStatus?.model_status === "loading";
 
   // For local providers: Check if model file is available (even if not loaded into memory yet)
   // For cloud providers: Check if provider is configured with API key
@@ -88,32 +81,39 @@ export function AICoach() {
 
   // Check if model needs to be downloaded (ONLY for local provider when file doesn't exist)
   // This should ONLY be true when available=false (model file not downloaded)
-  const needsModelDownload = isLocalProvider && !isAvailable && (
-    errorMessage?.toLowerCase().includes("not downloaded") ||
-    llmStatus?.model_status === "not_downloaded"
-  );
+  const needsModelDownload =
+    isLocalProvider &&
+    !isAvailable &&
+    (errorMessage.toLowerCase().includes("not downloaded") ||
+      llmStatus?.model_status === "not_downloaded");
 
   // Load conversation when selected from history
-  useEffect(() => {
-    if (conversationQuery.data?.messages) {
-      setMessages(conversationQuery.data.messages);
-      setIsViewingHistory(true);
-    }
-  }, [conversationQuery.data]);
+  // Use derived state or conditional rendering instead of setState in effect
+  const loadedMessages = conversationQuery.data?.messages;
 
-  // Add welcome message on first load
+  useEffect(() => {
+    if (loadedMessages) {
+      // Schedule state updates in a microtask to avoid cascading renders
+      Promise.resolve().then(() => {
+        setMessages(loadedMessages);
+        setIsViewingHistory(true);
+      });
+    }
+  }, [loadedMessages]);
+
+  // Only initialize welcome message once on mount if needed
   useEffect(() => {
     if (messages.length === 0 && !activeConversationId) {
-      setMessages([
-        {
-          role: "assistant",
-          content:
-            "Hi! I'm your focus coach. I can help you plan sessions, understand your distraction patterns, and build better focus habits. What would you like to work on?",
-          timestamp: new Date().toISOString(),
-        },
-      ]);
+      const welcomeMessage: ChatMessageType = {
+        role: "assistant",
+        content:
+          "Hi! I'm your focus coach. I can help you plan sessions, understand your distraction patterns, and build better focus habits. What would you like to work on?",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages([welcomeMessage]);
     }
-  }, [messages.length, activeConversationId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   // Handle starting a new chat
   const handleNewChat = useCallback(() => {
@@ -184,35 +184,38 @@ export function AICoach() {
   }, [input, chat, isReady, hasProvider, isModelLoading]);
 
   // Handle quick suggestion clicks - directly send the message
-  const handleSuggestionClick = useCallback(async (suggestion: string) => {
-    if (chat.isPending || !isReady) return;
+  const handleSuggestionClick = useCallback(
+    async (suggestion: string) => {
+      if (chat.isPending || !isReady) return;
 
-    const userMessage: ChatMessageType = {
-      role: "user",
-      content: suggestion,
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-
-    try {
-      const response = await chat.mutateAsync({ message: suggestion });
-      const assistantMessage: ChatMessageType = {
-        role: "assistant",
-        content: response.message,
+      const userMessage: ChatMessageType = {
+        role: "user",
+        content: suggestion,
         timestamp: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      const errorMessage: ChatMessageType = {
-        role: "assistant",
-        content: "Sorry, I had trouble processing that. Please try again.",
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-      console.error("Chat error:", error);
-    }
-  }, [chat, isReady]);
+
+      setMessages((prev) => [...prev, userMessage]);
+
+      try {
+        const response = await chat.mutateAsync({ message: suggestion });
+        const assistantMessage: ChatMessageType = {
+          role: "assistant",
+          content: response.message,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } catch (error) {
+        const errorMessage: ChatMessageType = {
+          role: "assistant",
+          content: "Sorry, I had trouble processing that. Please try again.",
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        console.error("Chat error:", error);
+      }
+    },
+    [chat, isReady]
+  );
 
   // Show quick suggestions when chat is not active
   const showQuickSuggestions = messages.length <= 1 && !chat.isPending;
@@ -238,8 +241,8 @@ export function AICoach() {
               {isLocalProvider
                 ? "Your personal productivity assistant, running 100% locally"
                 : isCloudProvider
-                ? "Your personal productivity assistant, powered by cloud AI"
-                : "Configure an AI provider to get started"}
+                  ? "Your personal productivity assistant, powered by cloud AI"
+                  : "Configure an AI provider to get started"}
             </p>
           </div>
         </div>
@@ -257,9 +260,7 @@ export function AICoach() {
               <span className="text-xs font-medium">
                 {llmLoading ? "Checking..." : modelName || "No model"}
               </span>
-              {isModelLoading && (
-                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-              )}
+              {isModelLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
             </div>
           )}
 
@@ -278,163 +279,149 @@ export function AICoach() {
 
       {/* Full-Screen Chat Area */}
       <Card className="relative flex flex-col flex-1 overflow-hidden min-h-0">
-            {/* Messages Area */}
-            <ChatContainer
-              ref={chatContainerRef}
-              className="flex-1"
-            >
-              {messages.map((msg, idx) => (
-                <ChatMessage
-                  key={`${msg.timestamp}-${idx}`}
-                  content={msg.content}
-                  role={msg.role}
-                  timestamp={msg.timestamp}
-                  showCopy={msg.role === "assistant"}
-                />
-              ))}
+        {/* Messages Area */}
+        <ChatContainer ref={chatContainerRef} className="flex-1">
+          {messages.map((msg, idx) => (
+            <ChatMessage
+              key={`${msg.timestamp}-${idx}`}
+              content={msg.content}
+              role={msg.role}
+              timestamp={msg.timestamp}
+              showCopy={msg.role === "assistant"}
+            />
+          ))}
 
-              {/* Thinking indicator */}
-              {chat.isPending && (
-                <ChatThinking variant="dots" />
-              )}
-            </ChatContainer>
+          {/* Thinking indicator */}
+          {chat.isPending && <ChatThinking variant="dots" />}
+        </ChatContainer>
 
-            {/* Input Area */}
-            <div className="border-t flex-shrink-0">
-              {/* Viewing History Banner */}
-              {isViewingHistory && (
-                <div className="px-4 py-3 bg-muted/50 border-b flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-sm text-muted-foreground">
-                      Viewing conversation from {conversationQuery.data?.createdAt
-                        ? new Date(conversationQuery.data.createdAt).toLocaleDateString()
-                        : "history"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleContinueConversation}
-                    >
-                      Continue Conversation
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleNewChat}
-                    >
-                      New Chat
-                    </Button>
-                  </div>
-                </div>
-              )}
+        {/* Input Area */}
+        <div className="border-t flex-shrink-0">
+          {/* Viewing History Banner */}
+          {isViewingHistory && (
+            <div className="px-4 py-3 bg-muted/50 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-sm text-muted-foreground">
+                  Viewing conversation from{" "}
+                  {conversationQuery.data?.createdAt
+                    ? new Date(conversationQuery.data.createdAt).toLocaleDateString()
+                    : "history"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleContinueConversation}>
+                  Continue Conversation
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleNewChat}>
+                  New Chat
+                </Button>
+              </div>
+            </div>
+          )}
 
-              {/* Quick Suggestion Buttons */}
-              {showQuickSuggestions && !isViewingHistory && (
-                <div className="px-4 pt-3 pb-2">
-                  <ChatSuggestions
-                    suggestions={QUICK_SUGGESTIONS}
-                    onSelect={handleSuggestionClick}
-                    variant="inline"
-                    disabled={chat.isPending || !isReady}
-                  />
-                </div>
-              )}
-
-              {/* Input */}
-              <ChatInput
-                value={input}
-                onChange={setInput}
-                onSend={handleSend}
-                placeholder={
-                  isViewingHistory
-                    ? "Continue this conversation or start a new one..."
-                    : isReady
-                    ? "Ask me anything about focus..."
-                    : "Configure AI to start chatting..."
-                }
-                disabled={chat.isPending || !isReady || isViewingHistory}
-                isLoading={chat.isPending}
+          {/* Quick Suggestion Buttons */}
+          {showQuickSuggestions && !isViewingHistory && (
+            <div className="px-4 pt-3 pb-2">
+              <ChatSuggestions
+                suggestions={QUICK_SUGGESTIONS}
+                onSelect={handleSuggestionClick}
+                variant="inline"
+                disabled={!isReady}
               />
             </div>
+          )}
 
-            {/* Overlay States */}
-            {/* Loading State */}
-            {llmLoading && !llmStatus && (
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                <Loader2 className="animate-spin h-8 w-8 mb-4 text-primary" />
-                <p className="text-sm font-medium">Checking AI status...</p>
-              </div>
-            )}
+          {/* Input */}
+          <ChatInput
+            value={input}
+            onChange={setInput}
+            onSend={handleSend}
+            placeholder={
+              isViewingHistory
+                ? "Continue this conversation or start a new one..."
+                : isReady
+                  ? "Ask me anything about focus..."
+                  : "Configure AI to start chatting..."
+            }
+            disabled={chat.isPending || !isReady || isViewingHistory}
+            isLoading={chat.isPending}
+          />
+        </div>
 
-            {/* Model Downloading State */}
-            {isModelLoading && hasProvider && (
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                <Loader2 className="animate-spin h-8 w-8 mb-4 text-primary" />
-                <p className="text-sm font-medium mb-2">
-                  {llmStatus?.model_status === "downloading"
-                    ? "Downloading model..."
-                    : "Loading model..."}
-                </p>
-                {/* Mock progress - in real implementation, this would come from backend */}
-                <Progress value={33} className="w-64 mt-2" />
-                <p className="text-xs text-muted-foreground mt-2">
-                  This may take a few minutes
-                </p>
-              </div>
-            )}
+        {/* Overlay States */}
+        {/* Loading State */}
+        {llmLoading && !llmStatus && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+            <Loader2 className="animate-spin h-8 w-8 mb-4 text-primary" />
+            <p className="text-sm font-medium">Checking AI status...</p>
+          </div>
+        )}
 
-            {/* Model Needs Download State */}
-            {!llmLoading && needsModelDownload && !isModelLoading && (
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                <Download className="h-12 w-12 mb-4 text-amber-500" />
-                <p className="text-sm font-medium mb-1">Model Download Required</p>
-                <p className="text-xs text-muted-foreground mb-4 max-w-xs text-center">
-                  The local AI model needs to be downloaded before you can use the coach.
-                  This is a one-time download of approximately 2-3 GB.
-                </p>
-                <Button onClick={() => setSettingsOpen(true)}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Model
+        {/* Model Downloading State */}
+        {isModelLoading && hasProvider && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+            <Loader2 className="animate-spin h-8 w-8 mb-4 text-primary" />
+            <p className="text-sm font-medium mb-2">
+              {llmStatus.model_status === "downloading"
+                ? "Downloading model..."
+                : "Loading model..."}
+            </p>
+            {/* Mock progress - in real implementation, this would come from backend */}
+            <Progress value={33} className="w-64 mt-2" />
+            <p className="text-xs text-muted-foreground mt-2">This may take a few minutes</p>
+          </div>
+        )}
+
+        {/* Model Needs Download State */}
+        {!llmLoading && needsModelDownload && !isModelLoading && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+            <Download className="h-12 w-12 mb-4 text-amber-500" />
+            <p className="text-sm font-medium mb-1">Model Download Required</p>
+            <p className="text-xs text-muted-foreground mb-4 max-w-xs text-center">
+              The local AI model needs to be downloaded before you can use the coach. This is a
+              one-time download of approximately 2-3 GB.
+            </p>
+            <Button onClick={() => setSettingsOpen(true)}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Model
+            </Button>
+          </div>
+        )}
+
+        {/* No Provider State */}
+        {!llmLoading && !hasProvider && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+            <Bot className="h-12 w-12 mb-4 text-muted-foreground" />
+            <p className="text-sm font-medium mb-1">No AI provider configured</p>
+            <p className="text-xs text-muted-foreground mb-4 max-w-xs text-center">
+              Configure a local or cloud AI provider to start coaching
+            </p>
+            <Button onClick={() => setSettingsOpen(true)}>Configure AI</Button>
+          </div>
+        )}
+
+        {/* Error State (but not when model needs download - that has its own overlay) */}
+        {!llmLoading &&
+          hasProvider &&
+          llmStatus?.error &&
+          !isModelLoading &&
+          !needsModelDownload && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+              <AlertCircle className="h-12 w-12 mb-4 text-destructive" />
+              <p className="text-sm font-medium mb-1">AI Provider Error</p>
+              <p className="text-xs text-muted-foreground mb-4 max-w-xs text-center">
+                {errorMessage}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => refetchStatus()}>
+                  Retry
                 </Button>
+                <Button onClick={() => setSettingsOpen(true)}>Configure AI</Button>
               </div>
-            )}
-
-            {/* No Provider State */}
-            {!llmLoading && !hasProvider && (
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                <Bot className="h-12 w-12 mb-4 text-muted-foreground" />
-                <p className="text-sm font-medium mb-1">No AI provider configured</p>
-                <p className="text-xs text-muted-foreground mb-4 max-w-xs text-center">
-                  Configure a local or cloud AI provider to start coaching
-                </p>
-                <Button onClick={() => setSettingsOpen(true)}>
-                  Configure AI
-                </Button>
-              </div>
-            )}
-
-            {/* Error State (but not when model needs download - that has its own overlay) */}
-            {!llmLoading && hasProvider && llmStatus?.error && !isModelLoading && !needsModelDownload && (
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                <AlertCircle className="h-12 w-12 mb-4 text-destructive" />
-                <p className="text-sm font-medium mb-1">AI Provider Error</p>
-                <p className="text-xs text-muted-foreground mb-4 max-w-xs text-center">
-                  {errorMessage}
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => refetchStatus()}>
-                    Retry
-                  </Button>
-                  <Button onClick={() => setSettingsOpen(true)}>
-                    Configure AI
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Card>
+            </div>
+          )}
+      </Card>
 
       {/* Chat History Panel */}
       <ChatHistoryPanel
@@ -446,10 +433,7 @@ export function AICoach() {
       />
 
       {/* AI Settings Dialog */}
-      <AISettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-      />
+      <AISettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

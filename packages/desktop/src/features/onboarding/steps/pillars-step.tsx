@@ -20,75 +20,74 @@ const INDISTRACTABLE_PILLARS: IndistractablePillar[] = [
   {
     id: "internal-triggers",
     title: "Master Internal Triggers",
-    description: "Understand the uncomfortable emotional states that prompt you to seek distraction. Learn to surf the urge instead of giving in.",
+    description:
+      "Understand the uncomfortable emotional states that prompt you to seek distraction. Learn to surf the urge instead of giving in.",
     icon: "brain",
     color: "from-blue-500 to-cyan-500",
     examples: [
       "Feeling bored during a task",
       "Anxiety about upcoming deadlines",
       "Restlessness when working alone",
-      "Curiosity about notifications"
+      "Curiosity about notifications",
     ],
     actionItems: [
       "Use the journal to log your triggers",
       "Practice the 10-minute rule",
-      "Reimagine the task to make it more engaging"
-    ]
+      "Reimagine the task to make it more engaging",
+    ],
   },
   {
     id: "make-time-traction",
     title: "Make Time for Traction",
-    description: "Schedule your day with intention. Turn your values into time. Without planning, you'll default to distraction.",
+    description:
+      "Schedule your day with intention. Turn your values into time. Without planning, you'll default to distraction.",
     icon: "calendar",
     color: "from-green-500 to-emerald-500",
     examples: [
       "Time-boxing important work",
       "Scheduling breaks and rejuvenation",
       "Blocking time for relationships",
-      "Planning weekly review sessions"
+      "Planning weekly review sessions",
     ],
     actionItems: [
       "Create a timeboxed calendar",
       "Use the FocusTimer for dedicated sessions",
-      "Align your time with your values"
-    ]
+      "Align your time with your values",
+    ],
   },
   {
     id: "hack-external-triggers",
     title: "Hack Back External Triggers",
-    description: "External triggers aren't always bad, but they should serve you, not control you. Reduce, remove, or restructure them.",
+    description:
+      "External triggers aren't always bad, but they should serve you, not control you. Reduce, remove, or restructure them.",
     icon: "bell-off",
     color: "from-orange-500 to-amber-500",
-    examples: [
-      "Social media notifications",
-      "Email alerts",
-      "Slack messages",
-      "News websites"
-    ],
+    examples: ["Social media notifications", "Email alerts", "Slack messages", "News websites"],
     actionItems: [
       "Block distracting apps and websites",
       "Turn off non-essential notifications",
-      "Use focus mode during deep work"
-    ]
+      "Use focus mode during deep work",
+    ],
   },
   {
     id: "prevent-with-pacts",
     title: "Prevent Distraction with Pacts",
-    description: "Make it harder to do things you don't want to do. Use effort pacts, price pacts, and identity pacts.",
+    description:
+      "Make it harder to do things you don't want to do. Use effort pacts, price pacts, and identity pacts.",
     icon: "shield-check",
     color: "from-purple-500 to-pink-500",
     examples: [
       "Effort pact: Install website blockers",
       "Price pact: Bet money on completing tasks",
       "Identity pact: Tell others your commitments",
-      "Use FocusFlow's blocking during sessions"
+      "Use FocusFlow's blocking during sessions",
     ],
     actionItems: [
       "Set up app and website blocking",
       "Create accountability with team features",
-      "Make distractions harder to access"
-    ]
-  }
+      "Make distractions harder to access",
+    ],
+  },
 ];
 
 interface PillarsStepProps {
@@ -134,8 +133,8 @@ export function PillarsStep({
       {/* Introduction */}
       <div className="prose dark:prose-invert max-w-none">
         <p className="text-base text-muted-foreground">
-          Based on Nir Eyal's bestselling book "Indistractable," these four pillars
-          form a comprehensive system for controlling your attention and choosing your life.
+          Based on Nir Eyal's bestselling book "Indistractable," these four pillars form a
+          comprehensive system for controlling your attention and choosing your life.
         </p>
       </div>
 
@@ -151,9 +150,7 @@ export function PillarsStep({
               className={`cursor-pointer transition-all border-2 ${
                 isExpanded ? "ring-2 ring-primary" : ""
               }`}
-              onClick={() =>
-                setExpandedPillar(isExpanded ? null : pillar.id)
-              }
+              onClick={() => setExpandedPillar(isExpanded ? null : pillar.id)}
             >
               <CardHeader>
                 <div className="flex items-start gap-4">
@@ -169,9 +166,7 @@ export function PillarsStep({
                       </Badge>
                       <CardTitle className="text-lg">{pillar.title}</CardTitle>
                     </div>
-                    <CardDescription className="text-sm">
-                      {pillar.description}
-                    </CardDescription>
+                    <CardDescription className="text-sm">{pillar.description}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -196,9 +191,7 @@ export function PillarsStep({
 
                   {/* Action items */}
                   <div>
-                    <h4 className="font-medium text-sm mb-2">
-                      How FocusFlow Helps:
-                    </h4>
+                    <h4 className="font-medium text-sm mb-2">How FocusFlow Helps:</h4>
                     <ul className="space-y-2">
                       {pillar.actionItems.map((action, idx) => (
                         <li
@@ -221,8 +214,8 @@ export function PillarsStep({
       {/* Call to action */}
       <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
         <p className="text-sm text-center text-muted-foreground">
-          Click each pillar to learn more. FocusFlow implements all four pillars
-          to help you become truly Indistractable.
+          Click each pillar to learn more. FocusFlow implements all four pillars to help you become
+          truly Indistractable.
         </p>
       </div>
     </StepWrapper>

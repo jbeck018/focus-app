@@ -114,24 +114,14 @@ export function TimeOfDayChart({
               <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
               <PolarRadiusAxis tick={false} />
               <Tooltip content={<CustomTooltip />} />
-              <RadialBar
-                background
-                dataKey="percentage"
-                cornerRadius={10}
-              />
+              <RadialBar background dataKey="percentage" cornerRadius={10} />
             </RadialBarChart>
           </ResponsiveContainer>
 
           <div className="mt-4 grid w-full grid-cols-2 gap-3 text-sm">
             {periodData.map((period, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-2 rounded-lg border p-2"
-              >
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: period.fill }}
-                />
+              <div key={index} className="flex items-center gap-2 rounded-lg border p-2">
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: period.fill }} />
                 <div className="flex-1">
                   <p className="text-xs font-medium">{period.name.split(" ")[0]}</p>
                   <p className="text-xs text-muted-foreground">
@@ -160,7 +150,7 @@ export function TimeOfDayChart({
 
 // Custom tooltip component
 function CustomTooltip({ active, payload }: any) {
-  if (!active || !payload || !payload.length) {
+  if (!active || !payload?.length) {
     return null;
   }
 

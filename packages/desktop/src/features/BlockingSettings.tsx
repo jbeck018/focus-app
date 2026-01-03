@@ -131,11 +131,7 @@ export function BlockingSettings() {
                   </p>
                 ) : (
                   apps.map((app) => (
-                    <Badge
-                      key={app}
-                      variant="secondary"
-                      className="flex items-center gap-1 pr-1"
-                    >
+                    <Badge key={app} variant="secondary" className="flex items-center gap-1 pr-1">
                       {app}
                       <button
                         onClick={() => handleRemoveApp(app)}
@@ -210,11 +206,7 @@ export function BlockingSettings() {
                   </p>
                 ) : (
                   websites.map((site) => (
-                    <Badge
-                      key={site}
-                      variant="secondary"
-                      className="flex items-center gap-1 pr-1"
-                    >
+                    <Badge key={site} variant="secondary" className="flex items-center gap-1 pr-1">
                       {site}
                       <button
                         onClick={() => handleRemoveWebsite(site)}

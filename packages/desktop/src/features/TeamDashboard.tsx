@@ -114,9 +114,7 @@ function NoTeamView() {
           <Users className="h-5 w-5" />
           Team
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Collaborate with your team on focus goals
-        </p>
+        <p className="text-sm text-muted-foreground">Collaborate with your team on focus goals</p>
       </div>
 
       <Card>
@@ -124,8 +122,8 @@ function NoTeamView() {
           <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <p className="text-lg font-medium mb-2">No team yet</p>
           <p className="text-sm text-muted-foreground mb-6">
-            Create a team or join an existing one to share blocklists and track
-            team progress together.
+            Create a team or join an existing one to share blocklists and track team progress
+            together.
           </p>
           <div className="flex justify-center gap-3">
             <Button onClick={() => setShowCreate(true)}>
@@ -173,25 +171,14 @@ function CreateTeamDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <Input
-            placeholder="Team name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <Input placeholder="Team name" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleCreate}
-            disabled={!name.trim() || createTeam.isPending}
-          >
-            {createTeam.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Create"
-            )}
+          <Button onClick={handleCreate} disabled={!name.trim() || createTeam.isPending}>
+            {createTeam.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -221,9 +208,7 @@ function JoinTeamDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Join a Team</DialogTitle>
-          <DialogDescription>
-            Enter the invite code to join an existing team.
-          </DialogDescription>
+          <DialogDescription>Enter the invite code to join an existing team.</DialogDescription>
         </DialogHeader>
         <div className="py-4">
           <Input
@@ -236,15 +221,8 @@ function JoinTeamDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleJoin}
-            disabled={!code.trim() || joinTeam.isPending}
-          >
-            {joinTeam.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Join"
-            )}
+          <Button onClick={handleJoin} disabled={!code.trim() || joinTeam.isPending}>
+            {joinTeam.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Join"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -298,9 +276,7 @@ function TeamStatsView() {
           <CardTitle className="text-sm font-medium">Team Focus Time</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            {stats.total_focus_hours_this_week.toFixed(1)}h
-          </div>
+          <div className="text-2xl font-bold">{stats.total_focus_hours_this_week.toFixed(1)}h</div>
           <p className="text-xs text-muted-foreground">This week</p>
         </CardContent>
       </Card>
@@ -310,9 +286,7 @@ function TeamStatsView() {
           <CardTitle className="text-sm font-medium">Avg Sessions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            {stats.average_sessions_per_member.toFixed(1)}
-          </div>
+          <div className="text-2xl font-bold">{stats.average_sessions_per_member.toFixed(1)}</div>
           <p className="text-xs text-muted-foreground">Per member</p>
         </CardContent>
       </Card>
@@ -322,9 +296,7 @@ function TeamStatsView() {
           <CardTitle className="text-sm font-medium">Most Productive</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            {stats.most_productive_day ?? "N/A"}
-          </div>
+          <div className="text-2xl font-bold">{stats.most_productive_day ?? "N/A"}</div>
           <p className="text-xs text-muted-foreground">Best day this week</p>
         </CardContent>
       </Card>
@@ -445,9 +417,7 @@ function TeamBlocklistView() {
                     <Badge variant="outline">{item.item_type}</Badge>
                     <span className="font-medium">{item.value}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Added by {item.added_by}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Added by {item.added_by}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -494,9 +464,7 @@ function TeamMembersView() {
             <CardContent className="py-4 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">
-                    {member.display_name ?? member.email}
-                  </span>
+                  <span className="font-medium">{member.display_name ?? member.email}</span>
                   <Badge variant="outline">{roleInfo.label}</Badge>
                   {member.sharing_enabled && (
                     <Badge variant="secondary" className="text-xs">
@@ -504,9 +472,7 @@ function TeamMembersView() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {member.email}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
               </div>
             </CardContent>
           </Card>
@@ -538,8 +504,8 @@ function TeamSettingsView() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Control what data you share with your team. Your individual session
-            details are never shared.
+            Control what data you share with your team. Your individual session details are never
+            shared.
           </p>
 
           <div className="space-y-3">
@@ -574,9 +540,7 @@ function TeamSettingsView() {
       {/* Leave Team */}
       <Card className="border-destructive/50">
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-destructive">
-            Danger Zone
-          </CardTitle>
+          <CardTitle className="text-sm font-medium text-destructive">Danger Zone</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">

@@ -4,11 +4,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Check, Copy, Bot, User } from "lucide-react";
 
 type MessageRole = "user" | "assistant" | "system";
@@ -83,10 +79,7 @@ function ChatMessage({
   if (isSystem) {
     return (
       <div
-        className={cn(
-          "flex justify-center py-2",
-          className
-        )}
+        className={cn("flex justify-center py-2", className)}
         role="status"
         aria-label="System message"
       >
@@ -113,16 +106,10 @@ function ChatMessage({
         <div
           className={cn(
             "flex-shrink-0 size-8 rounded-full flex items-center justify-center",
-            isUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-secondary text-secondary-foreground"
+            isUser ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
           )}
         >
-          {isUser ? (
-            <User className="size-4" />
-          ) : (
-            <Bot className="size-4" />
-          )}
+          {isUser ? <User className="size-4" /> : <Bot className="size-4" />}
         </div>
       )}
 
@@ -138,9 +125,7 @@ function ChatMessage({
       >
         {/* Label for assistant (only on group start) */}
         {!isUser && isGroupStart && (
-          <span className="text-xs font-medium text-muted-foreground ml-1">
-            Coach
-          </span>
+          <span className="text-xs font-medium text-muted-foreground ml-1">Coach</span>
         )}
 
         {/* Bubble */}
@@ -195,9 +180,7 @@ function ChatMessage({
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">
-                  {copied ? "Copied!" : "Copy message"}
-                </TooltipContent>
+                <TooltipContent side="right">{copied ? "Copied!" : "Copy message"}</TooltipContent>
               </Tooltip>
             </div>
           )}
@@ -209,10 +192,7 @@ function ChatMessage({
         {/* Timestamp */}
         {formattedTime && isGroupEnd && (
           <span
-            className={cn(
-              "text-[10px] text-muted-foreground/70 mt-0.5",
-              isUser ? "mr-1" : "ml-1"
-            )}
+            className={cn("text-[10px] text-muted-foreground/70 mt-0.5", isUser ? "mr-1" : "ml-1")}
           >
             {formattedTime}
           </span>
@@ -239,10 +219,7 @@ function renderMarkdown(text: string): React.ReactNode {
       elements.push(
         <ListTag
           key={`list-${index}`}
-          className={cn(
-            "my-2 ml-4 space-y-1",
-            listType === "ul" ? "list-disc" : "list-decimal"
-          )}
+          className={cn("my-2 ml-4 space-y-1", listType === "ul" ? "list-disc" : "list-decimal")}
         >
           {listItems.map((item, idx) => (
             <li key={idx} className="text-sm">
@@ -289,14 +266,15 @@ function renderMarkdown(text: string): React.ReactNode {
       flushList(i);
       const level = headerMatch[1].length;
       const HeaderTag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
-      const headerClasses = {
-        1: "text-xl font-bold mt-4 mb-2",
-        2: "text-lg font-bold mt-3 mb-2",
-        3: "text-base font-semibold mt-2 mb-1",
-        4: "text-sm font-semibold mt-2 mb-1",
-        5: "text-sm font-medium mt-1 mb-1",
-        6: "text-xs font-medium mt-1 mb-1",
-      }[level] || "";
+      const headerClasses =
+        {
+          1: "text-xl font-bold mt-4 mb-2",
+          2: "text-lg font-bold mt-3 mb-2",
+          3: "text-base font-semibold mt-2 mb-1",
+          4: "text-sm font-semibold mt-2 mb-1",
+          5: "text-sm font-medium mt-1 mb-1",
+          6: "text-xs font-medium mt-1 mb-1",
+        }[level] || "";
 
       elements.push(
         React.createElement(
@@ -374,19 +352,14 @@ function renderInlineMarkdown(text: string): React.ReactNode {
   while (remaining.length > 0) {
     // Inline code
     const codeMatch = remaining.match(/`([^`]+)`/);
-    if (codeMatch && codeMatch.index !== undefined) {
+    if (codeMatch?.index !== undefined) {
       if (codeMatch.index > 0) {
         parts.push(
-          <span key={keyIndex++}>
-            {processTextFormatting(remaining.slice(0, codeMatch.index))}
-          </span>
+          <span key={keyIndex++}>{processTextFormatting(remaining.slice(0, codeMatch.index))}</span>
         );
       }
       parts.push(
-        <code
-          key={keyIndex++}
-          className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs"
-        >
+        <code key={keyIndex++} className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">
           {codeMatch[1]}
         </code>
       );
@@ -395,9 +368,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
     }
 
     // No more special patterns
-    parts.push(
-      <span key={keyIndex++}>{processTextFormatting(remaining)}</span>
-    );
+    parts.push(<span key={keyIndex++}>{processTextFormatting(remaining)}</span>);
     break;
   }
 
@@ -437,9 +408,7 @@ function CodeBlock({ children, language }: CodeBlockProps) {
     <div className="relative group/code my-2 rounded-lg overflow-hidden bg-muted/80 border">
       {language && (
         <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/50">
-          <span className="text-xs font-mono text-muted-foreground">
-            {language}
-          </span>
+          <span className="text-xs font-mono text-muted-foreground">{language}</span>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -447,11 +416,7 @@ function CodeBlock({ children, language }: CodeBlockProps) {
             onClick={handleCopy}
             aria-label={copied ? "Copied" : "Copy code"}
           >
-            {copied ? (
-              <Check className="size-3 text-green-500" />
-            ) : (
-              <Copy className="size-3" />
-            )}
+            {copied ? <Check className="size-3 text-green-500" /> : <Copy className="size-3" />}
           </Button>
         </div>
       )}
@@ -466,11 +431,7 @@ function CodeBlock({ children, language }: CodeBlockProps) {
           onClick={handleCopy}
           aria-label={copied ? "Copied" : "Copy code"}
         >
-          {copied ? (
-            <Check className="size-3 text-green-500" />
-          ) : (
-            <Copy className="size-3" />
-          )}
+          {copied ? <Check className="size-3 text-green-500" /> : <Copy className="size-3" />}
         </Button>
       )}
     </div>

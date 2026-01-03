@@ -70,9 +70,7 @@ function ChatReasoning({
           <ChevronRight className="size-4 flex-shrink-0" />
         )}
 
-        {variant !== "minimal" && (
-          <Brain className="size-4 flex-shrink-0 text-purple-500" />
-        )}
+        {variant !== "minimal" && <Brain className="size-4 flex-shrink-0 text-purple-500" />}
 
         <span className="text-xs font-medium">{title}</span>
 
@@ -134,11 +132,7 @@ function InlineReasoning({ content, className }: InlineReasoningProps) {
       >
         <Sparkles className="size-3" />
         <span>{isExpanded ? "Hide reasoning" : "Show reasoning"}</span>
-        {isExpanded ? (
-          <ChevronDown className="size-3" />
-        ) : (
-          <ChevronRight className="size-3" />
-        )}
+        {isExpanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
       </button>
 
       {isExpanded && (
@@ -163,20 +157,11 @@ interface StreamingReasoningProps {
   className?: string;
 }
 
-function StreamingReasoning({
-  content,
-  isStreaming = false,
-  className,
-}: StreamingReasoningProps) {
+function StreamingReasoning({ content, isStreaming = false, className }: StreamingReasoningProps) {
   const [isExpanded, setIsExpanded] = React.useState(true);
 
   return (
-    <div
-      className={cn(
-        "w-full rounded-lg border bg-muted/20 overflow-hidden",
-        className
-      )}
-    >
+    <div className={cn("w-full rounded-lg border bg-muted/20 overflow-hidden", className)}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
@@ -187,11 +172,7 @@ function StreamingReasoning({
         )}
         aria-expanded={isExpanded}
       >
-        {isExpanded ? (
-          <ChevronDown className="size-4" />
-        ) : (
-          <ChevronRight className="size-4" />
-        )}
+        {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
         <Brain className="size-4 text-purple-500" />
         <span>Thinking</span>
         {isStreaming && (
@@ -248,10 +229,7 @@ function ReasoningBadge({ content, className }: ReasoningBadgeProps) {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
           {/* Popover */}
           <div
@@ -271,10 +249,5 @@ function ReasoningBadge({ content, className }: ReasoningBadgeProps) {
   );
 }
 
-export {
-  ChatReasoning,
-  InlineReasoning,
-  StreamingReasoning,
-  ReasoningBadge,
-};
+export { ChatReasoning, InlineReasoning, StreamingReasoning, ReasoningBadge };
 export type { ChatReasoningProps };

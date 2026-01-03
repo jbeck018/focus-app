@@ -9,11 +9,7 @@
  */
 
 import { useState } from "react";
-import {
-  useCurrentStreak,
-  useStreakStats,
-  useNextMilestone,
-} from "../../hooks/use-streaks";
+import { useCurrentStreak, useStreakStats, useNextMilestone } from "../../hooks/use-streaks";
 import { cn } from "../../lib/utils";
 
 interface StreakStatsProps {
@@ -48,9 +44,7 @@ export function StreakStats({ className }: StreakStatsProps) {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">Streak Statistics</h3>
-            <p className="text-sm text-muted-foreground">
-              Your focus performance over time
-            </p>
+            <p className="text-sm text-muted-foreground">Your focus performance over time</p>
           </div>
 
           {/* Period toggle */}
@@ -87,13 +81,9 @@ export function StreakStats({ className }: StreakStatsProps) {
         <div className="mb-6 rounded-lg bg-gradient-to-r from-orange-500/10 to-red-500/10 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                Current Streak
-              </div>
+              <div className="text-sm font-medium text-muted-foreground">Current Streak</div>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-4xl font-bold">
-                  {currentStreak?.currentCount || 0}
-                </span>
+                <span className="text-4xl font-bold">{currentStreak?.currentCount || 0}</span>
                 <span className="text-lg text-muted-foreground">days</span>
               </div>
               {currentStreak?.isInGracePeriod && (
@@ -105,9 +95,7 @@ export function StreakStats({ className }: StreakStatsProps) {
             </div>
 
             <div className="text-right">
-              <div className="text-sm font-medium text-muted-foreground">
-                Longest Streak
-              </div>
+              <div className="text-sm font-medium text-muted-foreground">Longest Streak</div>
               <div className="mt-1 flex items-baseline justify-end gap-2">
                 <span className="text-3xl font-bold text-muted-foreground">
                   {currentStreak?.longestCount || 0}
@@ -151,7 +139,7 @@ export function StreakStats({ className }: StreakStatsProps) {
             <StatCard
               label="Total Sessions"
               value={stats.totalSessions}
-              subtitle={`${stats?.averageSessionsPerDay?.toFixed(1) ?? '0'}/day avg`}
+              subtitle={`${(stats.averageSessionsPerDay ?? 0).toFixed(1)}/day avg`}
               icon="🎯"
               color="green"
             />
@@ -176,9 +164,7 @@ export function StreakStats({ className }: StreakStatsProps) {
         {stats && (
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
-              <div className="text-sm font-medium text-muted-foreground">
-                Activity Rate
-              </div>
+              <div className="text-sm font-medium text-muted-foreground">Activity Rate</div>
               <div className="mt-2">
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold">
@@ -200,14 +186,10 @@ export function StreakStats({ className }: StreakStatsProps) {
             </div>
 
             <div className="rounded-lg border p-4">
-              <div className="text-sm font-medium text-muted-foreground">
-                Consistency Score
-              </div>
+              <div className="text-sm font-medium text-muted-foreground">Consistency Score</div>
               <div className="mt-2">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">
-                    {calculateConsistencyScore(stats)}
-                  </span>
+                  <span className="text-2xl font-bold">{calculateConsistencyScore(stats)}</span>
                   <span className="text-sm text-muted-foreground">/ 100</span>
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">
@@ -250,13 +232,9 @@ function StatCard({ label, value, total, subtitle, icon, color }: StatCardProps)
               <span className="text-sm text-muted-foreground">/ {total}</span>
             )}
           </div>
-          {subtitle && (
-            <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div>
-          )}
+          {subtitle && <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div>}
         </div>
-        <div className={cn("rounded-lg p-2 text-xl", colorClasses[color])}>
-          {icon}
-        </div>
+        <div className={cn("rounded-lg p-2 text-xl", colorClasses[color])}>{icon}</div>
       </div>
     </div>
   );
@@ -264,7 +242,7 @@ function StatCard({ label, value, total, subtitle, icon, color }: StatCardProps)
 
 function formatMinutes(minutes?: number): string {
   if (!minutes || minutes <= 0) {
-    return '0m';
+    return "0m";
   }
   if (minutes < 60) {
     return `${Math.round(minutes)}m`;
@@ -274,7 +252,14 @@ function formatMinutes(minutes?: number): string {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-function calculateConsistencyScore(stats: any): number {
+interface ConsistencyStats {
+  activeDays: number;
+  totalDays: number;
+  perfectDays: number;
+  currentStreak: number;
+}
+
+function calculateConsistencyScore(stats: ConsistencyStats): number {
   // Calculate score based on:
   // - Activity rate (40 points)
   // - Perfect days ratio (30 points)

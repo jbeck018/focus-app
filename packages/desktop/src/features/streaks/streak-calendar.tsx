@@ -94,14 +94,12 @@ export function StreakCalendar({ months = 12, className }: StreakCalendarProps) 
   if (error) {
     return (
       <div className={cn("flex items-center justify-center p-8", className)}>
-        <div className="text-sm text-destructive">
-          Failed to load streak calendar
-        </div>
+        <div className="text-sm text-destructive">Failed to load streak calendar</div>
       </div>
     );
   }
 
-  if (!heatmapData || calendarGrid.length === 0) {
+  if (calendarGrid.length === 0) {
     return (
       <div className={cn("flex items-center justify-center p-8", className)}>
         <div className="text-sm text-muted-foreground">No streak data yet</div>
@@ -159,10 +157,7 @@ export function StreakCalendar({ months = 12, className }: StreakCalendarProps) 
           {[0, 1, 2, 3, 4].map((intensity) => (
             <div
               key={intensity}
-              className={cn(
-                "h-3 w-3 rounded-sm border",
-                getIntensityColor(intensity)
-              )}
+              className={cn("h-3 w-3 rounded-sm border", getIntensityColor(intensity))}
             />
           ))}
         </div>
@@ -209,9 +204,7 @@ function CalendarCell({ cell }: CalendarCellProps) {
           <div className="mt-1 space-y-0.5 text-muted-foreground">
             <div>{cell.sessionsCount} sessions</div>
             <div>{cell.focusMinutes} minutes</div>
-            {cell.wasFrozen && (
-              <div className="text-blue-400">Streak Freeze Used</div>
-            )}
+            {cell.wasFrozen && <div className="text-blue-400">Streak Freeze Used</div>}
           </div>
         </div>
       )}

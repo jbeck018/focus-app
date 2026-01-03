@@ -42,9 +42,7 @@ function ChatThinking({
 
       {/* Thinking indicator */}
       <div className="flex flex-col gap-1 items-start">
-        <span className="text-xs font-medium text-muted-foreground ml-1">
-          Coach
-        </span>
+        <span className="text-xs font-medium text-muted-foreground ml-1">Coach</span>
 
         <div
           className={cn(
@@ -96,11 +94,7 @@ function ThinkingSpinner({ message }: { message: string }) {
 
 // Pulsing text
 function ThinkingPulse({ message }: { message: string }) {
-  return (
-    <span className="text-sm text-muted-foreground animate-pulse">
-      {message}...
-    </span>
-  );
+  return <span className="text-sm text-muted-foreground animate-pulse">{message}...</span>;
 }
 
 // Typing effect
@@ -189,10 +183,5 @@ function ChatMessageSkeleton({ className }: { className?: string }) {
   );
 }
 
-export {
-  ChatThinking,
-  ChatThinkingMinimal,
-  ChatMessageSkeleton,
-  ThinkingDots,
-};
+export { ChatThinking, ChatThinkingMinimal, ChatMessageSkeleton, ThinkingDots };
 export type { ChatThinkingProps };

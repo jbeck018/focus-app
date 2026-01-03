@@ -69,10 +69,7 @@ export function CalendarHeatmap({
   const stats = useMemo(() => {
     const activeDays = data.filter((d) => d.hasData).length;
     const totalMinutes = data.reduce((sum, d) => sum + d.focusMinutes, 0);
-    const maxDay = data.reduce(
-      (max, d) => (d.focusMinutes > max.focusMinutes ? d : max),
-      data[0]
-    );
+    const maxDay = data.reduce((max, d) => (d.focusMinutes > max.focusMinutes ? d : max), data[0]);
 
     return {
       activeDays,
@@ -102,9 +99,7 @@ export function CalendarHeatmap({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-base font-semibold">
-          Year Activity - {year}
-        </CardTitle>
+        <CardTitle className="text-base font-semibold">Year Activity - {year}</CardTitle>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarIcon className="h-4 w-4" />
           <span>{stats.activeDays} active days</span>
@@ -115,11 +110,7 @@ export function CalendarHeatmap({
           {/* Month labels */}
           <div className="flex gap-[2px] text-xs text-muted-foreground">
             {getMonthLabels(year).map((month, index) => (
-              <div
-                key={index}
-                className="flex-1 text-center"
-                style={{ minWidth: `${100 / 12}%` }}
-              >
+              <div key={index} className="flex-1 text-center" style={{ minWidth: `${100 / 12}%` }}>
                 {month}
               </div>
             ))}
@@ -189,15 +180,11 @@ export function CalendarHeatmap({
             </div>
             <div>
               <p className="text-muted-foreground">Total Focus</p>
-              <p className="text-lg font-semibold">
-                {formatDuration(stats.totalMinutes)}
-              </p>
+              <p className="text-lg font-semibold">{formatDuration(stats.totalMinutes)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Best Day</p>
-              <p className="text-lg font-semibold">
-                {formatDuration(stats.maxMinutes)}
-              </p>
+              <p className="text-lg font-semibold">{formatDuration(stats.maxMinutes)}</p>
             </div>
           </div>
 
@@ -225,7 +212,20 @@ export function CalendarHeatmap({
 
 // Helper: Get month labels for the year
 function getMonthLabels(_year: number): string[] {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   return months;
 }
 

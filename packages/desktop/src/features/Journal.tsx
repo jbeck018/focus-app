@@ -93,10 +93,9 @@ function InsightsView() {
           {insights && insights.length > 0 ? (
             <div className="space-y-3">
               {insights.slice(0, 5).map((insight) => {
-                const info = TRIGGER_INFO[insight.trigger_type as TriggerType];
-                const percentage = totalTriggers > 0
-                  ? Math.round((insight.frequency / totalTriggers) * 100)
-                  : 0;
+                const info = TRIGGER_INFO[insight.trigger_type];
+                const percentage =
+                  totalTriggers > 0 ? Math.round((insight.frequency / totalTriggers) * 100) : 0;
 
                 return (
                   <div key={insight.trigger_type} className="flex items-center gap-3">
@@ -143,17 +142,13 @@ function InsightsView() {
               {peakTimes.peak_hour !== null && (
                 <div className="p-3 bg-secondary/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">Most distracting hour</p>
-                  <p className="text-lg font-medium">
-                    {formatHour(peakTimes.peak_hour)}
-                  </p>
+                  <p className="text-lg font-medium">{formatHour(peakTimes.peak_hour)}</p>
                 </div>
               )}
               {peakTimes.peak_day !== null && (
                 <div className="p-3 bg-secondary/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">Most distracting day</p>
-                  <p className="text-lg font-medium">
-                    {DAY_NAMES[peakTimes.peak_day]}
-                  </p>
+                  <p className="text-lg font-medium">{DAY_NAMES[peakTimes.peak_day]}</p>
                 </div>
               )}
             </div>
@@ -196,8 +191,8 @@ function HistoryView() {
   return (
     <div className="space-y-3">
       {entries.map((entry) => {
-        const triggerInfo = TRIGGER_INFO[entry.trigger_type as TriggerType];
-        const emotionInfo = entry.emotion ? EMOTION_INFO[entry.emotion as Emotion] : null;
+        const triggerInfo = TRIGGER_INFO[entry.trigger_type];
+        const emotionInfo = entry.emotion ? EMOTION_INFO[entry.emotion] : null;
 
         return (
           <Card key={entry.id}>
@@ -206,9 +201,7 @@ function HistoryView() {
                 <span className="text-2xl">{triggerInfo?.emoji ?? "❓"}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">
-                      {triggerInfo?.label ?? entry.trigger_type}
-                    </span>
+                    <span className="font-medium">{triggerInfo?.label ?? entry.trigger_type}</span>
                     {emotionInfo && (
                       <span className="text-sm text-muted-foreground">
                         • {emotionInfo.emoji} {emotionInfo.label}
@@ -221,9 +214,7 @@ function HistoryView() {
                     )}
                   </div>
                   {entry.notes && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {entry.notes}
-                    </p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{entry.notes}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
                     {formatDate(entry.created_at)}
@@ -274,16 +265,23 @@ function NewEntryDialog({
 
   const internalTriggers: TriggerType[] = ["boredom", "anxiety", "stress", "fatigue"];
   const externalTriggers: TriggerType[] = ["notification", "person", "environment", "other"];
-  const emotions: Emotion[] = ["frustrated", "anxious", "tired", "distracted", "curious", "bored", "overwhelmed", "neutral"];
+  const emotions: Emotion[] = [
+    "frustrated",
+    "anxious",
+    "tired",
+    "distracted",
+    "curious",
+    "bored",
+    "overwhelmed",
+    "neutral",
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Log a Trigger</DialogTitle>
-          <DialogDescription>
-            What caused you to lose focus?
-          </DialogDescription>
+          <DialogDescription>What caused you to lose focus?</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -371,10 +369,7 @@ function NewEntryDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!triggerType || createEntry.isPending}
-          >
+          <Button onClick={handleSubmit} disabled={!triggerType || createEntry.isPending}>
             {createEntry.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

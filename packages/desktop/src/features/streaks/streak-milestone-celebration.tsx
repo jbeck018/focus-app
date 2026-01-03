@@ -8,7 +8,7 @@
  * - Dismissable with animation
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StreakMilestone } from "@focusflow/types";
 import { cn } from "../../lib/utils";
 
@@ -67,9 +67,7 @@ export function MilestoneCelebration({
       <div
         className={cn(
           "celebration-card relative z-10 w-full max-w-md transform rounded-lg border bg-card p-8 shadow-2xl transition-all duration-500",
-          isVisible && !isExiting
-            ? "scale-100 opacity-100"
-            : "scale-75 opacity-0",
+          isVisible && !isExiting ? "scale-100 opacity-100" : "scale-75 opacity-0",
           className
         )}
       >
@@ -124,9 +122,7 @@ function ConfettiAnimation() {
     x: Math.random() * 100,
     delay: Math.random() * 2,
     duration: 3 + Math.random() * 2,
-    color: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6"][
-      Math.floor(Math.random() * 5)
-    ],
+    color: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6"][Math.floor(Math.random() * 5)],
   }));
 
   return (
@@ -186,13 +182,20 @@ function FireworksAnimation() {
 }
 
 function SparkleAnimation() {
-  const sparkles = Array.from({ length: 30 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    delay: Math.random() * 2,
-    size: 2 + Math.random() * 4,
-  }));
+  // Pre-computed sparkle positions using deterministic values based on index
+  // This avoids calling Math.random() during render which is impure
+  const sparkles = useMemo(
+    () =>
+      Array.from({ length: 30 }, (_, i) => ({
+        id: i,
+        // Use deterministic values based on index for consistent rendering
+        x: ((i * 17 + 7) % 100),
+        y: ((i * 23 + 13) % 100),
+        delay: (i % 20) / 10,
+        size: 2 + (i % 5),
+      })),
+    []
+  );
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -247,9 +250,7 @@ function getTierGradient(tier: string): string {
   }
 }
 
-function getAnimationType(
-  tier: string
-): "confetti" | "fireworks" | "sparkle" {
+function getAnimationType(tier: string): "confetti" | "fireworks" | "sparkle" {
   switch (tier.toLowerCase()) {
     case "diamond":
     case "platinum":

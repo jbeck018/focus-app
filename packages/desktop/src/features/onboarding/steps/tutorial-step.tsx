@@ -31,43 +31,43 @@ const TUTORIAL_TOPICS: TutorialTopic[] = [
     title: "Focus Timer",
     description: "Start focused work sessions with customizable durations and automatic blocking",
     icon: "timer",
-    duration: "2 min"
+    duration: "2 min",
   },
   {
     id: "blocking",
     title: "App & Website Blocking",
     description: "Block distracting apps and websites during focus sessions",
     icon: "shield",
-    duration: "2 min"
+    duration: "2 min",
   },
   {
     id: "journal",
     title: "Trigger Journaling",
     description: "Log your internal triggers to understand and overcome them",
     icon: "book-open",
-    duration: "2 min"
+    duration: "2 min",
   },
   {
     id: "analytics",
     title: "Analytics & Insights",
     description: "Track your productivity patterns and see your progress over time",
     icon: "bar-chart",
-    duration: "2 min"
+    duration: "2 min",
   },
   {
     id: "calendar",
     title: "Calendar Integration",
     description: "Sync your calendar and get smart focus time suggestions (Pro)",
     icon: "calendar",
-    duration: "2 min"
+    duration: "2 min",
   },
   {
     id: "ai-coach",
     title: "AI Coach",
     description: "Get personalized advice based on the Indistractable framework (Pro)",
     icon: "bot",
-    duration: "2 min"
-  }
+    duration: "2 min",
+  },
 ];
 
 interface TutorialStepProps {
@@ -175,9 +175,7 @@ export function TutorialStep({
                           {topic.duration}
                         </Badge>
                       </div>
-                      <CardDescription className="text-sm">
-                        {topic.description}
-                      </CardDescription>
+                      <CardDescription className="text-sm">{topic.description}</CardDescription>
                     </div>
                   </div>
                   <div className="flex-shrink-0">
@@ -204,8 +202,8 @@ export function TutorialStep({
       <div className="p-4 rounded-lg bg-muted/50 border space-y-2">
         <p className="text-sm font-medium">Click each feature to learn more</p>
         <p className="text-sm text-muted-foreground">
-          Don't worry - you can explore these features at your own pace after setup.
-          This is just a quick overview to get you started.
+          Don't worry - you can explore these features at your own pace after setup. This is just a
+          quick overview to get you started.
         </p>
       </div>
 

@@ -71,7 +71,10 @@ function App() {
       {/* Main Content Area */}
       <SidebarInset className="flex flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4" role="banner">
+        <header
+          className="sticky top-0 z-10 flex h-13 shrink-0 items-center gap-2 border-b bg-background px-4"
+          role="banner"
+        >
           <SidebarTrigger className="-ml-1" />
           <div className="flex-1">
             <p className="text-sm text-muted-foreground hidden md:block">
@@ -91,15 +94,15 @@ function App() {
             Timer view: Vertically centered (hero/focal element)
             All other views: Top-aligned (standard page layout)
           */}
-          <div className={
-            activeView === "timer"
-              ? "min-h-full flex flex-col items-center justify-center"
-              : "w-full max-w-6xl mx-auto"
-          }>
+          <div
+            className={
+              activeView === "timer"
+                ? "min-h-full flex flex-col items-center justify-center"
+                : "w-full max-w-6xl mx-auto"
+            }
+          >
             {activeView === "timer" ? (
-              <div className="w-full max-w-md">
-                {renderView()}
-              </div>
+              <div className="w-full max-w-md">{renderView()}</div>
             ) : (
               renderView()
             )}

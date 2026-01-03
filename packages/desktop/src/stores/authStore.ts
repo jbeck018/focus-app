@@ -4,11 +4,7 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
-import type {
-  UserInfo,
-  SubscriptionTier,
-  TierFeatures,
-} from "@focusflow/types";
+import type { UserInfo, SubscriptionTier, TierFeatures } from "@focusflow/types";
 
 // Backend response type for session count
 interface SessionCountResponse {

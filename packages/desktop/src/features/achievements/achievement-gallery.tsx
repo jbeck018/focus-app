@@ -6,10 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AchievementCard } from "./achievement-card";
-import {
-  useAchievements,
-  useAchievementStats,
-} from "@/hooks/use-achievements";
+import { useAchievements, useAchievementStats } from "@/hooks/use-achievements";
 import { Trophy, Lock, Target, TrendingUp, Award, Sparkles } from "lucide-react";
 
 const categories = [
@@ -30,8 +27,7 @@ export function AchievementGallery() {
 
   // Filter achievements based on category and unlock status
   const filteredAchievements = achievements?.filter((achievement) => {
-    const categoryMatch =
-      selectedCategory === "all" || achievement.category === selectedCategory;
+    const categoryMatch = selectedCategory === "all" || achievement.category === selectedCategory;
     const unlockedMatch = !showOnlyUnlocked || achievement.unlocked;
     return categoryMatch && unlockedMatch;
   });
@@ -65,9 +61,7 @@ export function AchievementGallery() {
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Total Points</CardDescription>
-            <CardTitle className="text-3xl text-amber-500">
-              {stats?.totalPoints || 0}
-            </CardTitle>
+            <CardTitle className="text-3xl text-amber-500">{stats?.totalPoints || 0}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -88,10 +82,7 @@ export function AchievementGallery() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Progress
-              value={stats?.completionPercentage || 0}
-              className="h-2"
-            />
+            <Progress value={stats?.completionPercentage || 0} className="h-2" />
             <p className="text-xs text-muted-foreground mt-1">
               {Math.round(stats?.completionPercentage || 0)}% complete
             </p>
@@ -135,11 +126,10 @@ export function AchievementGallery() {
           <TabsList className="grid w-full max-w-2xl grid-cols-6">
             {categories.map((category) => {
               const Icon = category.icon;
-              const count = achievements?.filter(
-                (a) =>
-                  (category.value === "all" || a.category === category.value) &&
-                  a.unlocked
-              ).length || 0;
+              const count =
+                achievements?.filter(
+                  (a) => (category.value === "all" || a.category === category.value) && a.unlocked
+                ).length || 0;
 
               return (
                 <TabsTrigger
@@ -192,9 +182,7 @@ export function AchievementGallery() {
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Lock className="w-16 h-16 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">
-                    {showOnlyUnlocked
-                      ? "No unlocked achievements yet"
-                      : "No achievements found"}
+                    {showOnlyUnlocked ? "No unlocked achievements yet" : "No achievements found"}
                   </h3>
                   <p className="text-sm text-muted-foreground text-center max-w-md">
                     {showOnlyUnlocked

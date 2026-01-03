@@ -115,14 +115,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     number={2}
                     text="Log your internal triggers in the Journal when you feel distracted"
                   />
-                  <NextStepItem
-                    number={3}
-                    text="Review your progress in the Stats dashboard"
-                  />
-                  <NextStepItem
-                    number={4}
-                    text="Customize your blocklist in the Block settings"
-                  />
+                  <NextStepItem number={3} text="Review your progress in the Stats dashboard" />
+                  <NextStepItem number={4} text="Customize your blocklist in the Block settings" />
                 </ul>
               </div>
 
@@ -146,7 +140,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {/* Indistractable reminder */}
               <div className="text-center p-4 rounded-lg bg-muted/50 border">
                 <p className="text-sm text-muted-foreground italic">
-                  "You can have anything you want in life if you just help enough other people get what they want."
+                  "You can have anything you want in life if you just help enough other people get
+                  what they want."
                   <br />
                   <span className="font-medium">- Zig Ziglar</span>
                 </p>

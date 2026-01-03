@@ -6,12 +6,7 @@ import { Cloud, Lock, AlertCircle, Settings, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ProviderType, ProviderConfig } from "@/hooks/useAIProviders";
 import { useActiveProvider } from "@/hooks/useAIProviders";
 import { useLlmStatus } from "@/hooks/useLlmStatus";
@@ -184,9 +179,7 @@ export function ModelIndicator({
 
           <TooltipContent side="bottom" className="max-w-xs">
             <div className="space-y-1">
-              <p className="font-medium">
-                {formatModelName(getModelFromConfig(activeProvider))}
-              </p>
+              <p className="font-medium">{formatModelName(getModelFromConfig(activeProvider))}</p>
               <p className="text-xs text-muted-foreground">
                 {activeProvider?.provider || "No provider"} - {statusInfo.label}
               </p>
@@ -210,19 +203,14 @@ export function ModelIndicator({
             variant="ghost"
             size="sm"
             onClick={onOpenSettings}
-            className={cn(
-              "h-auto px-2.5 py-1.5 gap-2 hover:bg-accent",
-              className
-            )}
+            className={cn("h-auto px-2.5 py-1.5 gap-2 hover:bg-accent", className)}
             aria-label="AI model settings - Click to configure"
           >
             {/* Provider icon */}
             <div
               className={cn(
                 "rounded-md p-1 shrink-0",
-                activeProvider?.provider === "local"
-                  ? "bg-primary/10"
-                  : "bg-blue-500/10"
+                activeProvider?.provider === "local" ? "bg-primary/10" : "bg-blue-500/10"
               )}
             >
               {getProviderIcon(activeProvider?.provider, statusInfo.color)}
@@ -246,7 +234,8 @@ export function ModelIndicator({
                   variant={isAvailable ? "default" : hasError ? "destructive" : "secondary"}
                   className={cn(
                     "text-[10px] px-1.5 py-0 h-4 mt-0.5",
-                    isAvailable && "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+                    isAvailable &&
+                      "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
                   )}
                 >
                   {statusInfo.label}
@@ -255,10 +244,7 @@ export function ModelIndicator({
             </div>
 
             {/* Settings icon */}
-            <Settings
-              className="h-3.5 w-3.5 text-muted-foreground shrink-0"
-              aria-hidden="true"
-            />
+            <Settings className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
           </Button>
         </TooltipTrigger>
 
@@ -274,9 +260,7 @@ export function ModelIndicator({
             </div>
 
             {llmStatus?.model && (
-              <p className="text-xs text-muted-foreground">
-                Model: {llmStatus.model}
-              </p>
+              <p className="text-xs text-muted-foreground">Model: {llmStatus.model}</p>
             )}
 
             {hasError && llmStatus?.error && (
@@ -284,17 +268,15 @@ export function ModelIndicator({
             )}
 
             {!hasError && !activeProvider && (
-              <p className="text-xs text-muted-foreground italic">
-                Click to configure AI provider
-              </p>
+              <p className="text-xs text-muted-foreground italic">Click to configure AI provider</p>
             )}
 
             <p className="text-xs text-muted-foreground border-t pt-2 mt-2">
               {activeProvider?.provider === "local"
                 ? "🔒 Private - runs on your device"
                 : activeProvider?.provider
-                ? "☁️ Cloud - uses external API"
-                : "Configure to enable AI features"}
+                  ? "☁️ Cloud - uses external API"
+                  : "Configure to enable AI features"}
             </p>
           </div>
         </TooltipContent>

@@ -151,14 +151,12 @@ export function useActiveProvider() {
  * const { data: models, isLoading } = useAvailableModels("openai");
  * ```
  */
-export function useAvailableModels(
-  provider: ProviderType | null,
-  options?: { enabled?: boolean }
-) {
+export function useAvailableModels(provider: ProviderType | null, options?: { enabled?: boolean }) {
   const { enabled = true } = options || {};
 
   return useQuery({
-    queryKey: aiProviderQueryKeys.availableModels(provider!),
+    queryKey:
+      provider !== null ? aiProviderQueryKeys.availableModels(provider) : ["ai", "models", "null"],
     queryFn: async () => {
       return invoke<ModelInfo[]>("list_models", { provider });
     },
@@ -189,7 +187,7 @@ export function useSetProvider() {
 
   return useMutation({
     mutationFn: async (config: ProviderConfig) => {
-      return invoke<void>("set_active_provider", { config });
+      return invoke("set_active_provider", { config });
     },
     onSuccess: () => {
       // Invalidate active provider and LLM status
@@ -222,10 +220,7 @@ export function useSetProvider() {
 export function useTestConnection() {
   return useMutation({
     mutationFn: async (config: ProviderConfig) => {
-      return invoke<{ success: boolean; error?: string }>(
-        "test_provider_connection",
-        { config }
-      );
+      return invoke<{ success: boolean; error?: string }>("test_provider_connection", { config });
     },
   });
 }
@@ -249,7 +244,7 @@ export function useSaveApiKey() {
 
   return useMutation({
     mutationFn: async ({ provider, apiKey }: { provider: ProviderType; apiKey: string }) => {
-      return invoke<void>("save_api_key", { provider, apiKey });
+      return invoke("save_api_key", { provider, apiKey });
     },
     onSuccess: (_, { provider }) => {
       // Invalidate API key cache for this provider
@@ -272,7 +267,7 @@ export function useSaveApiKey() {
  */
 export function useGetApiKey(provider: ProviderType | null) {
   return useQuery({
-    queryKey: aiProviderQueryKeys.apiKey(provider!),
+    queryKey: provider !== null ? aiProviderQueryKeys.apiKey(provider) : ["ai", "apiKey", "null"],
     queryFn: async () => {
       return invoke<string | null>("get_api_key", { provider });
     },
@@ -300,7 +295,7 @@ export function useDeleteApiKey() {
 
   return useMutation({
     mutationFn: async (provider: ProviderType) => {
-      return invoke<void>("delete_api_key", { provider });
+      return invoke("delete_api_key", { provider });
     },
     onSuccess: (_, provider) => {
       queryClient.invalidateQueries({ queryKey: aiProviderQueryKeys.apiKey(provider) });
@@ -332,7 +327,7 @@ export function useDownloadModel() {
 
   return useMutation({
     mutationFn: async (modelName: string) => {
-      return invoke<void>("download_model", { modelName });
+      return invoke("download_model", { modelName });
     },
     onSuccess: () => {
       // Invalidate download status to trigger refetch
@@ -389,37 +384,31 @@ export function useModelDownloadProgress(
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const progressUnlisten = listen<DownloadProgress>(
-      "model-download-progress",
-      (event) => {
-        // Update query cache with latest progress
-        queryClient.setQueryData(aiProviderQueryKeys.downloadStatus, {
-          isDownloading: true,
-          modelName: event.payload.modelName,
-          progress: event.payload,
-          error: undefined,
-        });
+    const progressUnlisten = listen<DownloadProgress>("model-download-progress", (event) => {
+      // Update query cache with latest progress
+      queryClient.setQueryData(aiProviderQueryKeys.downloadStatus, {
+        isDownloading: true,
+        modelName: event.payload.modelName,
+        progress: event.payload,
+        error: undefined,
+      });
 
-        onProgress?.(event.payload);
-      }
-    );
+      onProgress?.(event.payload);
+    });
 
-    const completeUnlisten = listen<{ model_name: string }>(
-      "model-download-complete",
-      (event) => {
-        // Update query cache to reflect completion
-        queryClient.setQueryData(aiProviderQueryKeys.downloadStatus, {
-          isDownloading: false,
-          error: undefined,
-        });
+    const completeUnlisten = listen<{ model_name: string }>("model-download-complete", (event) => {
+      // Update query cache to reflect completion
+      queryClient.setQueryData(aiProviderQueryKeys.downloadStatus, {
+        isDownloading: false,
+        error: undefined,
+      });
 
-        // Invalidate models list to show newly downloaded model
-        queryClient.invalidateQueries({ queryKey: aiProviderQueryKeys.availableModels("local") });
-        queryClient.invalidateQueries({ queryKey: ["llm", "status"] });
+      // Invalidate models list to show newly downloaded model
+      queryClient.invalidateQueries({ queryKey: aiProviderQueryKeys.availableModels("local") });
+      queryClient.invalidateQueries({ queryKey: ["llm", "status"] });
 
-        onComplete?.(event.payload.model_name);
-      }
-    );
+      onComplete?.(event.payload.model_name);
+    });
 
     const errorUnlisten = listen<{ error: string; model?: string }>(
       "model-download-error",

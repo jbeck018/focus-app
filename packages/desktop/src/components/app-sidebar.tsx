@@ -79,7 +79,7 @@ export function AppSidebar({ activeView, onViewChange }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       {/* Header */}
-      <SidebarHeader className="border-b">
+      <SidebarHeader className="border-b h-13">
         <div className="flex items-center gap-2 px-2 py-1">
           <Timer className="h-6 w-6 shrink-0" />
           <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">

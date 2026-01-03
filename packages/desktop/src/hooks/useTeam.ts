@@ -113,7 +113,7 @@ export function useLeaveTeam() {
 
   return useMutation({
     mutationFn: async () => {
-      return invoke<void>("leave_team");
+      return invoke("leave_team");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team"] });
@@ -141,7 +141,7 @@ export function useRemoveTeamBlockedItem() {
 
   return useMutation({
     mutationFn: async (itemId: number) => {
-      return invoke<void>("remove_team_blocked_item", { itemId });
+      return invoke("remove_team_blocked_item", { itemId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teamQueryKeys.blocklist });
@@ -155,7 +155,7 @@ export function useUpdateTeamPrivacySettings() {
 
   return useMutation({
     mutationFn: async (settings: TeamPrivacySettings) => {
-      return invoke<void>("update_team_privacy_settings", { settings });
+      return invoke("update_team_privacy_settings", { settings });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: teamQueryKeys.privacy });

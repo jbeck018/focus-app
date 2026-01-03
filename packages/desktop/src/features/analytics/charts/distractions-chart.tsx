@@ -79,12 +79,7 @@ export function DistractionsChart({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            onClick={handleClick}
-            margin={{ left: 100 }}
-          >
+          <BarChart data={chartData} layout="vertical" onClick={handleClick} margin={{ left: 100 }}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis
               type="number"
@@ -157,7 +152,7 @@ function TrendIndicator({ trend }: { trend: "up" | "down" | "stable" }) {
 
 // Custom tooltip component
 function CustomTooltip({ active, payload }: any) {
-  if (!active || !payload || !payload.length) {
+  if (!active || !payload?.length) {
     return null;
   }
 

@@ -40,10 +40,7 @@ export function StreakDashboard({ className }: StreakDashboardProps) {
     if (!milestones || !Array.isArray(milestones)) return;
 
     const justAchieved = milestones.find(
-      (m) =>
-        m.isAchieved &&
-        m.achievedAt &&
-        Date.now() - new Date(m.achievedAt).getTime() < 5000 // Within last 5 seconds
+      (m) => m.isAchieved && m.achievedAt && Date.now() - new Date(m.achievedAt).getTime() < 5000 // Within last 5 seconds
     );
 
     if (justAchieved && !celebratingMilestone) {
@@ -58,22 +55,16 @@ export function StreakDashboard({ className }: StreakDashboardProps) {
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-bold">Your Focus Streak</h2>
-            <p className="mt-1 text-muted-foreground">
-              Keep the momentum going every day
-            </p>
+            <p className="mt-1 text-muted-foreground">Keep the momentum going every day</p>
           </div>
 
           {/* Current Streak Badge */}
           <div className="text-center">
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold">
-                {currentStreak?.currentCount || 0}
-              </span>
+              <span className="text-5xl font-bold">{currentStreak?.currentCount || 0}</span>
               <span className="text-xl text-muted-foreground">days</span>
             </div>
-            <div className="mt-1 text-sm text-muted-foreground">
-              Current Streak
-            </div>
+            <div className="mt-1 text-sm text-muted-foreground">Current Streak</div>
           </div>
         </div>
 
@@ -169,10 +160,7 @@ export function StreakDashboard({ className }: StreakDashboardProps) {
 
       {/* Modals */}
       {showFreezeModal && (
-        <StreakFreezeModal
-          isOpen={showFreezeModal}
-          onClose={() => setShowFreezeModal(false)}
-        />
+        <StreakFreezeModal isOpen={showFreezeModal} onClose={() => setShowFreezeModal(false)} />
       )}
 
       {celebratingMilestone && (
@@ -198,22 +186,16 @@ function MilestoneCard({ milestone, currentCount }: MilestoneCardProps) {
     <div
       className={cn(
         "rounded-lg border p-4 transition-all",
-        isAchieved
-          ? "border-primary bg-primary/5"
-          : "border-muted hover:border-muted-foreground/50"
+        isAchieved ? "border-primary bg-primary/5" : "border-muted hover:border-muted-foreground/50"
       )}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">
-              {getTierIcon(milestone.tier)}
-            </span>
+            <span className="text-2xl">{getTierIcon(milestone.tier)}</span>
             <div>
               <div className="font-medium capitalize">{milestone.tier}</div>
-              <div className="text-xs text-muted-foreground">
-                {milestone.daysRequired} days
-              </div>
+              <div className="text-xs text-muted-foreground">{milestone.daysRequired} days</div>
             </div>
           </div>
 
@@ -233,9 +215,7 @@ function MilestoneCard({ milestone, currentCount }: MilestoneCardProps) {
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-500",
-                  isAchieved
-                    ? "bg-primary"
-                    : "bg-gradient-to-r from-orange-500 to-red-500"
+                  isAchieved ? "bg-primary" : "bg-gradient-to-r from-orange-500 to-red-500"
                 )}
                 style={{ width: `${Math.min(progress, 100)}%` }}
               />

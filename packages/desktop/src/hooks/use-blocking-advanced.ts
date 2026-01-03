@@ -300,9 +300,7 @@ export function useEnabledCategoryItems() {
   const { data: categories } = useBlockingCategories();
 
   const items = Array.isArray(categories)
-    ? categories
-        .filter((cat) => cat.enabled)
-        .flatMap((cat) => cat.items)
+    ? categories.filter((cat) => cat.enabled).flatMap((cat) => cat.items)
     : [];
 
   return items;
@@ -316,7 +314,7 @@ export function useIsBlockingLocked() {
   const { data: nuclearOption } = useNuclearOptionState();
 
   return {
-    isLocked: strictMode?.enabled || nuclearOption?.active || false,
+    isLocked: (strictMode?.enabled ?? false) || (nuclearOption?.active ?? false),
     reason: strictMode?.enabled ? "strict-mode" : nuclearOption?.active ? "nuclear-option" : null,
     strictMode,
     nuclearOption,

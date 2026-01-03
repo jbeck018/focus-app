@@ -50,13 +50,7 @@ export function useLogin() {
   const setError = useAuthStore((s) => s.setError);
 
   return useMutation({
-    mutationFn: async ({
-      email,
-      password,
-    }: {
-      email: string;
-      password: string;
-    }) => {
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
       setLoading(true);
       setError(null);
       return invoke<AuthResponse>("login", { email, password });
@@ -83,13 +77,7 @@ export function useRegister() {
   const setError = useAuthStore((s) => s.setError);
 
   return useMutation({
-    mutationFn: async ({
-      email,
-      password,
-    }: {
-      email: string;
-      password: string;
-    }) => {
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
       setLoading(true);
       setError(null);
       return invoke<AuthResponse>("register", { email, password });
@@ -114,7 +102,7 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async () => {
-      return invoke<void>("logout");
+      return invoke("logout");
     },
     onSuccess: () => {
       logout();
@@ -159,7 +147,7 @@ export function useIsAuthenticated() {
 export function useSetTrailbaseUrl() {
   return useMutation({
     mutationFn: async (url: string) => {
-      return invoke<void>("set_trailbase_url", { url });
+      return invoke("set_trailbase_url", { url });
     },
   });
 }

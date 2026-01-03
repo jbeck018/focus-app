@@ -55,9 +55,9 @@ export function APIKeyInput({
   onTestError,
 }: APIKeyInputProps) {
   const [showKey, setShowKey] = React.useState(false);
-  const [testStatus, setTestStatus] = React.useState<
-    "idle" | "testing" | "success" | "error"
-  >("idle");
+  const [testStatus, setTestStatus] = React.useState<"idle" | "testing" | "success" | "error">(
+    "idle"
+  );
   const [errorMessage, setErrorMessage] = React.useState<string>("");
 
   const testConnection = useTestConnection();
@@ -162,9 +162,7 @@ export function APIKeyInput({
               testStatus === "error" && "border-destructive"
             )}
             aria-invalid={testStatus === "error"}
-            aria-describedby={
-              testStatus === "error" ? `api-key-${provider}-error` : undefined
-            }
+            aria-describedby={testStatus === "error" ? `api-key-${provider}-error` : undefined}
             autoComplete="off"
             spellCheck={false}
           />

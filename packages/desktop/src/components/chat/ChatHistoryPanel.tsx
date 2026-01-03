@@ -79,24 +79,14 @@ export function ChatHistoryPanel({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="left"
-        className={cn("w-full sm:max-w-md p-0 flex flex-col", className)}
-      >
+      <SheetContent side="left" className={cn("w-full sm:max-w-md p-0 flex flex-col", className)}>
         <SheetHeader className="px-4 pt-4 pb-3 border-b">
           <div className="flex items-center justify-between">
             <div>
               <SheetTitle>Chat History</SheetTitle>
-              <SheetDescription>
-                Your recent conversations (last 30 days)
-              </SheetDescription>
+              <SheetDescription>Your recent conversations (last 30 days)</SheetDescription>
             </div>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleNewChat}
-              className="ml-2"
-            >
+            <Button variant="default" size="sm" onClick={handleNewChat} className="ml-2">
               <Plus className="h-4 w-4 mr-1" />
               New
             </Button>
@@ -136,8 +126,8 @@ export function ChatHistoryPanel({
               {conversationsData.hasMore && (
                 <div className="mt-4 text-center">
                   <p className="text-xs text-muted-foreground">
-                    Showing {conversationsData.conversations.length} of{" "}
-                    {conversationsData.total} conversations
+                    Showing {conversationsData.conversations.length} of {conversationsData.total}{" "}
+                    conversations
                   </p>
                 </div>
               )}

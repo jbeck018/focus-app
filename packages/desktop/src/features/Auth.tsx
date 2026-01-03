@@ -44,9 +44,7 @@ function AuthForms() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle>Welcome to FocusFlow</CardTitle>
-        <CardDescription>
-          Sign in to sync your data across devices
-        </CardDescription>
+        <CardDescription>Sign in to sync your data across devices</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
@@ -273,20 +271,11 @@ function AccountSettings() {
         <div className="space-y-2">
           <span className="text-sm font-medium">Features</span>
           <ul className="space-y-1.5">
-            <FeatureItem
-              label="Trigger Journaling"
-              enabled={features.triggerJournaling}
-            />
+            <FeatureItem label="Trigger Journaling" enabled={features.triggerJournaling} />
             <FeatureItem label="Cloud Sync" enabled={features.cloudSync} />
             <FeatureItem label="AI Coach" enabled={features.aiCoach} />
-            <FeatureItem
-              label="Calendar Integration"
-              enabled={features.calendarIntegration}
-            />
-            <FeatureItem
-              label="Team Dashboard"
-              enabled={features.teamDashboard}
-            />
+            <FeatureItem label="Calendar Integration" enabled={features.calendarIntegration} />
+            <FeatureItem label="Team Dashboard" enabled={features.teamDashboard} />
           </ul>
         </div>
 
@@ -322,19 +311,11 @@ function AccountSettings() {
   );
 }
 
-function FeatureItem({
-  label,
-  enabled,
-}: {
-  label: string;
-  enabled: boolean;
-}) {
+function FeatureItem({ label, enabled }: { label: string; enabled: boolean }) {
   return (
     <li className="flex items-center gap-2 text-sm">
       <CheckCircle2
-        className={`h-4 w-4 ${
-          enabled ? "text-green-500" : "text-muted-foreground/40"
-        }`}
+        className={`h-4 w-4 ${enabled ? "text-green-500" : "text-muted-foreground/40"}`}
       />
       <span className={enabled ? "" : "text-muted-foreground"}>{label}</span>
     </li>

@@ -122,7 +122,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Setup Apple signing (macOS)
-        if: matrix.os == 'macos'
+        if: matrix.os == 'macos' && secrets.APPLE_CERTIFICATE != ''
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -131,6 +131,13 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
+          # Skip if no certificate provided
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "⚠️ Apple signing disabled - no certificate provided"
+            echo "Users will need to allow app in System Preferences > Security & Privacy"
+            exit 0
+          fi
+
           # Decode certificate
           echo "$APPLE_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
 
@@ -152,6 +159,13 @@ jobs:
             build.keychain
 
           rm /tmp/certificate.p12
+
+      - name: Note about unsigned macOS build
+        if: matrix.os == 'macos' && secrets.APPLE_CERTIFICATE == ''
+        run: |
+          echo "::warning::Building unsigned macOS app. Users will need to:"
+          echo "1. Right-click the app and select 'Open'"
+          echo "2. Or go to System Settings > Privacy & Security > Allow app"
 
       - name: Setup Windows signing
         if: matrix.os == 'windows'
@@ -177,15 +191,22 @@ jobs:
 
       - name: Build Tauri Desktop
         env:
+          # Tauri updater signing (optional - if not set, updates won't be signed)
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Apple signing (optional - if not set, app will be unsigned)
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # Windows signing (optional)
           WINDOWS_SIGN_CERT: ${{ secrets.WINDOWS_SIGN_CERT }}
           WINDOWS_SIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGN_CERT_PASSWORD }}
-        run: pnpm --filter @focusflow/desktop tauri build --ci --target ${{ matrix.target }} --verbose
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::warning::Building without Tauri updater signing. Auto-updates will be disabled."
+          fi
+          pnpm --filter @focusflow/desktop tauri build --ci --target ${{ matrix.target }} --verbose
 
       - name: Collect artifacts
         shell: bash

@@ -53,8 +53,7 @@ export function FocusTimer() {
   // Timer state from backend (single source of truth)
   const [timerTick, setTimerTick] = useState<TimerTickPayload | null>(null);
 
-  const { activeSession, startSession, endSession, updateSessionDuration } =
-    useSessionStore();
+  const { activeSession, startSession, endSession, updateSessionDuration } = useSessionStore();
   const canStartSession = useAuthStore((s) => s.canStartSession);
   const getRemainingDailySessions = useAuthStore((s) => s.getRemainingDailySessions);
   const syncSessionCount = useAuthStore((s) => s.syncSessionCount);
@@ -75,11 +74,26 @@ export function FocusTimer() {
   const plannedSeconds = (timerTick?.plannedDurationMinutes ?? duration) * 60;
 
   // Calculate progress percentage
-  const progress = activeSession && plannedSeconds > 0
-    ? Math.min((elapsedSeconds / plannedSeconds) * 100, 100)
-    : 0;
+  const progress =
+    activeSession && plannedSeconds > 0
+      ? Math.min((elapsedSeconds / plannedSeconds) * 100, 100)
+      : 0;
 
   const displayTime = activeSession ? formatTime(remainingSeconds) : "00:00";
+
+  // Handle stopping session
+  const handleStopSession = useCallback(
+    async (completed: boolean) => {
+      try {
+        await endMutation.mutateAsync(completed);
+        endSession();
+        setTimerTick(null);
+      } catch (error: unknown) {
+        console.error("Failed to end session:", error);
+      }
+    },
+    [endMutation, endSession]
+  );
 
   // Listen to backend timer ticks (broadcasts to all windows)
   useEffect(() => {
@@ -97,7 +111,7 @@ export function FocusTimer() {
       .then((state) => {
         if (state) setTimerTick(state);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.debug("No active timer state:", err);
       });
 
@@ -105,7 +119,7 @@ export function FocusTimer() {
       unlistenTick.then((fn) => fn());
       unlistenComplete.then((fn) => fn());
     };
-  }, []);
+  }, [handleStopSession]);
 
   // Listen for session extension events
   useEffect(() => {
@@ -130,11 +144,7 @@ export function FocusTimer() {
     const unlistenCount = listen<{ sessionsToday: number; dailyLimit: number }>(
       "session-count-changed",
       (event) => {
-        setSessionCount(
-          event.payload.sessionsToday,
-          event.payload.dailyLimit,
-          isUnlimited
-        );
+        setSessionCount(event.payload.sessionsToday, event.payload.dailyLimit, isUnlimited);
       }
     );
 
@@ -193,7 +203,10 @@ export function FocusTimer() {
 
       // Handle session limit error from backend
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("SessionLimitReached") || errorMessage.includes("Daily session limit")) {
+      if (
+        errorMessage.includes("SessionLimitReached") ||
+        errorMessage.includes("Daily session limit")
+      ) {
         setShowStartDialog(false);
         setShowUpgradeDialog(true);
         // Sync the latest count from backend
@@ -202,48 +215,48 @@ export function FocusTimer() {
     }
   };
 
-  const handleStopSession = async (completed: boolean) => {
-    try {
-      await endMutation.mutateAsync(completed);
-      endSession();
-      setTimerTick(null);
-    } catch (error) {
-      console.error("Failed to end session:", error);
-    }
-  };
-
   // Announce time updates to screen readers at intervals
+  // This effect synchronizes screen reader announcements with timer state
   useEffect(() => {
     if (!activeSession || !isRunning) return;
 
     const minutes = Math.floor(remainingSeconds / 60);
     const secs = remainingSeconds % 60;
 
-    if (minutes > 0 && secs === 0 && minutes % 5 === 0) {
-      setAnnouncement(`${minutes} minutes remaining`);
-    } else if (minutes === 1 && secs === 0) {
-      setAnnouncement("1 minute remaining");
-    } else if (minutes === 0 && secs <= 10 && secs > 0) {
-      setAnnouncement(`${secs} seconds remaining`);
-    } else if (remainingSeconds === 0) {
-      setAnnouncement(`${activeSession.sessionType === "focus" ? "Focus session" : "Break"} completed`);
-    }
+    // Use queueMicrotask to avoid cascading renders
+    queueMicrotask(() => {
+      if (minutes > 0 && secs === 0 && minutes % 5 === 0) {
+        setAnnouncement(`${minutes} minutes remaining`);
+      } else if (minutes === 1 && secs === 0) {
+        setAnnouncement("1 minute remaining");
+      } else if (minutes === 0 && secs <= 10 && secs > 0) {
+        setAnnouncement(`${secs} seconds remaining`);
+      } else if (remainingSeconds === 0) {
+        setAnnouncement(
+          `${activeSession.sessionType === "focus" ? "Focus session" : "Break"} completed`
+        );
+      }
+    });
   }, [remainingSeconds, activeSession, isRunning]);
 
   // Announce session state changes
+  // This effect synchronizes screen reader announcements with session state
   useEffect(() => {
-    if (activeSession && isRunning) {
-      setAnnouncement(
-        `${activeSession.sessionType === "focus" ? "Focus session" : "Break"} started`
-      );
-    } else if (activeSession && isPaused) {
-      setAnnouncement("Timer paused");
-    }
+    // Use queueMicrotask to avoid cascading renders
+    queueMicrotask(() => {
+      if (activeSession && isRunning) {
+        setAnnouncement(
+          `${activeSession.sessionType === "focus" ? "Focus session" : "Break"} started`
+        );
+      } else if (activeSession && isPaused) {
+        setAnnouncement("Timer paused");
+      }
+    });
   }, [activeSession, isRunning, isPaused]);
 
   // Handle opening mini-timer
   const handleOpenMiniTimer = useCallback(() => {
-    invoke("open_mini_timer").catch((error) => {
+    invoke("open_mini_timer").catch((error: unknown) => {
       console.error("Failed to open mini-timer:", error);
     });
   }, []);
@@ -278,12 +291,7 @@ export function FocusTimer() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Live region for screen reader announcements */}
-        <div
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-        >
+        <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
           {announcement}
         </div>
 
@@ -365,13 +373,17 @@ export function FocusTimer() {
                     <DialogTitle>Start a Focus Session</DialogTitle>
                     {!hasUnlimitedSessions && (
                       <DialogDescription id="dialog-description">
-                        {remainingDailySessions} session{remainingDailySessions !== 1 ? "s" : ""} remaining today
+                        {remainingDailySessions} session{remainingDailySessions !== 1 ? "s" : ""}{" "}
+                        remaining today
                       </DialogDescription>
                     )}
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     {/* Session Type */}
-                    <Tabs value={sessionType} onValueChange={(v) => setSessionType(v as SessionType)}>
+                    <Tabs
+                      value={sessionType}
+                      onValueChange={(v) => setSessionType(v as SessionType)}
+                    >
                       <TabsList className="w-full" aria-label="Session type">
                         <TabsTrigger value="focus" className="flex-1" aria-label="Focus session">
                           Focus
@@ -435,7 +447,8 @@ export function FocusTimer() {
                       Daily Limit Reached
                     </DialogTitle>
                     <DialogDescription id="upgrade-description">
-                      You&apos;ve used all 3 free sessions for today. Upgrade to Pro for unlimited sessions.
+                      You&apos;ve used all 3 free sessions for today. Upgrade to Pro for unlimited
+                      sessions.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
@@ -454,9 +467,7 @@ export function FocusTimer() {
                     <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
                       Maybe Later
                     </Button>
-                    <Button onClick={() => setShowUpgradeDialog(false)}>
-                      Upgrade to Pro
-                    </Button>
+                    <Button onClick={() => setShowUpgradeDialog(false)}>Upgrade to Pro</Button>
                     {/* Dev mode: simulate upgrade */}
                     <Button
                       variant="secondary"
@@ -496,7 +507,7 @@ export function FocusTimer() {
             aria-live="polite"
             onDoubleClick={() => {
               useAuthStore.getState().resetDailySessionCount();
-              console.log('[Dev] Daily session count reset');
+              console.log("[Dev] Daily session count reset");
             }}
             title="Double-click to reset (dev)"
           >

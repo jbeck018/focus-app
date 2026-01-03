@@ -73,11 +73,7 @@ export function StepWrapper({
               {previousLabel}
             </Button>
 
-            <Button
-              onClick={onNext}
-              disabled={!canGoNext || isNextDisabled}
-              className="gap-2"
-            >
+            <Button onClick={onNext} disabled={!canGoNext || isNextDisabled} className="gap-2">
               {nextLabel}
               <ChevronRight className="h-4 w-4" />
             </Button>

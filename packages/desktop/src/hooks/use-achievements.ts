@@ -2,11 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type {
-  AchievementWithStatus,
-  UserAchievement,
-  Achievement,
-} from "@focusflow/types";
+import type { AchievementWithStatus, UserAchievement, Achievement } from "@focusflow/types";
 import { toast } from "sonner";
 
 // Achievement statistics response
@@ -36,9 +32,7 @@ export function useAchievements() {
   return useQuery({
     queryKey: achievementQueryKeys.all,
     queryFn: async () => {
-      const achievements = await invoke<AchievementWithStatus[]>(
-        "get_achievements"
-      );
+      const achievements = await invoke<AchievementWithStatus[]>("get_achievements");
       return achievements;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -52,9 +46,7 @@ export function useAchievementStats() {
   return useQuery({
     queryKey: achievementQueryKeys.stats,
     queryFn: async () => {
-      const stats = await invoke<AchievementStatsResponse>(
-        "get_achievement_stats"
-      );
+      const stats = await invoke<AchievementStatsResponse>("get_achievement_stats");
       return stats;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -68,10 +60,7 @@ export function useRecentAchievements(limit?: number) {
   return useQuery({
     queryKey: achievementQueryKeys.recent(limit),
     queryFn: async () => {
-      const achievements = await invoke<UserAchievement[]>(
-        "get_recent_achievements",
-        { limit }
-      );
+      const achievements = await invoke<UserAchievement[]>("get_recent_achievements", { limit });
       return achievements;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -131,9 +120,7 @@ export function useAchievementsByCategory(category?: string) {
 export function useUnlockedAchievements() {
   const { data: achievements, ...rest } = useAchievements();
 
-  const unlockedAchievements = achievements?.filter(
-    (achievement) => achievement.unlocked
-  );
+  const unlockedAchievements = achievements?.filter((achievement) => achievement.unlocked);
 
   return {
     data: unlockedAchievements,
@@ -147,9 +134,7 @@ export function useUnlockedAchievements() {
 export function useLockedAchievements() {
   const { data: achievements, ...rest } = useAchievements();
 
-  const lockedAchievements = achievements?.filter(
-    (achievement) => !achievement.unlocked
-  );
+  const lockedAchievements = achievements?.filter((achievement) => !achievement.unlocked);
 
   return {
     data: lockedAchievements,
@@ -173,4 +158,3 @@ export function useNextAchievements(limit = 3) {
     ...rest,
   };
 }
-

@@ -5,11 +5,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Send, StopCircle, Loader2 } from "lucide-react";
 
 interface ChatInputProps {
@@ -103,13 +99,7 @@ function ChatInput({
   const canSend = !disabled && !isLoading && value.trim().length > 0;
 
   return (
-    <div
-      className={cn(
-        "relative flex items-end gap-2 p-2",
-        "bg-background border-t",
-        className
-      )}
-    >
+    <div className={cn("relative flex items-end gap-2 p-2", "bg-background border-t", className)}>
       <div className="relative flex-1">
         <Textarea
           ref={inputRef}
@@ -138,11 +128,7 @@ function ChatInput({
             value.length > 0 ? "opacity-0" : "opacity-100"
           )}
         >
-          {multiline && (
-            <kbd className="font-sans">
-              Shift + Enter for new line
-            </kbd>
-          )}
+          {multiline && <kbd className="font-sans">Shift + Enter for new line</kbd>}
         </div>
       </div>
 
@@ -172,9 +158,7 @@ function ChatInput({
                 disabled={!canSend}
                 className={cn(
                   "size-10 rounded-xl transition-all duration-200",
-                  canSend
-                    ? "bg-primary hover:bg-primary/90"
-                    : "bg-muted text-muted-foreground"
+                  canSend ? "bg-primary hover:bg-primary/90" : "bg-muted text-muted-foreground"
                 )}
                 aria-label="Send message"
               >
@@ -252,11 +236,7 @@ function ChatInputSimple({
         className="size-10 rounded-lg"
         aria-label="Send message"
       >
-        {isLoading ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <Send className="size-4" />
-        )}
+        {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
       </Button>
     </div>
   );

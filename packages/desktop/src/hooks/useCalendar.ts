@@ -106,7 +106,7 @@ export function useDisconnectCalendar() {
 
   return useMutation({
     mutationFn: async (provider: CalendarProvider) => {
-      return invoke<void>("disconnect_calendar", { provider });
+      return invoke("disconnect_calendar", { provider });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: calendarQueryKeys.connections });

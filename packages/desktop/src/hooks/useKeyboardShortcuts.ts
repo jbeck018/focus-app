@@ -22,7 +22,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutConfig[]) {
     const handleKeyDown = (event: KeyboardEvent) => {
       for (const shortcut of shortcuts) {
         const modifierMatch =
-          (!shortcut.ctrlOrCmd || (event.ctrlKey || event.metaKey)) &&
+          (!shortcut.ctrlOrCmd || event.ctrlKey || event.metaKey) &&
           (!shortcut.shift || event.shiftKey) &&
           (!shortcut.alt || event.altKey);
 
@@ -54,7 +54,7 @@ export function useMiniTimerShortcut() {
       ctrlOrCmd: true,
       shift: true,
       callback: () => {
-        invoke("toggle_mini_timer").catch((error) => {
+        invoke("toggle_mini_timer").catch((error: unknown) => {
           console.error("Failed to toggle mini-timer:", error);
         });
       },

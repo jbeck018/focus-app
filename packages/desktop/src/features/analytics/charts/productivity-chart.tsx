@@ -90,7 +90,12 @@ export function ProductivityChart({
               tick={{ fontSize: 12 }}
               tickLine={{ stroke: "hsl(var(--muted-foreground))" }}
               className="text-muted-foreground"
-              label={{ value: "Score", angle: -90, position: "insideLeft", style: { fontSize: 12 } }}
+              label={{
+                value: "Score",
+                angle: -90,
+                position: "insideLeft",
+                style: { fontSize: 12 },
+              }}
             />
             <Tooltip
               content={<CustomTooltip />}
@@ -147,7 +152,7 @@ export function ProductivityChart({
 
 // Custom tooltip component
 function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload || !payload.length) {
+  if (!active || !payload?.length) {
     return null;
   }
 

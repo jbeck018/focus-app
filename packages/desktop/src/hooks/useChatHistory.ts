@@ -85,7 +85,7 @@ export function useDeleteConversation() {
 
   return useMutation({
     mutationFn: async (conversationId: string) => {
-      return invoke<void>("delete_conversation", { conversationId });
+      return invoke("delete_conversation", { conversationId });
     },
     onSuccess: (_data, conversationId) => {
       // Remove from cache
@@ -108,13 +108,7 @@ export function useUpdateConversationTitle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      conversationId,
-      title,
-    }: {
-      conversationId: string;
-      title: string;
-    }) => {
+    mutationFn: async ({ conversationId, title }: { conversationId: string; title: string }) => {
       return invoke<Conversation>("update_conversation_title", {
         conversationId,
         title,
@@ -162,10 +156,7 @@ export function useAddMessageToConversation() {
     },
     onSuccess: (data) => {
       // Update the conversation in cache
-      queryClient.setQueryData(
-        chatHistoryQueryKeys.conversation(data.id),
-        data
-      );
+      queryClient.setQueryData(chatHistoryQueryKeys.conversation(data.id), data);
 
       // Invalidate conversation list to update metadata
       queryClient.invalidateQueries({

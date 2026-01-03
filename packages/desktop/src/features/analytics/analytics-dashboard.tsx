@@ -26,16 +26,7 @@ import {
   DistractionsChart,
   CalendarHeatmap,
 } from "./charts";
-import {
-  Calendar,
-  Download,
-  TrendingUp,
-  Clock,
-  Target,
-  Flame,
-  Zap,
-  Loader2,
-} from "lucide-react";
+import { Calendar, Download, TrendingUp, Clock, Target, Flame, Zap, Loader2 } from "lucide-react";
 import { exportToCSV, exportToPNG } from "./export-utils";
 import { toast } from "sonner";
 
@@ -104,9 +95,7 @@ export function AnalyticsDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Analytics Dashboard</h2>
-          <p className="text-muted-foreground">
-            Deep insights into your productivity patterns
-          </p>
+          <p className="text-muted-foreground">Deep insights into your productivity patterns</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -149,7 +138,12 @@ export function AnalyticsDashboard() {
           {/* Export Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2" disabled={isExporting || isLoading}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={isExporting || isLoading}
+              >
                 {isExporting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -223,11 +217,7 @@ export function AnalyticsDashboard() {
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <FocusTrendChart
-                data={analytics.focusTrend}
-                variant="area"
-                showSessions={true}
-              />
+              <FocusTrendChart data={analytics.focusTrend} variant="area" showSessions={true} />
               <SessionCompletionChart data={analytics.sessionCompletion} />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -237,11 +227,7 @@ export function AnalyticsDashboard() {
           </TabsContent>
 
           <TabsContent value="trends" className="space-y-4">
-            <FocusTrendChart
-              data={analytics.focusTrend}
-              variant="line"
-              showSessions={true}
-            />
+            <FocusTrendChart data={analytics.focusTrend} variant="line" showSessions={true} />
             <div className="grid gap-4 md:grid-cols-2">
               <SessionCompletionChart data={analytics.sessionCompletion} />
               <ProductivityChart data={analytics.productivityScores} />
@@ -251,12 +237,10 @@ export function AnalyticsDashboard() {
           <TabsContent value="patterns" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <TimeOfDayChart data={analytics.timeOfDay} />
-              <DistractionsChart
-                data={analytics.topDistractions}
-                maxItems={10}
-              />
+              <DistractionsChart data={analytics.topDistractions} maxItems={10} />
             </div>
-            {analytics.summary.mostProductiveHour !== null && (
+            {analytics.summary.mostProductiveHour !== undefined &&
+             analytics.summary.mostProductiveHour !== null && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Insights</CardTitle>
@@ -284,10 +268,7 @@ export function AnalyticsDashboard() {
           </TabsContent>
 
           <TabsContent value="calendar" className="space-y-4">
-            <CalendarHeatmap
-              data={analytics.calendarHeatmap}
-              year={new Date().getFullYear()}
-            />
+            <CalendarHeatmap data={analytics.calendarHeatmap} year={new Date().getFullYear()} />
           </TabsContent>
         </Tabs>
       )}

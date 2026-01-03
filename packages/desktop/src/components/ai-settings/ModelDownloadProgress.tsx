@@ -92,11 +92,19 @@ export function ModelDownloadProgress({
 }: ModelDownloadProgressProps) {
   const [startTime] = React.useState(() => Date.now());
   const [eta, setEta] = React.useState<string>("Calculating...");
+  const [currentSpeed, setCurrentSpeed] = React.useState<string>("0.0");
 
-  // Update ETA every second
+  // Update ETA and speed every second
   React.useEffect(() => {
     if (progress && isDownloading) {
       const interval = setInterval(() => {
+        const now = Date.now();
+        const elapsedSeconds = (now - startTime) / 1000;
+        const speed =
+          progress.downloadedMb > 0 && elapsedSeconds > 0
+            ? (progress.downloadedMb / elapsedSeconds).toFixed(1)
+            : "0.0";
+        setCurrentSpeed(speed);
         setEta(calculateETA(progress.downloadedMb, progress.totalMb, startTime));
       }, 1000);
 
@@ -113,13 +121,7 @@ export function ModelDownloadProgress({
         <AlertDescription className="space-y-2">
           <p className="text-sm">{error}</p>
           {onRetry && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onRetry}
-              className="mt-2"
-            >
+            <Button type="button" variant="outline" size="sm" onClick={onRetry} className="mt-2">
               Retry Download
             </Button>
           )}
@@ -195,12 +197,7 @@ export function ModelDownloadProgress({
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground justify-end">
               <HardDrive className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              <span className="truncate">
-                {progress.downloadedMb > 0 && Date.now() - startTime > 0
-                  ? ((progress.downloadedMb / ((Date.now() - startTime) / 1000))).toFixed(1)
-                  : "0.0"}{" "}
-                MB/s
-              </span>
+              <span className="truncate">{currentSpeed} MB/s</span>
             </div>
           </div>
         </CardContent>
@@ -236,12 +233,8 @@ export function ModelDownloadProgressInline({
       <Download className="h-4 w-4 text-primary animate-pulse shrink-0" aria-hidden="true" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium truncate">
-            Downloading {progress.modelName}
-          </span>
-          <span className="text-xs text-muted-foreground shrink-0">
-            {percentComplete}%
-          </span>
+          <span className="text-sm font-medium truncate">Downloading {progress.modelName}</span>
+          <span className="text-xs text-muted-foreground shrink-0">{percentComplete}%</span>
         </div>
         <Progress
           value={progress.percent}

@@ -74,15 +74,11 @@ export function Example3_StreakWidget() {
     <div className="rounded-lg border bg-card p-4">
       <div className="text-sm text-muted-foreground">Current Streak</div>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-3xl font-bold">
-          {currentStreak?.currentCount || 0}
-        </span>
+        <span className="text-3xl font-bold">{currentStreak?.currentCount || 0}</span>
         <span className="text-muted-foreground">days</span>
       </div>
       {currentStreak?.isInGracePeriod && (
-        <div className="mt-2 text-xs text-orange-500">
-          Grace period active
-        </div>
+        <div className="mt-2 text-xs text-orange-500">Grace period active</div>
       )}
     </div>
   );
@@ -94,12 +90,8 @@ export function Example3_StreakWidget() {
  * Display notifications for streak status
  */
 export function Example4_StreakNotifications() {
-  const {
-    shouldNotifyGracePeriod,
-    shouldNotifyRiskBroken,
-    gracePeriodEndsAt,
-    currentCount,
-  } = useStreakNotifications();
+  const { shouldNotifyGracePeriod, shouldNotifyRiskBroken, gracePeriodEndsAt, currentCount } =
+    useStreakNotifications();
 
   if (shouldNotifyGracePeriod) {
     return (
@@ -107,9 +99,8 @@ export function Example4_StreakNotifications() {
         <div className="font-medium">Grace Period Active</div>
         <p className="text-sm text-muted-foreground">
           Complete a session before{" "}
-          {gracePeriodEndsAt &&
-            new Date(gracePeriodEndsAt).toLocaleTimeString()}{" "}
-          to maintain your streak
+          {gracePeriodEndsAt && new Date(gracePeriodEndsAt).toLocaleTimeString()} to maintain your
+          streak
         </p>
       </div>
     );
@@ -120,8 +111,7 @@ export function Example4_StreakNotifications() {
       <div className="rounded-lg border border-red-500 bg-red-500/10 p-4">
         <div className="font-medium">Streak at Risk!</div>
         <p className="text-sm text-muted-foreground">
-          Your {currentCount}-day streak will break if you don't complete a
-          session today
+          Your {currentCount}-day streak will break if you don't complete a session today
         </p>
       </div>
     );
@@ -144,10 +134,7 @@ export function Example5_MilestoneHandler() {
 
     // Find milestone achieved in the last 5 seconds
     const justAchieved = milestones.find(
-      (m) =>
-        m.isAchieved &&
-        m.achievedAt &&
-        Date.now() - new Date(m.achievedAt).getTime() < 5000
+      (m) => m.isAchieved && m.achievedAt && Date.now() - new Date(m.achievedAt).getTime() < 5000
     );
 
     if (justAchieved && !celebrating) {
@@ -158,10 +145,7 @@ export function Example5_MilestoneHandler() {
   return (
     <>
       {celebrating && (
-        <MilestoneCelebration
-          milestone={celebrating}
-          onDismiss={() => setCelebrating(null)}
-        />
+        <MilestoneCelebration milestone={celebrating} onDismiss={() => setCelebrating(null)} />
       )}
     </>
   );
@@ -181,15 +165,12 @@ export function Example6_CustomLayout() {
       <div className="rounded-lg border bg-card p-6">
         <h3 className="text-lg font-semibold">Your Streak</h3>
         <div className="mt-4 flex items-baseline gap-2">
-          <span className="text-5xl font-bold">
-            {currentStreak?.currentCount || 0}
-          </span>
+          <span className="text-5xl font-bold">{currentStreak?.currentCount || 0}</span>
           <span className="text-xl text-muted-foreground">days</span>
         </div>
         {freezes && freezes.totalAvailable > 0 && (
           <div className="mt-4 text-sm text-muted-foreground">
-            {freezes.totalAvailable} freeze{freezes.totalAvailable !== 1 ? "s" : ""}{" "}
-            available
+            {freezes.totalAvailable} freeze{freezes.totalAvailable !== 1 ? "s" : ""} available
           </div>
         )}
       </div>
@@ -201,9 +182,7 @@ export function Example6_CustomLayout() {
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
               <div className="text-sm text-muted-foreground">Sessions</div>
-              <div className="text-2xl font-bold">
-                {weekStats.totalSessions}
-              </div>
+              <div className="text-2xl font-bold">{weekStats.totalSessions}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Focus Time</div>
@@ -263,8 +242,7 @@ export function Example7_FocusTimerIntegration() {
     <div className="rounded-lg border bg-card p-6">
       <div className="text-center">
         <div className="text-4xl font-bold">
-          {Math.floor(timeLeft / 60)}:
-          {(timeLeft % 60).toString().padStart(2, "0")}
+          {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
         </div>
         <button
           onClick={() => setIsRunning(!isRunning)}
@@ -290,9 +268,7 @@ export function Example8_ManualRefresh() {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm text-muted-foreground">Current Streak</div>
-          <div className="text-2xl font-bold">
-            {currentStreak?.currentCount || 0} days
-          </div>
+          <div className="text-2xl font-bold">{currentStreak?.currentCount || 0} days</div>
         </div>
         <button
           onClick={() => refetch()}

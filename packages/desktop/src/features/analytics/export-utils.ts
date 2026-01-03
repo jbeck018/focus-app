@@ -41,19 +41,36 @@ function focusTrendToCSV(data: readonly FocusTrendDataPoint[]): string {
 
 function sessionCompletionToCSV(data: readonly SessionCompletionData[]): string {
   const headers = ["Date", "Completed", "Abandoned", "Total", "Completion Rate (%)"];
-  const rows = data.map((point) => [point.date, point.completed, point.abandoned, point.total, point.rate]);
+  const rows = data.map((point) => [
+    point.date,
+    point.completed,
+    point.abandoned,
+    point.total,
+    point.rate,
+  ]);
   return arrayToCSV(headers, rows);
 }
 
 function productivityScoresToCSV(data: readonly ProductivityScorePoint[]): string {
   const headers = ["Date", "Productivity Score", "Focus Minutes", "Distractions Blocked"];
-  const rows = data.map((point) => [point.date, point.score, point.focusMinutes, point.distractionsBlocked]);
+  const rows = data.map((point) => [
+    point.date,
+    point.score,
+    point.focusMinutes,
+    point.distractionsBlocked,
+  ]);
   return arrayToCSV(headers, rows);
 }
 
 function timeOfDayToCSV(data: readonly TimeOfDayDistribution[]): string {
   const headers = ["Hour", "Time", "Focus Minutes", "Sessions", "Percentage"];
-  const rows = data.map((point) => [point.hour, point.label, point.focusMinutes, point.sessions, point.percentage]);
+  const rows = data.map((point) => [
+    point.hour,
+    point.label,
+    point.focusMinutes,
+    point.sessions,
+    point.percentage,
+  ]);
   return arrayToCSV(headers, rows);
 }
 
@@ -72,7 +89,9 @@ function summaryToCSV(analytics: AnalyticsDashboardData): string {
     ["Most Productive Day", analytics.summary.mostProductiveDay || "N/A"],
     [
       "Most Productive Hour",
-      analytics.summary.mostProductiveHour !== null ? formatHour(analytics.summary.mostProductiveHour) : "N/A",
+      analytics.summary.mostProductiveHour !== null
+        ? formatHour(analytics.summary.mostProductiveHour)
+        : "N/A",
     ],
     ["Total Distractions Blocked", analytics.summary.totalDistractionsBlocked],
   ];
@@ -117,7 +136,9 @@ export async function exportToCSV(analytics: AnalyticsDashboardData): Promise<vo
     }
   } catch (error) {
     console.error("Failed to export CSV:", error);
-    throw new Error(`Failed to export CSV: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to export CSV: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -147,7 +168,9 @@ async function captureChartAsPNG(elementId: string): Promise<Blob | null> {
 
 async function captureDashboardAsPNG(): Promise<Blob | null> {
   // Find the main dashboard container
-  const dashboard = document.querySelector('[data-export-container="analytics-dashboard"]') as HTMLElement;
+  const dashboard = document.querySelector(
+    '[data-export-container="analytics-dashboard"]'
+  ) as HTMLElement;
   if (!dashboard) {
     console.error("Dashboard container not found");
     return null;
@@ -199,7 +222,9 @@ export async function exportToPNG(analytics: AnalyticsDashboardData): Promise<vo
     }
   } catch (error) {
     console.error("Failed to export PNG:", error);
-    throw new Error(`Failed to export PNG: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to export PNG: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -232,6 +257,8 @@ export async function exportChartToPNG(chartId: string, fileName: string): Promi
     }
   } catch (error) {
     console.error("Failed to export chart PNG:", error);
-    throw new Error(`Failed to export chart PNG: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to export chart PNG: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }

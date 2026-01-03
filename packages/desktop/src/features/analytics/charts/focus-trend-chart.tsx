@@ -42,7 +42,10 @@ export function FocusTrendChart({
   );
 
   const totalMinutes = useMemo(() => data.reduce((sum, d) => sum + d.focusMinutes, 0), [data]);
-  const averageMinutes = useMemo(() => (data.length > 0 ? Math.round(totalMinutes / data.length) : 0), [data, totalMinutes]);
+  const averageMinutes = useMemo(
+    () => (data.length > 0 ? Math.round(totalMinutes / data.length) : 0),
+    [data, totalMinutes]
+  );
 
   const handleClick = (dataPoint: any) => {
     if (onDataPointClick && dataPoint) {
@@ -79,7 +82,12 @@ export function FocusTrendChart({
               tick={{ fontSize: 12 }}
               tickLine={{ stroke: "hsl(var(--muted-foreground))" }}
               className="text-muted-foreground"
-              label={{ value: "Minutes", angle: -90, position: "insideLeft", style: { fontSize: 12 } }}
+              label={{
+                value: "Minutes",
+                angle: -90,
+                position: "insideLeft",
+                style: { fontSize: 12 },
+              }}
             />
             <Tooltip
               content={<CustomTooltip />}
@@ -90,10 +98,7 @@ export function FocusTrendChart({
                 fontSize: "12px",
               }}
             />
-            <Legend
-              wrapperStyle={{ fontSize: "12px" }}
-              iconType="line"
-            />
+            <Legend wrapperStyle={{ fontSize: "12px" }} iconType="line" />
             <DataComponent
               type="monotone"
               dataKey="focusMinutes"
@@ -133,7 +138,7 @@ export function FocusTrendChart({
 
 // Custom tooltip component
 function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload || !payload.length) {
+  if (!active || !payload?.length) {
     return null;
   }
 
@@ -142,10 +147,7 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="mb-2 font-semibold">{label}</p>
       {payload.map((entry: any, index: number) => (
         <div key={index} className="flex items-center gap-2">
-          <div
-            className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
+          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-xs">
             {entry.name}: <span className="font-medium">{entry.value}</span>
           </span>

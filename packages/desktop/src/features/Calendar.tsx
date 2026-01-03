@@ -64,8 +64,13 @@ export function Calendar() {
 }
 
 function ScheduleView() {
-  const today = new Date().toISOString().split("T")[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  // Calculate today and tomorrow dates in a stable way (memoized to avoid recalculation on every render)
+  const { today, tomorrow } = React.useMemo(() => {
+    const now = new Date();
+    const todayDate = now.toISOString().split("T")[0];
+    const tomorrowDate = new Date(now.getTime() + 86400000).toISOString().split("T")[0];
+    return { today: todayDate, tomorrow: tomorrowDate };
+  }, []);
 
   const { data: events, isLoading } = useCalendarEvents(today, tomorrow);
   const { data: suggestions } = useFocusSuggestions();
@@ -82,7 +87,11 @@ function ScheduleView() {
           <p className="text-sm text-muted-foreground mt-1">
             Connect your calendar to see your schedule and find focus time
           </p>
-          <Button variant="outline" className="mt-4" onClick={() => window.location.hash = "#connections"}>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => (window.location.hash = "#connections")}
+          >
             Connect Calendar
           </Button>
         </CardContent>
@@ -231,12 +240,8 @@ function InsightsView() {
           <CardTitle className="text-sm font-medium">Longest Free Block</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold">
-            {meetingLoad?.longest_free_block_minutes} min
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Great for deep work
-          </p>
+          <div className="text-3xl font-bold">{meetingLoad?.longest_free_block_minutes} min</div>
+          <p className="text-xs text-muted-foreground mt-1">Great for deep work</p>
         </CardContent>
       </Card>
 
@@ -368,9 +373,8 @@ function ConnectionsView() {
             <div>
               <p className="text-sm font-medium">Privacy First</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Calendar data is fetched on-demand and processed locally. We only store
-                connection tokens securely on your device. No calendar data is ever sent
-                to our servers.
+                Calendar data is fetched on-demand and processed locally. We only store connection
+                tokens securely on your device. No calendar data is ever sent to our servers.
               </p>
             </div>
           </div>

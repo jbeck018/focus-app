@@ -75,18 +75,11 @@ function ChatSuggestions({
 
   return (
     <div
-      className={cn(
-        "animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
-        className
-      )}
+      className={cn("animate-in fade-in-0 slide-in-from-bottom-2 duration-300", className)}
       role="group"
       aria-label={title || "Suggested prompts"}
     >
-      {title && (
-        <p className="text-xs font-medium text-muted-foreground mb-2">
-          {title}
-        </p>
-      )}
+      {title && <p className="text-xs font-medium text-muted-foreground mb-2">{title}</p>}
 
       <div
         className={cn(
@@ -221,11 +214,5 @@ function FloatingSuggestions({
   );
 }
 
-export {
-  ChatSuggestions,
-  SuggestionChip,
-  FloatingSuggestions,
-  FOCUS_SUGGESTIONS,
-  QUICK_ACTIONS,
-};
+export { ChatSuggestions, SuggestionChip, FloatingSuggestions, FOCUS_SUGGESTIONS, QUICK_ACTIONS };
 export type { ChatSuggestionsProps, Suggestion };

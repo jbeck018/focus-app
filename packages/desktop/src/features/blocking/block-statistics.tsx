@@ -34,10 +34,10 @@ export function BlockStatistics() {
 
   // Calculate highest distraction hour
   const peakHour = Array.isArray(stats.attemptsByHour)
-    ? stats.attemptsByHour.reduce(
-        (max, hour) => (hour.count > max.count ? hour : max),
-        { hour: 0, count: 0 }
-      )
+    ? stats.attemptsByHour.reduce((max, hour) => (hour.count > max.count ? hour : max), {
+        hour: 0,
+        count: 0,
+      })
     : { hour: 0, count: 0 };
 
   return (
@@ -60,9 +60,7 @@ export function BlockStatistics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalAttempts.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              All-time blocked attempts
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">All-time blocked attempts</p>
           </CardContent>
         </Card>
 
@@ -75,9 +73,7 @@ export function BlockStatistics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.attemptsThisWeek.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Last 7 days
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Last 7 days</p>
           </CardContent>
         </Card>
 
@@ -90,9 +86,7 @@ export function BlockStatistics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.attemptsToday.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Distractions blocked today
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Distractions blocked today</p>
           </CardContent>
         </Card>
       </div>
@@ -105,9 +99,7 @@ export function BlockStatistics() {
         </CardHeader>
         <CardContent>
           {!Array.isArray(stats.topBlockedItems) || stats.topBlockedItems.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              No blocked attempts yet this week
-            </div>
+            <div className="text-sm text-muted-foreground">No blocked attempts yet this week</div>
           ) : (
             <div className="space-y-3">
               {stats.topBlockedItems.slice(0, 10).map((item, index) => {
@@ -153,9 +145,7 @@ export function BlockStatistics() {
         </CardHeader>
         <CardContent>
           {stats.attemptsThisWeek === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              No attempts this week to analyze
-            </div>
+            <div className="text-sm text-muted-foreground">No attempts this week to analyze</div>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={hourlyData}>
@@ -175,11 +165,7 @@ export function BlockStatistics() {
                   }}
                   labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                 />
-                <Bar
-                  dataKey="attempts"
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                />
+                <Bar dataKey="attempts" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -196,19 +182,23 @@ export function BlockStatistics() {
             <div className="text-sm">
               {stats.attemptsToday > stats.attemptsThisWeek / 7 && (
                 <p className="text-amber-600 dark:text-amber-400">
-                  Today has higher than average distraction attempts. Consider enabling strict
-                  mode or the nuclear option for better focus.
+                  Today has higher than average distraction attempts. Consider enabling strict mode
+                  or the nuclear option for better focus.
                 </p>
               )}
               {Array.isArray(stats.topBlockedItems) && stats.topBlockedItems.length > 0 && (
                 <p className="text-muted-foreground">
-                  Your top distraction is <span className="font-medium text-foreground">{stats.topBlockedItems[0].itemValue}</span> with{" "}
-                  {stats.topBlockedItems[0].count} attempts this week.
+                  Your top distraction is{" "}
+                  <span className="font-medium text-foreground">
+                    {stats.topBlockedItems[0].itemValue}
+                  </span>{" "}
+                  with {stats.topBlockedItems[0].count} attempts this week.
                 </p>
               )}
               {peakHour.count > 0 && (
                 <p className="text-muted-foreground mt-2">
-                  You're most distracted around <span className="font-medium text-foreground">{peakHour.hour}:00</span>. Consider
+                  You're most distracted around{" "}
+                  <span className="font-medium text-foreground">{peakHour.hour}:00</span>. Consider
                   scheduling focused work during other hours.
                 </p>
               )}

@@ -70,11 +70,7 @@ export function MiniTimerControls({ isRunning, isPaused }: MiniTimerControlsProp
   return (
     <div className="flex flex-col items-center gap-1">
       {/* Error indicator */}
-      {error && (
-        <div className="text-xs text-red-400 animate-pulse mb-1">
-          {error}
-        </div>
-      )}
+      {error && <div className="text-xs text-red-400 animate-pulse mb-1">{error}</div>}
 
       <div className="flex items-center justify-center gap-2">
         {/* Pause/Resume button */}
@@ -92,37 +88,37 @@ export function MiniTimerControls({ isRunning, isPaused }: MiniTimerControlsProp
           aria-label={showPlayIcon ? "Resume timer" : "Pause timer"}
           title={showPlayIcon ? "Resume" : "Pause"}
         >
-        {showPlayIcon ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polygon points="5 3 19 12 5 21 5 3" />
-          </svg>
-        ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="6" y="4" width="4" height="16" />
-            <rect x="14" y="4" width="4" height="16" />
-          </svg>
-        )}
-      </button>
+          {showPlayIcon ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="6" y="4" width="4" height="16" />
+              <rect x="14" y="4" width="4" height="16" />
+            </svg>
+          )}
+        </button>
 
         {/* Stop button */}
         <button
@@ -139,20 +135,20 @@ export function MiniTimerControls({ isRunning, isPaused }: MiniTimerControlsProp
           aria-label="Stop session"
           title="Stop"
         >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          </svg>
+        </button>
 
         {/* Add 5 minutes button */}
         <button

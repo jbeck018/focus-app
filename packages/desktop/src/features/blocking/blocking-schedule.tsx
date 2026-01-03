@@ -5,7 +5,13 @@ import { Clock, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
@@ -65,16 +71,13 @@ export function BlockingSchedule() {
 
   // Group schedules by day
   const schedulesByDay = Array.isArray(schedules)
-    ? schedules.reduce(
-        (acc, schedule) => {
-          if (!acc[schedule.dayOfWeek]) {
-            acc[schedule.dayOfWeek] = [];
-          }
-          acc[schedule.dayOfWeek].push(schedule);
-          return acc;
-        },
-        {} as Record<number, typeof schedules>
-      )
+    ? schedules.reduce<Record<number, typeof schedules>>((acc, schedule) => {
+        if (!acc[schedule.dayOfWeek]) {
+          acc[schedule.dayOfWeek] = [];
+        }
+        acc[schedule.dayOfWeek].push(schedule);
+        return acc;
+      }, {})
     : {};
 
   return (
@@ -151,9 +154,7 @@ export function BlockingSchedule() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Active Schedules</CardTitle>
-          <CardDescription>
-            Manage your automatic blocking schedules
-          </CardDescription>
+          <CardDescription>Manage your automatic blocking schedules</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (

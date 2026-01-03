@@ -7,20 +7,11 @@ export type { AISettingsDialogProps } from "./AISettingsDialog";
 export { APIKeyInput } from "./APIKeyInput";
 export type { APIKeyInputProps } from "./APIKeyInput";
 
-export {
-  ModelDownloadProgress,
-  ModelDownloadProgressInline,
-} from "./ModelDownloadProgress";
+export { ModelDownloadProgress, ModelDownloadProgressInline } from "./ModelDownloadProgress";
 export type {
   ModelDownloadProgressProps,
   ModelDownloadProgressInlineProps,
 } from "./ModelDownloadProgress";
 
-export {
-  ProviderCard,
-  ProviderCardCompact,
-} from "./ProviderCard";
-export type {
-  ProviderCardProps,
-  ProviderCardCompactProps,
-} from "./ProviderCard";
+export { ProviderCard, ProviderCardCompact } from "./ProviderCard";
+export type { ProviderCardProps, ProviderCardCompactProps } from "./ProviderCard";

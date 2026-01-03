@@ -18,10 +18,7 @@ interface ChatContainerRef {
 }
 
 const ChatContainer = React.forwardRef<ChatContainerRef, ChatContainerProps>(
-  (
-    { className, children, autoScroll = true, scrollThreshold = 100, ...props },
-    ref
-  ) => {
+  ({ className, children, autoScroll = true, scrollThreshold = 100, ...props }, ref) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [isUserScrolling, setIsUserScrolling] = React.useState(false);
     const lastScrollTop = React.useRef(0);
@@ -34,17 +31,14 @@ const ChatContainer = React.forwardRef<ChatContainerRef, ChatContainerProps>(
       return scrollHeight - scrollTop - clientHeight < scrollThreshold;
     }, [scrollThreshold]);
 
-    const scrollToBottom = React.useCallback(
-      (behavior: ScrollBehavior = "smooth") => {
-        const container = containerRef.current;
-        if (!container) return;
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior,
-        });
-      },
-      []
-    );
+    const scrollToBottom = React.useCallback((behavior: ScrollBehavior) => {
+      const container = containerRef.current;
+      if (!container) return;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior,
+      });
+    }, []);
 
     // Expose methods via ref
     React.useImperativeHandle(
@@ -107,9 +101,7 @@ const ChatContainer = React.forwardRef<ChatContainerRef, ChatContainerProps>(
         {...props}
       >
         <div className="flex-1" />
-        <div className="flex flex-col gap-1 p-4">
-          {children}
-        </div>
+        <div className="flex flex-col gap-1 p-4">{children}</div>
       </div>
     );
   }
@@ -124,11 +116,7 @@ interface ScrollToBottomButtonProps {
   className?: string;
 }
 
-function ScrollToBottomButton({
-  onClick,
-  visible,
-  className,
-}: ScrollToBottomButtonProps) {
+function ScrollToBottomButton({ onClick, visible, className }: ScrollToBottomButtonProps) {
   if (!visible) return null;
 
   return (
@@ -146,18 +134,8 @@ function ScrollToBottomButton({
       )}
       aria-label="Scroll to latest messages"
     >
-      <svg
-        className="size-3"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M19 14l-7 7m0 0l-7-7m7 7V3"
-        />
+      <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
       </svg>
       New messages
     </button>
