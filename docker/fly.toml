@@ -38,4 +38,4 @@ primary_region = "dfw"
 
 [mounts]
   source = "trailbase_data"
-  destination = "/data"
+  destination = "/app/traildepot"
