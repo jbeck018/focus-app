@@ -46,9 +46,9 @@ export function DistractionsChart({
   };
 
   const handleClick = (clickData: MouseHandlerDataParam) => {
-    if (onDataPointClick && typeof clickData?.activeTooltipIndex === "number") {
+    if (onDataPointClick && typeof clickData.activeTooltipIndex === "number") {
       const clickedItem = chartData[clickData.activeTooltipIndex];
-      if (clickedItem?.fullName) {
+      if (clickedItem.fullName) {
         const original = data.find((d) => d.name === clickedItem.fullName);
         if (original) {
           onDataPointClick(original);

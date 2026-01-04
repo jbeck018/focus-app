@@ -43,14 +43,10 @@ export function ConversationListItem({
     onClick?.(conversation.id);
   }, [onClick, conversation.id]);
 
-  const handleDelete = React.useCallback(async () => {
+  const handleDelete = React.useCallback(() => {
     setIsDeleting(true);
     try {
-      // onDelete may or may not be async - handle both cases
-      const result = onDelete?.(conversation.id);
-      if (result && typeof result === "object" && "then" in result) {
-        await result;
-      }
+      onDelete?.(conversation.id);
       setShowDeleteDialog(false);
     } finally {
       setIsDeleting(false);

@@ -41,9 +41,9 @@ export function SessionCompletionChart({ data, onDataPointClick }: SessionComple
   }, [data]);
 
   const handleClick = (clickData: MouseHandlerDataParam) => {
-    if (onDataPointClick && typeof clickData?.activeTooltipIndex === "number") {
+    if (onDataPointClick && typeof clickData.activeTooltipIndex === "number") {
       const clickedItem = chartData[clickData.activeTooltipIndex];
-      if (clickedItem?.date) {
+      if (clickedItem.date) {
         const original = data.find((d) => formatDate(d.date) === clickedItem.date);
         if (original) {
           onDataPointClick(original);

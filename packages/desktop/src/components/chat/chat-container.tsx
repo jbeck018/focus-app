@@ -31,12 +31,12 @@ const ChatContainer = React.forwardRef<ChatContainerRef, ChatContainerProps>(
       return scrollHeight - scrollTop - clientHeight < scrollThreshold;
     }, [scrollThreshold]);
 
-    const scrollToBottom = React.useCallback((behavior: ScrollBehavior = "smooth") => {
+    const scrollToBottom = React.useCallback((behavior?: ScrollBehavior) => {
       const container = containerRef.current;
       if (!container) return;
       container.scrollTo({
         top: container.scrollHeight,
-        behavior,
+        behavior: behavior ?? "smooth",
       });
     }, []);
 
