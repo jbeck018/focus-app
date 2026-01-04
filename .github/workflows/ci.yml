@@ -215,6 +215,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build workspace dependencies
+        run: pnpm turbo build --filter=@focusflow/types --filter=@focusflow/shared
+
       - name: Build Tauri (check only)
         run: pnpm --filter @focusflow/desktop tauri build --debug --ci
 
