@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  type MouseHandlerDataParam,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,11 +45,14 @@ export function DistractionsChart({
     return type === "app" ? "hsl(var(--chart-1))" : "hsl(var(--chart-2))";
   };
 
-  const handleClick = (dataPoint: { fullName?: string } | null) => {
-    if (onDataPointClick && dataPoint?.fullName) {
-      const original = data.find((d) => d.name === dataPoint.fullName);
-      if (original) {
-        onDataPointClick(original);
+  const handleClick = (clickData: MouseHandlerDataParam) => {
+    if (onDataPointClick && typeof clickData?.activeTooltipIndex === "number") {
+      const clickedItem = chartData[clickData.activeTooltipIndex];
+      if (clickedItem?.fullName) {
+        const original = data.find((d) => d.name === clickedItem.fullName);
+        if (original) {
+          onDataPointClick(original);
+        }
       }
     }
   };

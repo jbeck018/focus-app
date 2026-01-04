@@ -716,8 +716,6 @@ mod tests {
 
     #[test]
     fn test_system_prompts_integration() {
-        use crate::ai::system_prompts::{CORE_IDENTITY, FRAMEWORK_KNOWLEDGE, RESPONSE_GUIDELINES};
-
         let orchestrator = GuidelineOrchestrator::new();
         let ctx = mock_context();
 
@@ -737,21 +735,19 @@ mod tests {
 
     #[test]
     fn test_tool_instructions_inclusion() {
-        use crate::ai::system_prompts::TOOL_USAGE_INSTRUCTIONS;
-
         let orchestrator = GuidelineOrchestrator::new();
         let ctx = mock_context();
 
         // With tools enabled (default)
         let prompt_with_tools = orchestrator.build_dynamic_prompt("Help me focus", &ctx, &[]);
-        assert!(prompt_with_tools.contains("[[start_focus_session]]"),
+        assert!(prompt_with_tools.contains("<tool name=\"start_focus_session\""),
                 "Should include tool instructions by default");
 
         // With tools disabled
         let prompt_without_tools = orchestrator.build_dynamic_prompt_with_options(
             "Help me focus", &ctx, &[], false
         );
-        assert!(!prompt_without_tools.contains("[[start_focus_session]]"),
+        assert!(!prompt_without_tools.contains("<tool name=\"start_focus_session\""),
                 "Should not include tool instructions when disabled");
     }
 }

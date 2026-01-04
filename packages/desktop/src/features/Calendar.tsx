@@ -1,6 +1,6 @@
 // features/Calendar.tsx - Calendar integration and schedule view
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { open } from "@tauri-apps/plugin-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +65,7 @@ export function Calendar() {
 
 function ScheduleView() {
   // Calculate today and tomorrow dates in a stable way (memoized to avoid recalculation on every render)
-  const { today, tomorrow } = React.useMemo(() => {
+  const { today, tomorrow } = useMemo(() => {
     const now = new Date();
     const todayDate = now.toISOString().split("T")[0];
     const tomorrowDate = new Date(now.getTime() + 86400000).toISOString().split("T")[0];

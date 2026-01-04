@@ -1,6 +1,5 @@
 // features/AICoach.tsx - AI Coach chat interface with modern chat components
 
-import * as React from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

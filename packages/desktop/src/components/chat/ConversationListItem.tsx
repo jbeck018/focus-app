@@ -48,7 +48,7 @@ export function ConversationListItem({
     try {
       // onDelete may or may not be async - handle both cases
       const result = onDelete?.(conversation.id);
-      if (result instanceof Promise) {
+      if (result && typeof result === "object" && "then" in result) {
         await result;
       }
       setShowDeleteDialog(false);

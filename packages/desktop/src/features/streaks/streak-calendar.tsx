@@ -10,7 +10,7 @@
 
 import React, { useMemo } from "react";
 import { useStreakHeatmap } from "../../hooks/use-streaks";
-import { HeatmapCell } from "@focusflow/types";
+import type { HeatmapCell, DateString, Minutes } from "@focusflow/types";
 import { cn } from "../../lib/utils";
 
 interface StreakCalendarProps {
@@ -41,9 +41,9 @@ export function StreakCalendar({ months = 12, className }: StreakCalendarProps) 
       if (weeks.length === 0 && currentWeek.length === 0 && dayOfWeek > 0) {
         for (let i = 0; i < dayOfWeek; i++) {
           currentWeek.push({
-            date: "", // Empty placeholder for calendar layout
+            date: "" as DateString, // Empty placeholder for calendar layout
             sessionsCount: 0,
-            focusMinutes: 0,
+            focusMinutes: 0 as Minutes,
             intensity: 0,
             wasFrozen: false,
           });

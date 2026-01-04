@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { CalendarHeatmapDay } from "@focusflow/types";
+import type { CalendarHeatmapDay, DateString, Minutes } from "@focusflow/types";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 interface CalendarHeatmapProps {
@@ -31,8 +31,8 @@ export function CalendarHeatmap({
     // Add empty days for the first week
     for (let i = 0; i < firstDayOfWeek; i++) {
       currentWeek.push({
-        date: "",
-        focusMinutes: 0,
+        date: "" as DateString,
+        focusMinutes: 0 as Minutes,
         sessions: 0,
         intensity: 0,
         hasData: false,
@@ -53,8 +53,8 @@ export function CalendarHeatmap({
     if (currentWeek.length > 0) {
       while (currentWeek.length < 7) {
         currentWeek.push({
-          date: "",
-          focusMinutes: 0,
+          date: "" as DateString,
+          focusMinutes: 0 as Minutes,
           sessions: 0,
           intensity: 0,
           hasData: false,

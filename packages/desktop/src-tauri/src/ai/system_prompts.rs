@@ -597,8 +597,8 @@ mod tests {
         assert!(prompt.contains("afternoon on Tuesday"));
         assert!(prompt.contains("5 days"));
         assert!(prompt.contains("social media"));
-        // Note: SCENARIO content now comes from GuidelineRegistry via orchestrator
-        assert!(prompt.contains("[[start_focus_session]]"));
+        // Note: Tool format now uses XML-style syntax
+        assert!(prompt.contains("<tool name=\"start_focus_session\""));
     }
 
     #[test]

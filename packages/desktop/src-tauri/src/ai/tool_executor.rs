@@ -654,7 +654,7 @@ mod tests {
         let executor = ToolExecutor::new();
         let docs = executor.get_tool_documentation();
 
-        assert!(docs.contains("Available Tools"));
+        assert!(docs.contains("Tool Reference"));
         assert!(docs.contains("start_focus_session"));
         assert!(docs.contains("duration"));
     }

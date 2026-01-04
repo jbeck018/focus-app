@@ -1410,7 +1410,7 @@ mod tests {
         let registry = ToolRegistry::with_default_tools();
         let docs = registry.generate_documentation();
 
-        assert!(docs.contains("Available Tools"));
+        assert!(docs.contains("Tool Reference"));
         assert!(docs.contains("start_focus_session"));
         assert!(docs.contains("Session Management"));
     }

@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  type MouseHandlerDataParam,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ProductivityScorePoint } from "@focusflow/types";
@@ -49,11 +50,14 @@ export function ProductivityChart({
     return { label: "Needs Improvement", color: "hsl(var(--destructive))" };
   }, [averageScore]);
 
-  const handleClick = (dataPoint: { date?: string } | null) => {
-    if (onDataPointClick && dataPoint?.date) {
-      const original = data.find((d) => formatDate(d.date) === dataPoint.date);
-      if (original) {
-        onDataPointClick(original);
+  const handleClick = (clickData: MouseHandlerDataParam) => {
+    if (onDataPointClick && typeof clickData?.activeTooltipIndex === "number") {
+      const clickedItem = chartData[clickData.activeTooltipIndex];
+      if (clickedItem?.date) {
+        const original = data.find((d) => formatDate(d.date) === clickedItem.date);
+        if (original) {
+          onDataPointClick(original);
+        }
       }
     }
   };
