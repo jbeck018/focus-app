@@ -128,6 +128,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[ignore = "Requires keyring/secrets service (not available in CI)"]
     async fn test_save_and_get_api_key() {
         let provider = "test_provider".to_string();
         let api_key = "test_key_123".to_string();
