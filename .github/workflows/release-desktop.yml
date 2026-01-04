@@ -191,6 +191,9 @@ jobs:
             -CertStoreLocation Cert:\CurrentUser\My `
             -Password (ConvertTo-SecureString -String $env:WINDOWS_SIGN_CERT_PASSWORD -AsPlainText -Force)
 
+      - name: Build workspace dependencies
+        run: pnpm turbo build --filter=@focusflow/types --filter=@focusflow/shared
+
       - name: Build Tauri Desktop
         env:
           # Tauri updater signing (optional - if not set, updates won't be signed)
