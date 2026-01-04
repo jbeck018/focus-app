@@ -45,6 +45,7 @@ fn get_tool_executor() -> &'static ToolExecutor {
 
 /// Chat message in the coach conversation
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ChatMessage {
     pub role: String, // "user" or "assistant"
     pub content: String,

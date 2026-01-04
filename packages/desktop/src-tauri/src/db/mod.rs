@@ -51,6 +51,7 @@ impl Database {
 }
 
 // Ensure pool is Send + Sync for cross-thread sharing
+#[allow(dead_code)]
 const _: () = {
     fn assert_send_sync<T: Send + Sync>() {}
     fn assert_all() {

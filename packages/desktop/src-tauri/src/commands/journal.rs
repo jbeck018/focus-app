@@ -7,6 +7,7 @@ use tauri::State;
 /// Trigger types based on Indistractable framework
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum TriggerType {
     // Internal triggers
     Boredom,
@@ -23,6 +24,7 @@ pub enum TriggerType {
 /// Emotion types for journaling
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum Emotion {
     Frustrated,
     Anxious,

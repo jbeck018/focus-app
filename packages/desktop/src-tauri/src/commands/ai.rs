@@ -31,6 +31,7 @@ pub struct LlmStatus {
 
 /// Download progress update
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct DownloadProgress {
     pub model_name: String,
     pub progress_percent: u8,

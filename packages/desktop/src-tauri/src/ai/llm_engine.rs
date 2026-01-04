@@ -113,7 +113,7 @@ impl LlmEngine {
             // Use larger batch size to handle bigger prompts more efficiently
             // Set to 2048 to allow processing larger prompt chunks without multiple decode calls
             let ctx_params = LlamaContextParams::default()
-                .with_n_ctx(std::num::NonZero::new(self.model_config.context_size))
+                .with_n_ctx(std::num::NonZeroU32::new(self.model_config.context_size))
                 .with_n_batch(2048);
 
             // Create context
