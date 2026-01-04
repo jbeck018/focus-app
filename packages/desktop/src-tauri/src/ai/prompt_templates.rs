@@ -29,7 +29,7 @@ pub enum PromptTemplate {
 impl PromptTemplate {
     /// Convert template type to user intent for guideline selection
     #[allow(dead_code)] // Used by deprecated prompt building functions
-    fn to_intent(&self) -> UserIntent {
+    fn as_intent(&self) -> UserIntent {
         match self {
             PromptTemplate::GeneralCoaching => UserIntent::GeneralChat,
             PromptTemplate::DailyTip => UserIntent::GeneralChat, // Uses custom instructions
@@ -237,7 +237,7 @@ fn detect_intent_from_message_and_template(template: PromptTemplate, message: &s
         // For general coaching, detect from message
         PromptTemplate::GeneralCoaching | PromptTemplate::DailyTip => {
             if message.is_empty() {
-                template.to_intent()
+                template.as_intent()
             } else {
                 UserIntent::detect(message)
             }

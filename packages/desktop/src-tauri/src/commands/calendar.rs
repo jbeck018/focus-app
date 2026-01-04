@@ -373,7 +373,7 @@ pub async fn get_focus_suggestions(
                 start_time: now.to_rfc3339(),
                 end_time: (*first_start - Duration::minutes(5)).to_rfc3339(),
                 duration_minutes: (gap_minutes - 5) as i32,
-                reason: format!("Free time before your next meeting"),
+                reason: "Free time before your next meeting".to_string(),
             });
         }
     }

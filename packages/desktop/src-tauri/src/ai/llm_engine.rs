@@ -1,6 +1,6 @@
 // ai/llm-engine.rs - Core LLM inference engine with streaming support
 
-#![cfg(feature = "local-ai")]
+#![allow(clippy::missing_transmute_annotations)]
 
 use crate::{Error, Result};
 use crate::ai::model_manager::{ModelConfig, ModelManager};

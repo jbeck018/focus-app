@@ -201,7 +201,7 @@ pub async fn get_productivity_score(
 
     let analytics = queries::get_daily_analytics(state.pool(), &today)
         .await?
-        .unwrap_or_else(|| DailyAnalytics {
+        .unwrap_or(DailyAnalytics {
             date: today,
             total_focus_seconds: 0,
             total_break_seconds: 0,

@@ -4,6 +4,7 @@
 // internal use but currently wrapped by the chat_history command module.
 
 #![allow(dead_code)]
+#![allow(clippy::too_many_arguments)]
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

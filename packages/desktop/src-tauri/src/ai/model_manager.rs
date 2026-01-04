@@ -1,7 +1,5 @@
 // ai/model_manager.rs - Model downloading, caching, and lifecycle management
 
-#![cfg(feature = "local-ai")]
-
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;

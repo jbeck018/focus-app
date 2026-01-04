@@ -231,6 +231,7 @@ pub struct NuclearOptionState {
 /// This allows the backend to be the single source of truth for timer state,
 /// ensuring all windows stay perfectly synchronized.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct TimerState {
     pub is_running: bool,
     pub is_paused: bool,
@@ -240,16 +241,6 @@ pub struct TimerState {
     pub paused_at: Option<DateTime<Utc>>,
 }
 
-impl Default for TimerState {
-    fn default() -> Self {
-        Self {
-            is_running: false,
-            is_paused: false,
-            pause_elapsed_seconds: 0,
-            paused_at: None,
-        }
-    }
-}
 
 impl TimerState {
     /// Create a new running timer state (for session start)

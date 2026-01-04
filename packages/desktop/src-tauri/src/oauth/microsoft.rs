@@ -1,5 +1,7 @@
 // oauth/microsoft.rs - Microsoft Outlook Calendar OAuth provider
 
+#![allow(clippy::if_same_then_else)]
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

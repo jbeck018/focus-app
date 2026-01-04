@@ -192,7 +192,7 @@ pub async fn get_current_streak(state: State<'_, AppState>) -> Result<CurrentStr
         if entry_date == expected_date {
             if entry.sessions_count >= MIN_SESSIONS_FOR_STREAK || entry.was_frozen {
                 current_count += 1;
-                expected_date = expected_date - Duration::days(1);
+                expected_date -= Duration::days(1);
             } else {
                 break;
             }
@@ -275,7 +275,7 @@ pub async fn get_streak_heatmap(
             });
         }
 
-        current = current + Duration::days(1);
+        current += Duration::days(1);
     }
 
     Ok(StreakHeatmapData {

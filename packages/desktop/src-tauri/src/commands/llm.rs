@@ -16,19 +16,12 @@ const CACHE_DURATION: Duration = Duration::from_secs(30);
 
 /// Cached health check result
 #[derive(Debug, Clone)]
+#[derive(Default)]
 struct HealthCache {
     last_check: Option<Instant>,
     last_result: Option<LlmStatus>,
 }
 
-impl Default for HealthCache {
-    fn default() -> Self {
-        Self {
-            last_check: None,
-            last_result: None,
-        }
-    }
-}
 
 impl HealthCache {
     fn is_valid(&self) -> bool {

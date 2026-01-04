@@ -742,8 +742,7 @@ fn generate_response(message: &str, ctx: &UserContext) -> CoachResponse {
 }
 
 fn generate_daily_tip(ctx: &UserContext) -> CoachResponse {
-    let tips = vec![
-        (
+    let tips = [(
             "Start with your hardest task. Your willpower is highest in the morning.",
             vec!["Start a morning session".into(), "Plan today's priorities".into()],
         ),
@@ -762,8 +761,7 @@ fn generate_daily_tip(ctx: &UserContext) -> CoachResponse {
         (
             "Track your triggers. Understanding what distracts you is the first step to fixing it.",
             vec!["View trigger insights".into(), "Log a trigger".into()],
-        ),
-    ];
+        )];
 
     // Select tip based on day
     let day_of_year = chrono::Utc::now().ordinal() as usize;

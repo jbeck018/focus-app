@@ -311,13 +311,13 @@ impl GuidelineOrchestrator {
                         g.category == GuidelineCategory::Session
                             || g.id == "session_planning"
                     })
-                    .filter_map(|g| {
+                    .map(|g| {
                         // Create a synthetic match for session guidelines
-                        Some(GuidelineMatch {
+                        GuidelineMatch {
                             guideline: g.clone(),
                             confidence: 1.0,
                             matched_keywords: vec!["session".into()],
-                        })
+                        }
                     })
                     .collect()
             }
@@ -328,12 +328,12 @@ impl GuidelineOrchestrator {
                         g.id.contains("reflection")
                             || g.category == GuidelineCategory::Session
                     })
-                    .filter_map(|g| {
-                        Some(GuidelineMatch {
+                    .map(|g| {
+                        GuidelineMatch {
                             guideline: g.clone(),
                             confidence: 1.0,
                             matched_keywords: vec!["reflection".into()],
-                        })
+                        }
                     })
                     .collect()
             }
@@ -567,8 +567,8 @@ pub fn build_suggestions_from_guidelines(
             let suggestions_text = &action[suggestions_start..];
             for line in suggestions_text.lines().skip(1) {
                 let line = line.trim();
-                if line.starts_with("- ") {
-                    suggestions.push(line[2..].to_string());
+                if let Some(stripped) = line.strip_prefix("- ") {
+                    suggestions.push(stripped.to_string());
                 }
                 if suggestions.len() >= 3 {
                     break;

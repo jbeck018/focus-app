@@ -120,11 +120,9 @@ async fn write_hosts_file(content: &str) -> Result<()> {
     match tokio::fs::write(&temp_path, content).await {
         Ok(_) => {}
         Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
-            return Err(Error::PermissionDenied(format!(
-                "Cannot write hosts file. Please run with elevated privileges.\n\
+            return Err(Error::PermissionDenied("Cannot write hosts file. Please run with elevated privileges.\n\
                  On macOS/Linux: Use sudo or grant accessibility permissions\n\
-                 On Windows: Run as administrator"
-            )));
+                 On Windows: Run as administrator".to_string()));
         }
         Err(e) => return Err(e.into()),
     }

@@ -2,6 +2,8 @@
 //
 // Provides trait-based sync with offline queue and conflict resolution.
 
+#![allow(clippy::type_complexity)]
+
 use crate::{Error, Result};
 use chrono::{DateTime, Utc};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};

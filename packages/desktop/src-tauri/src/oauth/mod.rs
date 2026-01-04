@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 pub fn generate_state() -> String {
     use rand::Rng;
     let random_bytes: [u8; 32] = rand::thread_rng().gen();
-    URL_SAFE_NO_PAD.encode(&random_bytes)
+    URL_SAFE_NO_PAD.encode(random_bytes)
 }
 
 /// PKCE (Proof Key for Code Exchange) utilities for OAuth2 flow
@@ -33,13 +33,13 @@ impl Pkce {
 
         // Generate code_verifier: 43-128 characters from [A-Z, a-z, 0-9, -, ., _, ~]
         let random_bytes: [u8; 32] = rand::thread_rng().gen();
-        let code_verifier = URL_SAFE_NO_PAD.encode(&random_bytes);
+        let code_verifier = URL_SAFE_NO_PAD.encode(random_bytes);
 
         // Generate code_challenge: BASE64URL(SHA256(code_verifier))
         let mut hasher = Sha256::new();
         hasher.update(code_verifier.as_bytes());
         let hash = hasher.finalize();
-        let code_challenge = URL_SAFE_NO_PAD.encode(&hash);
+        let code_challenge = URL_SAFE_NO_PAD.encode(hash);
 
         Ok(Self {
             code_verifier,

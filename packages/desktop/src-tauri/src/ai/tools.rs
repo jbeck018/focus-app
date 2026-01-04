@@ -982,7 +982,7 @@ impl ToolHandler for GetStreakInfoHandler {
                 if entry_date == expected_date {
                     if *sessions >= 1 || *was_frozen {
                         current_streak += 1;
-                        expected_date = expected_date - Duration::days(1);
+                        expected_date -= Duration::days(1);
                     } else {
                         break;
                     }
@@ -1036,7 +1036,7 @@ impl ToolHandler for SetFocusGoalHandler {
             .and_then(|v| v.as_i64())
             .ok_or_else(|| Error::InvalidInput("minutes is required".into()))? as i32;
 
-        if minutes < 5 || minutes > 480 {
+        if !(5..=480).contains(&minutes) {
             return Ok(ToolResult::failure(
                 "Invalid goal",
                 "Focus goal must be between 5 and 480 minutes.",

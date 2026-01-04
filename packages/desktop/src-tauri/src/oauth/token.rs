@@ -1,5 +1,7 @@
 // oauth/token.rs - Token manager for secure storage and automatic refresh
 
+#![allow(clippy::type_complexity)]
+
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;

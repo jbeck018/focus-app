@@ -189,14 +189,14 @@ pub async fn check_achievements(
         let start_hour = session.start_time.hour();
 
         // Night Owl (10PM - 4AM)
-        if start_hour >= 22 || start_hour < 4 {
+        if !(4..22).contains(&start_hour) {
             newly_unlocked.extend(
                 check_special_achievement(state.pool(), user_id_ref, "night_owl").await?,
             );
         }
 
         // Early Bird (5AM - 7AM)
-        if start_hour >= 5 && start_hour < 7 {
+        if (5..7).contains(&start_hour) {
             newly_unlocked.extend(
                 check_special_achievement(state.pool(), user_id_ref, "early_bird").await?,
             );

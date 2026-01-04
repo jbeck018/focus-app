@@ -2,6 +2,8 @@
 //
 // Replaces the mock team commands with real backend integration.
 
+#![allow(clippy::type_complexity)]
+
 use crate::trailbase::{
     client::{AuthResponse, Credentials, TeamConnection, TrailBaseClient},
     models::{Member, SharedSession, SyncStatus},
@@ -175,12 +177,11 @@ pub async fn share_session(
             .map_err(|e| Error::Serialization(e.to_string()))?
             .with_timezone(&Utc),
         end_time: end_time
-            .map(|s| {
+            .and_then(|s| {
                 chrono::DateTime::parse_from_rfc3339(&s)
                     .map(|dt| dt.with_timezone(&Utc))
                     .ok()
-            })
-            .flatten(),
+            }),
         planned_duration_minutes: planned_duration,
         actual_duration_seconds: actual_duration,
         completed,
