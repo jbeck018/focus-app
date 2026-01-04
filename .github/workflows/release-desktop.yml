@@ -18,7 +18,9 @@ permissions:
   contents: write
 
 env:
+  # macOS 10.15+ required for C++ filesystem APIs (llama-cpp-sys dependency)
   MACOSX_DEPLOYMENT_TARGET: "10.15"
+  CMAKE_OSX_DEPLOYMENT_TARGET: "10.15"
   PNPM_VERSION: 10.11.0
   NODE_VERSION: "20"
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -194,6 +196,14 @@ jobs:
 
       - name: Build workspace dependencies
         run: pnpm turbo build --filter=@focusflow/types --filter=@focusflow/shared
+
+      - name: Set macOS deployment target flags
+        if: matrix.os == 'macos'
+        run: |
+          # Ensure llama-cpp-sys compiles with macOS 10.15+ for C++ filesystem APIs
+          echo "CFLAGS=-mmacosx-version-min=10.15" >> $GITHUB_ENV
+          echo "CXXFLAGS=-mmacosx-version-min=10.15" >> $GITHUB_ENV
+          echo "LDFLAGS=-mmacosx-version-min=10.15" >> $GITHUB_ENV
 
       - name: Build Tauri Desktop
         shell: bash
