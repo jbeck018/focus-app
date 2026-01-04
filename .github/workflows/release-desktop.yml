@@ -131,21 +131,25 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY_SECRET: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_ID_SECRET: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID_SECRET: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PASSWORD_SECRET: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # Skip if no certificate provided - use ad-hoc signing
+          # Skip if no certificate provided - use ad-hoc signing (no notarization)
           if [ -z "$APPLE_CERTIFICATE" ]; then
             echo "⚠️ Apple signing disabled - no certificate provided"
             echo "Using ad-hoc signing (users will need to allow app in System Settings)"
-            # Set ad-hoc signing identity for Tauri
+            # Set ad-hoc signing identity for Tauri (no notarization)
             echo "APPLE_SIGNING_IDENTITY=-" >> $GITHUB_ENV
+            # Don't set APPLE_ID/TEAM_ID/PASSWORD to skip notarization
             exit 0
           fi
 
-          # Set signing identity from secret
+          # Set signing identity and notarization credentials
           echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY_SECRET" >> $GITHUB_ENV
+          echo "APPLE_ID=$APPLE_ID_SECRET" >> $GITHUB_ENV
+          echo "APPLE_TEAM_ID=$APPLE_TEAM_ID_SECRET" >> $GITHUB_ENV
+          echo "APPLE_PASSWORD=$APPLE_PASSWORD_SECRET" >> $GITHUB_ENV
 
           # Decode certificate
           echo "$APPLE_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
@@ -216,11 +220,8 @@ jobs:
           # Tauri updater signing (optional - if not set, updates won't be signed)
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # Apple signing - APPLE_SIGNING_IDENTITY is set in the "Setup Apple signing" step
-          # (either from certificate or "-" for ad-hoc signing)
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # Apple signing - env vars are set in the "Setup Apple signing" step
+          # (either from certificate + notarization or ad-hoc signing without notarization)
           # Windows signing (optional)
           WINDOWS_SIGN_CERT: ${{ secrets.WINDOWS_SIGN_CERT }}
           WINDOWS_SIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGN_CERT_PASSWORD }}
