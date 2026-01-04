@@ -110,19 +110,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
             librsvg2-dev \
             patchelf \
             libssl-dev \
             libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            webkit2gtk-driver
+            libayatana-appindicator3-dev
 
       - name: Install pnpm dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Setup Apple signing (macOS)
-        if: matrix.os == 'macos' && secrets.APPLE_CERTIFICATE != ''
+        if: matrix.os == 'macos'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -161,11 +159,15 @@ jobs:
           rm /tmp/certificate.p12
 
       - name: Note about unsigned macOS build
-        if: matrix.os == 'macos' && secrets.APPLE_CERTIFICATE == ''
+        if: matrix.os == 'macos'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
         run: |
-          echo "::warning::Building unsigned macOS app. Users will need to:"
-          echo "1. Right-click the app and select 'Open'"
-          echo "2. Or go to System Settings > Privacy & Security > Allow app"
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "::warning::Building unsigned macOS app. Users will need to:"
+            echo "1. Right-click the app and select 'Open'"
+            echo "2. Or go to System Settings > Privacy & Security > Allow app"
+          fi
 
       - name: Setup Windows signing
         if: matrix.os == 'windows'
