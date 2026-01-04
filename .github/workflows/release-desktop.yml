@@ -135,10 +135,12 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
-          # Skip if no certificate provided
+          # Skip if no certificate provided - use ad-hoc signing
           if [ -z "$APPLE_CERTIFICATE" ]; then
             echo "⚠️ Apple signing disabled - no certificate provided"
-            echo "Users will need to allow app in System Preferences > Security & Privacy"
+            echo "Using ad-hoc signing (users will need to allow app in System Settings)"
+            # Set ad-hoc signing identity for Tauri
+            echo "APPLE_SIGNING_IDENTITY=-" >> $GITHUB_ENV
             exit 0
           fi
 
