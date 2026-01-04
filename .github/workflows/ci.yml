@@ -160,6 +160,9 @@ jobs:
         with:
           workspaces: packages/desktop/src-tauri
 
+      - name: Create dist directory for Tauri
+        run: mkdir -p packages/desktop/dist
+
       - name: Run Rust tests
         working-directory: packages/desktop/src-tauri
         run: cargo test --lib
