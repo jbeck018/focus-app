@@ -73,6 +73,7 @@ impl DimmingState {
 }
 
 /// Monitor information for overlay positioning
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonitorInfo {
     pub name: String,
@@ -85,6 +86,7 @@ pub struct MonitorInfo {
 }
 
 /// Rectangle representing a window position
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WindowRect {
     pub x: i32,
@@ -94,6 +96,7 @@ pub struct WindowRect {
 }
 
 /// Foreground window information
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ForegroundWindowInfo {
     pub title: String,
