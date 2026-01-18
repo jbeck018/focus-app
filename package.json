@@ -8,20 +8,36 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
     "check": "turbo run check",
     "tauri": "pnpm --filter @focusflow/desktop tauri",
     "desktop:dev": "pnpm --filter @focusflow/desktop tauri dev",
     "desktop:build": "pnpm --filter @focusflow/desktop tauri build",
     "trailbase:up": "docker compose -f docker/docker-compose.yml up -d",
     "trailbase:down": "docker compose -f docker/docker-compose.yml down",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "turbo": "^2.5.4"
   },
   "packageManager": "pnpm@10.11.0",
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "packages/desktop/src/**/*.{ts,tsx}": [
+      "bash -c 'cd packages/desktop && pnpm lint'",
+      "bash -c 'cd packages/desktop && pnpm typecheck'"
+    ],
+    "packages/shared/**/*.ts": [
+      "bash -c 'cd packages/shared && pnpm typecheck'"
+    ],
+    "packages/types/**/*.ts": [
+      "bash -c 'cd packages/types && pnpm typecheck'"
+    ]
   }
 }

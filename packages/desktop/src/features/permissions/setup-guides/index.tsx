@@ -10,8 +10,9 @@ import { Monitor, Info } from "lucide-react";
 import { MacOSGuide } from "./macos-guide";
 import { WindowsGuide } from "./windows-guide";
 import { LinuxGuide } from "./linux-guide";
+import type { Platform } from "./use-platform";
 
-export type Platform = "macos" | "windows" | "linux";
+export type { Platform };
 
 interface PlatformInfo {
   name: string;
@@ -43,21 +44,15 @@ interface SetupGuidesProps {
   onComplete?: () => void;
 }
 
-export function SetupGuides({
-  showHeader = true,
-  defaultPlatform,
-  onComplete,
-}: SetupGuidesProps) {
+export function SetupGuides({ showHeader = true, defaultPlatform, onComplete }: SetupGuidesProps) {
   const [detectedPlatform, setDetectedPlatform] = useState<Platform | null>(null);
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform>(
-    defaultPlatform || "macos"
-  );
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>(defaultPlatform ?? "macos");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function detectPlatform() {
+    function detectPlatform() {
       try {
-        const platformName = await platform();
+        const platformName = platform();
 
         let detected: Platform;
         switch (platformName) {
@@ -85,7 +80,7 @@ export function SetupGuides({
       } catch (error) {
         console.error("Failed to detect platform:", error);
         // Fallback to provided default or macOS
-        setDetectedPlatform(defaultPlatform || "macos");
+        setDetectedPlatform(defaultPlatform ?? "macos");
       } finally {
         setIsLoading(false);
       }
@@ -123,8 +118,8 @@ export function SetupGuides({
               <AlertTitle>Why are permissions needed?</AlertTitle>
               <AlertDescription className="space-y-2">
                 <p>
-                  FocusFlow uses DNS-level blocking by modifying your system's hosts file. This is the
-                  most effective way to block distractions because:
+                  FocusFlow uses DNS-level blocking by modifying your system's hosts file. This is
+                  the most effective way to block distractions because:
                 </p>
                 <ul className="list-disc list-inside text-sm space-y-1 mt-2 ml-2">
                   <li>Works across all browsers and applications</li>
@@ -140,9 +135,7 @@ export function SetupGuides({
                 <Badge variant="secondary" className="bg-primary/10">
                   Detected Platform
                 </Badge>
-                <span className="text-sm font-medium">
-                  {platformInfo[detectedPlatform].name}
-                </span>
+                <span className="text-sm font-medium">{platformInfo[detectedPlatform].name}</span>
                 <span className="text-sm text-muted-foreground ml-auto">
                   Showing {platformInfo[selectedPlatform].name} instructions
                 </span>
@@ -229,44 +222,5 @@ export { MacOSGuide } from "./macos-guide";
 export { WindowsGuide } from "./windows-guide";
 export { LinuxGuide } from "./linux-guide";
 
-// Helper hook for detecting platform
-export function usePlatform() {
-  const [detectedPlatform, setDetectedPlatform] = useState<Platform | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function detectPlatform() {
-      try {
-        const platformName = await platform();
-
-        let detected: Platform;
-        switch (platformName) {
-          case "macos":
-          case "ios":
-            detected = "macos";
-            break;
-          case "windows":
-            detected = "windows";
-            break;
-          case "linux":
-          case "android":
-            detected = "linux";
-            break;
-          default:
-            detected = "linux";
-        }
-
-        setDetectedPlatform(detected);
-      } catch (error) {
-        console.error("Failed to detect platform:", error);
-        setDetectedPlatform(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    detectPlatform();
-  }, []);
-
-  return { platform: detectedPlatform, isLoading };
-}
+// Re-export the platform hook from its own file (for fast refresh compatibility)
+export { usePlatform } from "./use-platform";

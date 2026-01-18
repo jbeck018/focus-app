@@ -1,6 +1,14 @@
 // features/permissions/setup-guides/windows-guide.tsx - Windows-specific permissions setup guide
 
-import { Terminal, ShieldAlert, Shield, CheckCircle2, Copy, ChevronDown, ExternalLink } from "lucide-react";
+import {
+  Terminal,
+  ShieldAlert,
+  Shield,
+  CheckCircle2,
+  Copy,
+  ChevronDown,
+  ExternalLink,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -84,8 +92,10 @@ export function WindowsGuide() {
         <AlertTitle>Windows Permissions Setup</AlertTitle>
         <AlertDescription>
           FocusFlow needs write access to{" "}
-          <code className="text-xs bg-muted px-1 rounded">C:\Windows\System32\drivers\etc\hosts</code>
-          {" "}to block websites at the DNS level. Choose one of the methods below.
+          <code className="text-xs bg-muted px-1 rounded">
+            C:\Windows\System32\drivers\etc\hosts
+          </code>{" "}
+          to block websites at the DNS level. Choose one of the methods below.
         </AlertDescription>
       </Alert>
 
@@ -96,9 +106,15 @@ export function WindowsGuide() {
         <AlertDescription className="space-y-2">
           <p>All methods require administrator privileges. Choose based on your preference:</p>
           <ul className="list-disc list-inside text-sm space-y-1 mt-2">
-            <li><strong>Run as Admin:</strong> Most secure, prompts UAC each launch</li>
-            <li><strong>Shortcut with Admin:</strong> Convenient, automatic elevation</li>
-            <li><strong>File Permissions:</strong> Grant specific permissions to hosts file</li>
+            <li>
+              <strong>Run as Admin:</strong> Most secure, prompts UAC each launch
+            </li>
+            <li>
+              <strong>Shortcut with Admin:</strong> Convenient, automatic elevation
+            </li>
+            <li>
+              <strong>File Permissions:</strong> Grant specific permissions to hosts file
+            </li>
           </ul>
         </AlertDescription>
       </Alert>
@@ -107,7 +123,10 @@ export function WindowsGuide() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-400">
+            <Badge
+              variant="secondary"
+              className="bg-green-500/10 text-green-700 dark:text-green-400"
+            >
               Recommended
             </Badge>
             <CardTitle className="text-lg">Method 1: Run as Administrator</CardTitle>
@@ -125,7 +144,10 @@ export function WindowsGuide() {
               Locate FocusFlow executable
             </h4>
             <p className="text-sm text-muted-foreground ml-8">
-              Usually found at: <code className="text-xs bg-muted px-1 rounded">C:\Program Files\FocusFlow\FocusFlow.exe</code>
+              Usually found at:{" "}
+              <code className="text-xs bg-muted px-1 rounded">
+                C:\Program Files\FocusFlow\FocusFlow.exe
+              </code>
             </p>
           </div>
 
@@ -156,7 +178,8 @@ export function WindowsGuide() {
           <Alert>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription>
-              You'll need to do this each time you launch FocusFlow. For a more convenient option, see Method 2.
+              You'll need to do this each time you launch FocusFlow. For a more convenient option,
+              see Method 2.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -169,7 +192,9 @@ export function WindowsGuide() {
             <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 dark:text-blue-400">
               Convenient
             </Badge>
-            <CardTitle className="text-lg">Method 2: Create Shortcut with Admin Privileges</CardTitle>
+            <CardTitle className="text-lg">
+              Method 2: Create Shortcut with Admin Privileges
+            </CardTitle>
           </div>
           <CardDescription>
             Automatically run as administrator - set it once, use it always
@@ -184,7 +209,8 @@ export function WindowsGuide() {
               Find the FocusFlow executable
             </h4>
             <p className="text-sm text-muted-foreground ml-8">
-              Navigate to <code className="text-xs bg-muted px-1 rounded">C:\Program Files\FocusFlow\</code>
+              Navigate to{" "}
+              <code className="text-xs bg-muted px-1 rounded">C:\Program Files\FocusFlow\</code>
             </p>
           </div>
 
@@ -241,24 +267,29 @@ export function WindowsGuide() {
           <Alert>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription>
-              Now you can launch FocusFlow from this shortcut and it will automatically request admin privileges.
+              Now you can launch FocusFlow from this shortcut and it will automatically request
+              admin privileges.
             </AlertDescription>
           </Alert>
 
           <CollapsibleSection title="Alternative: Task Scheduler method">
             <p className="text-sm text-muted-foreground mb-3">
-              For advanced users, you can create a Task Scheduler task that runs FocusFlow with highest privileges without UAC prompts:
+              For advanced users, you can create a Task Scheduler task that runs FocusFlow with
+              highest privileges without UAC prompts:
             </p>
             <ol className="text-sm space-y-2 ml-4 list-decimal list-inside">
               <li>Open Task Scheduler (search in Start menu)</li>
               <li>Click "Create Task" (not "Create Basic Task")</li>
               <li>Name it "FocusFlow" and check "Run with highest privileges"</li>
               <li>In Actions tab, click "New" and browse to FocusFlow.exe</li>
-              <li>In Conditions tab, uncheck "Start the task only if the computer is on AC power"</li>
+              <li>
+                In Conditions tab, uncheck "Start the task only if the computer is on AC power"
+              </li>
               <li>Click OK to save</li>
             </ol>
             <p className="text-sm text-muted-foreground mt-3">
-              Create a shortcut to run the task: <code className="text-xs bg-muted px-1 rounded">schtasks /run /tn "FocusFlow"</code>
+              Create a shortcut to run the task:{" "}
+              <code className="text-xs bg-muted px-1 rounded">schtasks /run /tn "FocusFlow"</code>
             </p>
           </CollapsibleSection>
         </CardContent>
@@ -268,7 +299,10 @@ export function WindowsGuide() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-400">
+            <Badge
+              variant="secondary"
+              className="bg-amber-500/10 text-amber-700 dark:text-amber-400"
+            >
               Advanced
             </Badge>
             <CardTitle className="text-lg">Method 3: Grant File Permissions</CardTitle>
@@ -307,7 +341,8 @@ export function WindowsGuide() {
               Backup the hosts file
             </h4>
             <p className="text-sm text-muted-foreground ml-8">
-              Right-click "hosts" → Copy, then paste it in the same folder. Windows will create "hosts - Copy"
+              Right-click "hosts" → Copy, then paste it in the same folder. Windows will create
+              "hosts - Copy"
             </p>
           </div>
 
@@ -348,7 +383,8 @@ export function WindowsGuide() {
               Test the changes
             </h4>
             <p className="text-sm text-muted-foreground ml-8">
-              Try opening the hosts file with Notepad - you should be able to edit and save it without admin privileges
+              Try opening the hosts file with Notepad - you should be able to edit and save it
+              without admin privileges
             </p>
           </div>
 
@@ -414,9 +450,14 @@ Write-Host "Permissions reverted" -ForegroundColor Green`}
             </p>
             <ul className="list-disc list-inside text-sm space-y-2 ml-4">
               <li>Make sure you're running as Administrator</li>
-              <li>Check if antivirus software is protecting the hosts file (temporarily disable protection)</li>
+              <li>
+                Check if antivirus software is protecting the hosts file (temporarily disable
+                protection)
+              </li>
               <li>Verify the file isn't marked as Read-only (Properties → uncheck Read-only)</li>
-              <li>Close any programs that might have the hosts file open (browsers, security software)</li>
+              <li>
+                Close any programs that might have the hosts file open (browsers, security software)
+              </li>
             </ul>
           </CollapsibleSection>
 
@@ -425,15 +466,25 @@ Write-Host "Permissions reverted" -ForegroundColor Green`}
               If blocking isn't working even after setup:
             </p>
             <ol className="list-decimal list-inside text-sm space-y-2 ml-4">
-              <li>Flush DNS cache (open CMD as Admin):
+              <li>
+                Flush DNS cache (open CMD as Admin):
                 <CodeBlock code="ipconfig /flushdns" language="batch" />
               </li>
-              <li>Verify entries in hosts file (open hosts in Notepad and check for FocusFlow entries)</li>
+              <li>
+                Verify entries in hosts file (open hosts in Notepad and check for FocusFlow entries)
+              </li>
               <li>Restart your browser completely</li>
-              <li>Check if browser is using DNS-over-HTTPS:
+              <li>
+                Check if browser is using DNS-over-HTTPS:
                 <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
-                  <li><strong>Chrome/Edge:</strong> Settings → Privacy → Security → Use secure DNS (disable)</li>
-                  <li><strong>Firefox:</strong> Settings → General → Network Settings → Enable DNS over HTTPS (disable)</li>
+                  <li>
+                    <strong>Chrome/Edge:</strong> Settings → Privacy → Security → Use secure DNS
+                    (disable)
+                  </li>
+                  <li>
+                    <strong>Firefox:</strong> Settings → General → Network Settings → Enable DNS
+                    over HTTPS (disable)
+                  </li>
                 </ul>
               </li>
             </ol>
@@ -443,12 +494,13 @@ Write-Host "Permissions reverted" -ForegroundColor Green`}
             <Alert className="mb-3">
               <ShieldAlert className="h-4 w-4" />
               <AlertDescription className="text-sm">
-                Disabling UAC is not recommended as it reduces system security. Consider using Method 2 (shortcut) or the Task Scheduler approach instead.
+                Disabling UAC is not recommended as it reduces system security. Consider using
+                Method 2 (shortcut) or the Task Scheduler approach instead.
               </AlertDescription>
             </Alert>
             <p className="text-sm text-muted-foreground">
-              If you absolutely need to reduce UAC prompts, use the Task Scheduler method described in Method 2's advanced section.
-              This is safer than fully disabling UAC.
+              If you absolutely need to reduce UAC prompts, use the Task Scheduler method described
+              in Method 2's advanced section. This is safer than fully disabling UAC.
             </p>
           </CollapsibleSection>
 
@@ -458,8 +510,17 @@ Write-Host "Permissions reverted" -ForegroundColor Green`}
             </p>
             <ul className="list-disc list-inside text-sm space-y-2 ml-4">
               <li>Add FocusFlow.exe to your antivirus exclusion list</li>
-              <li>Add <code className="text-xs bg-muted px-1 rounded">C:\Windows\System32\drivers\etc\hosts</code> to exclusions</li>
-              <li>Windows Defender: Settings → Virus & threat protection → Manage settings → Exclusions</li>
+              <li>
+                Add{" "}
+                <code className="text-xs bg-muted px-1 rounded">
+                  C:\Windows\System32\drivers\etc\hosts
+                </code>{" "}
+                to exclusions
+              </li>
+              <li>
+                Windows Defender: Settings → Virus & threat protection → Manage settings →
+                Exclusions
+              </li>
               <li>Check Event Viewer for blocked actions: Windows Logs → Security</li>
             </ul>
           </CollapsibleSection>

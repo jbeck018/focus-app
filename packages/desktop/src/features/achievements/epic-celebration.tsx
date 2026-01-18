@@ -29,44 +29,52 @@ interface EpicCelebrationProps {
   onDismiss: () => void;
 }
 
+const CONFETTI_COLORS = ["#ffd700", "#ff6b6b", "#4ecdc4", "#45b7d1", "#a855f7", "#ec4899"];
+
+// Generate confetti pieces outside of React render
+function generateConfettiPieces() {
+  return Array.from({ length: 50 }).map((_, i) => ({
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    delay: Math.random() * 2,
+    duration: 3 + Math.random() * 2,
+    left: Math.random() * 100,
+    rotation: Math.random() * 360,
+    isCircle: Math.random() > 0.5,
+    rotateDirection: Math.random() > 0.5 ? 1 : -1,
+  }));
+}
+
 function Confetti() {
-  const colors = ["#ffd700", "#ff6b6b", "#4ecdc4", "#45b7d1", "#a855f7", "#ec4899"];
+  // Pre-compute random values on mount (lazy initializer runs once)
+  const [confettiPieces] = useState(generateConfettiPieces);
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-40">
-      {Array.from({ length: 50 }).map((_, i) => {
-        const color = colors[i % colors.length];
-        const delay = Math.random() * 2;
-        const duration = 3 + Math.random() * 2;
-        const left = Math.random() * 100;
-        const rotation = Math.random() * 360;
-
-        return (
-          <motion.div
-            key={i}
-            className="absolute w-3 h-3"
-            style={{
-              left: `${left}%`,
-              top: -20,
-              backgroundColor: color,
-              borderRadius: Math.random() > 0.5 ? "50%" : "2px",
-              transform: `rotate(${rotation}deg)`,
-            }}
-            initial={{ y: -20, opacity: 1 }}
-            animate={{
-              y: "100vh",
-              opacity: [1, 1, 0.8, 0],
-              rotate: rotation + 360 * (Math.random() > 0.5 ? 1 : -1),
-              x: Math.sin(i) * 100,
-            }}
-            transition={{
-              duration,
-              delay,
-              ease: "easeOut",
-            }}
-          />
-        );
-      })}
+      {confettiPieces.map((piece, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-3 h-3"
+          style={{
+            left: `${piece.left}%`,
+            top: -20,
+            backgroundColor: piece.color,
+            borderRadius: piece.isCircle ? "50%" : "2px",
+            transform: `rotate(${piece.rotation}deg)`,
+          }}
+          initial={{ y: -20, opacity: 1 }}
+          animate={{
+            y: "100vh",
+            opacity: [1, 1, 0.8, 0],
+            rotate: piece.rotation + 360 * piece.rotateDirection,
+            x: Math.sin(i) * 100,
+          }}
+          transition={{
+            duration: piece.duration,
+            delay: piece.delay,
+            ease: "easeOut",
+          }}
+        />
+      ))}
     </div>
   );
 }
@@ -110,43 +118,49 @@ function Fireworks() {
   );
 }
 
+// Generate star positions outside of React render
+function generateStarPositions() {
+  return Array.from({ length: 20 }).map(() => ({
+    left: Math.random() * 100,
+    top: Math.random() * 100,
+    delay: Math.random() * 1.5,
+    size: 12 + Math.random() * 16,
+  }));
+}
+
 function AnimatedStars() {
+  // Pre-compute random values on mount (lazy initializer runs once)
+  const [starPositions] = useState(generateStarPositions);
+
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-40">
-      {Array.from({ length: 20 }).map((_, i) => {
-        const left = Math.random() * 100;
-        const top = Math.random() * 100;
-        const delay = Math.random() * 1.5;
-        const size = 12 + Math.random() * 16;
-
-        return (
-          <motion.div
-            key={i}
-            className="absolute text-amber-300"
-            style={{ left: `${left}%`, top: `${top}%` }}
-            initial={{ scale: 0, opacity: 0, rotate: 0 }}
-            animate={{
-              scale: [0, 1, 0.8, 1, 0],
-              opacity: [0, 1, 0.8, 1, 0],
-              rotate: 180,
-            }}
-            transition={{
-              duration: 3,
-              delay,
-              ease: "easeInOut",
-            }}
-          >
-            <Star className="fill-current" style={{ width: size, height: size }} />
-          </motion.div>
-        );
-      })}
+      {starPositions.map((star, i) => (
+        <motion.div
+          key={i}
+          className="absolute text-amber-300"
+          style={{ left: `${star.left}%`, top: `${star.top}%` }}
+          initial={{ scale: 0, opacity: 0, rotate: 0 }}
+          animate={{
+            scale: [0, 1, 0.8, 1, 0],
+            opacity: [0, 1, 0.8, 1, 0],
+            rotate: 180,
+          }}
+          transition={{
+            duration: 3,
+            delay: star.delay,
+            ease: "easeInOut",
+          }}
+        >
+          <Star className="fill-current" style={{ width: star.size, height: star.size }} />
+        </motion.div>
+      ))}
     </div>
   );
 }
 
 export function EpicCelebration({ celebration, onDismiss }: EpicCelebrationProps) {
   const { achievement, isFirstInCategory, totalUnlocked } = celebration;
-  const rarity = (achievement.rarity || "common") as keyof typeof rarityGradients;
+  const rarity = achievement.rarity as keyof typeof rarityGradients;
   const gradient = rarityGradients[rarity];
   const glow = rarityGlow[rarity];
   const hasPlayedSound = useRef(false);

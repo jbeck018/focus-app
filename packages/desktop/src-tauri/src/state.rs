@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::Manager;
 use tokio::sync::RwLock;
-use tracing::info;
+use tracing::{info, warn};
 use uuid::Uuid;
 
 // Re-export system state types
@@ -95,10 +95,14 @@ impl AppState {
         // TODO: These client IDs should come from environment variables or config
         // For development, you can set them via environment variables:
         // GOOGLE_CLIENT_ID and MICROSOFT_CLIENT_ID
-        let google_client_id = std::env::var("GOOGLE_CLIENT_ID")
-            .unwrap_or_else(|_| "YOUR_GOOGLE_CLIENT_ID".to_string());
-        let microsoft_client_id = std::env::var("MICROSOFT_CLIENT_ID")
-            .unwrap_or_else(|_| "YOUR_MICROSOFT_CLIENT_ID".to_string());
+        let google_client_id = std::env::var("GOOGLE_CLIENT_ID").unwrap_or_else(|_| {
+            warn!("GOOGLE_CLIENT_ID environment variable not set. Google OAuth will not work.");
+            "MISSING_GOOGLE_CLIENT_ID".to_string()
+        });
+        let microsoft_client_id = std::env::var("MICROSOFT_CLIENT_ID").unwrap_or_else(|_| {
+            warn!("MICROSOFT_CLIENT_ID environment variable not set. Microsoft OAuth will not work.");
+            "MISSING_MICROSOFT_CLIENT_ID".to_string()
+        });
 
         let token_manager = TokenManager::new(db.pool.clone());
         let google_calendar = GoogleCalendar::default(google_client_id);

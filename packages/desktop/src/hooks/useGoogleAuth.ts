@@ -31,7 +31,7 @@ export function useGoogleAuth() {
 
   // Listen for deep link callback
   useEffect(() => {
-    const unlisten = listen<{ url: string }>("deep-link", async (event) => {
+    const handleDeepLink = async (event: { payload: { url: string } }) => {
       const url = event.payload.url || (event.payload as unknown as string);
 
       if (typeof url === "string" && url.startsWith("focusflow://oauth/auth-callback")) {
@@ -81,6 +81,11 @@ export function useGoogleAuth() {
           setIsLoading(false);
         }
       }
+    };
+
+    // Wrap async handler to satisfy void return type
+    const unlisten = listen<{ url: string }>("deep-link", (event) => {
+      void handleDeepLink(event);
     });
 
     return () => {

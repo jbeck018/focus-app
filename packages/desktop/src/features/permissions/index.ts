@@ -1,8 +1,9 @@
-// features/permissions/index.ts - Export all permission-related modules
+// features/permissions/index.ts - Main exports for permissions feature
 
+export { SetupGuides, MacOSGuide, WindowsGuide, LinuxGuide, usePlatform } from "./setup-guides";
+export { SetupGuidesModal, SetupGuidesButton } from "./setup-guides-modal";
+export { PermissionStatusProvider } from "./permission-status-provider";
 export { PermissionModal } from "./permission-modal";
-export { PermissionStatusProvider } from "./permission-status-context";
-export { usePermissions } from "./use-permissions";
 export { DegradedModeBanner } from "./degraded-mode-banner";
-export { PermissionIntegration } from "./permission-integration-example";
-export type { PermissionStatus, PermissionContextValue } from "./types";
+export type { Platform } from "./setup-guides";
+export type { PermissionStatus } from "./types";

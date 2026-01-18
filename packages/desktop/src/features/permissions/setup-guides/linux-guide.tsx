@@ -1,6 +1,14 @@
 // features/permissions/setup-guides/linux-guide.tsx - Linux-specific permissions setup guide
 
-import { Terminal, ShieldAlert, Package, CheckCircle2, Copy, ChevronDown, Info } from "lucide-react";
+import {
+  Terminal,
+  ShieldAlert,
+  Package,
+  CheckCircle2,
+  Copy,
+  ChevronDown,
+  Info,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -80,8 +88,9 @@ export function LinuxGuide() {
         <Terminal className="h-4 w-4" />
         <AlertTitle>Linux Permissions Setup</AlertTitle>
         <AlertDescription>
-          FocusFlow needs write access to <code className="text-xs bg-muted px-1 rounded">/etc/hosts</code>
-          {" "}to block websites at the DNS level. Choose the method that best fits your distribution and security needs.
+          FocusFlow needs write access to{" "}
+          <code className="text-xs bg-muted px-1 rounded">/etc/hosts</code> to block websites at the
+          DNS level. Choose the method that best fits your distribution and security needs.
         </AlertDescription>
       </Alert>
 
@@ -90,8 +99,9 @@ export function LinuxGuide() {
         <Package className="h-4 w-4" />
         <AlertTitle>Distribution Compatibility</AlertTitle>
         <AlertDescription>
-          These instructions work on most Linux distributions including Ubuntu, Debian, Fedora, Arch, and openSUSE.
-          Commands may vary slightly - check your distribution's documentation if needed.
+          These instructions work on most Linux distributions including Ubuntu, Debian, Fedora,
+          Arch, and openSUSE. Commands may vary slightly - check your distribution's documentation
+          if needed.
         </AlertDescription>
       </Alert>
 
@@ -102,10 +112,18 @@ export function LinuxGuide() {
         <AlertDescription className="space-y-2">
           <p>Each method has different security implications:</p>
           <ul className="list-disc list-inside text-sm space-y-1 mt-2">
-            <li><strong>Sudo (recommended):</strong> Most secure, requires password each launch</li>
-            <li><strong>Polkit rule:</strong> Convenient, allows specific operations without password</li>
-            <li><strong>Group permissions:</strong> Flexible but requires careful group management</li>
-            <li><strong>File permissions:</strong> Least secure, any process can modify hosts</li>
+            <li>
+              <strong>Sudo (recommended):</strong> Most secure, requires password each launch
+            </li>
+            <li>
+              <strong>Polkit rule:</strong> Convenient, allows specific operations without password
+            </li>
+            <li>
+              <strong>Group permissions:</strong> Flexible but requires careful group management
+            </li>
+            <li>
+              <strong>File permissions:</strong> Least secure, any process can modify hosts
+            </li>
           </ul>
         </AlertDescription>
       </Alert>
@@ -114,7 +132,10 @@ export function LinuxGuide() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-400">
+            <Badge
+              variant="secondary"
+              className="bg-green-500/10 text-green-700 dark:text-green-400"
+            >
               Recommended
             </Badge>
             <CardTitle className="text-lg">Method 1: Run with Sudo</CardTitle>
@@ -147,12 +168,8 @@ export function LinuxGuide() {
               code="sudo focusflow"
               description="If installed via package manager, or use the full path to the binary"
             />
-            <p className="text-sm text-muted-foreground ml-8">
-              Alternative if installed manually:
-            </p>
-            <CodeBlock
-              code="sudo /opt/FocusFlow/focusflow"
-            />
+            <p className="text-sm text-muted-foreground ml-8">Alternative if installed manually:</p>
+            <CodeBlock code="sudo /opt/FocusFlow/focusflow" />
           </div>
 
           <div className="space-y-3">
@@ -170,7 +187,8 @@ export function LinuxGuide() {
           <Alert>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription>
-              You'll need to repeat this each time you launch FocusFlow. For a more convenient option, see the methods below.
+              You'll need to repeat this each time you launch FocusFlow. For a more convenient
+              option, see the methods below.
             </AlertDescription>
           </Alert>
 
@@ -219,8 +237,9 @@ update-desktop-database ~/.local/share/applications/`}
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              Polkit (PolicyKit) is a modern authorization framework used by most desktop Linux distributions.
-              This method is safer than sudoers as it can be more granular and application-specific.
+              Polkit (PolicyKit) is a modern authorization framework used by most desktop Linux
+              distributions. This method is safer than sudoers as it can be more granular and
+              application-specific.
             </AlertDescription>
           </Alert>
 
@@ -294,8 +313,8 @@ EOF`}
           <Alert variant="destructive">
             <ShieldAlert className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              This rule grants broad permissions. For a more secure setup, create a dedicated script and grant
-              permissions only to that script instead of general tee access.
+              This rule grants broad permissions. For a more secure setup, create a dedicated script
+              and grant permissions only to that script instead of general tee access.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -305,7 +324,10 @@ EOF`}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-purple-500/10 text-purple-700 dark:text-purple-400">
+            <Badge
+              variant="secondary"
+              className="bg-purple-500/10 text-purple-700 dark:text-purple-400"
+            >
               Flexible
             </Badge>
             <CardTitle className="text-lg">Method 3: Create Group with Access</CardTitle>
@@ -384,15 +406,14 @@ ls -l /etc/hosts`}
             <p className="text-sm text-muted-foreground ml-8">
               Group membership changes require a new login session. You can verify with:
             </p>
-            <CodeBlock
-              code="groups | grep focusflow"
-            />
+            <CodeBlock code="groups | grep focusflow" />
           </div>
 
           <Alert>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription>
-              Now FocusFlow can modify /etc/hosts without requiring sudo, and you can manage access by adding/removing users from the focusflow group.
+              Now FocusFlow can modify /etc/hosts without requiring sudo, and you can manage access
+              by adding/removing users from the focusflow group.
             </AlertDescription>
           </Alert>
 
@@ -419,7 +440,10 @@ sudo cp /etc/hosts.backup /etc/hosts`}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-400">
+            <Badge
+              variant="secondary"
+              className="bg-amber-500/10 text-amber-700 dark:text-amber-400"
+            >
               Not Recommended
             </Badge>
             <CardTitle className="text-lg">Method 4: Direct File Permissions</CardTitle>
@@ -432,8 +456,8 @@ sudo cp /etc/hosts.backup /etc/hosts`}
           <Alert variant="destructive">
             <ShieldAlert className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              This makes /etc/hosts writable by your user, meaning any application you run can modify it.
-              Use Method 3 (group permissions) instead for better security.
+              This makes /etc/hosts writable by your user, meaning any application you run can
+              modify it. Use Method 3 (group permissions) instead for better security.
             </AlertDescription>
           </Alert>
 
@@ -476,9 +500,18 @@ sudo cp /etc/hosts.backup /etc/hosts`}
             </p>
             <ul className="list-disc list-inside text-sm space-y-2 ml-4">
               <li>Verify you're using sudo for commands that require it</li>
-              <li>Check your user is in the sudo group: <code className="text-xs bg-muted px-1 rounded">groups $USER | grep sudo</code></li>
-              <li>If using group method, ensure you logged out and back in after adding yourself to the group</li>
-              <li>Check file permissions: <code className="text-xs bg-muted px-1 rounded">ls -l /etc/hosts</code></li>
+              <li>
+                Check your user is in the sudo group:{" "}
+                <code className="text-xs bg-muted px-1 rounded">groups $USER | grep sudo</code>
+              </li>
+              <li>
+                If using group method, ensure you logged out and back in after adding yourself to
+                the group
+              </li>
+              <li>
+                Check file permissions:{" "}
+                <code className="text-xs bg-muted px-1 rounded">ls -l /etc/hosts</code>
+              </li>
             </ul>
           </CollapsibleSection>
 
@@ -487,7 +520,8 @@ sudo cp /etc/hosts.backup /etc/hosts`}
               If blocking isn't working even after setup:
             </p>
             <ol className="list-decimal list-inside text-sm space-y-2 ml-4">
-              <li>Flush DNS cache:
+              <li>
+                Flush DNS cache:
                 <Tabs defaultValue="systemd-resolved" className="w-full mt-2">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="systemd-resolved">systemd</TabsTrigger>
@@ -505,7 +539,8 @@ sudo cp /etc/hosts.backup /etc/hosts`}
                   </TabsContent>
                 </Tabs>
               </li>
-              <li className="mt-3">Verify entries were added:
+              <li className="mt-3">
+                Verify entries were added:
                 <CodeBlock code="cat /etc/hosts | grep focusflow" />
               </li>
               <li>Restart your browser completely</li>
@@ -550,11 +585,16 @@ sudo journalctl | grep -i apparmor | grep focusflow`}
               If the Polkit rule isn't taking effect:
             </p>
             <ul className="list-disc list-inside text-sm space-y-2 ml-4">
-              <li>Check Polkit service is running: <code className="text-xs bg-muted px-1 rounded">systemctl status polkit</code></li>
-              <li>Verify rule syntax:
+              <li>
+                Check Polkit service is running:{" "}
+                <code className="text-xs bg-muted px-1 rounded">systemctl status polkit</code>
+              </li>
+              <li>
+                Verify rule syntax:
                 <CodeBlock code="pkaction --verbose" />
               </li>
-              <li>Check Polkit logs:
+              <li>
+                Check Polkit logs:
                 <CodeBlock code="journalctl -u polkit" />
               </li>
               <li>Ensure file has correct permissions (644) and ownership (root:root)</li>
@@ -562,9 +602,7 @@ sudo journalctl | grep -i apparmor | grep focusflow`}
           </CollapsibleSection>
 
           <CollapsibleSection title="Restore default hosts file">
-            <p className="text-sm text-muted-foreground mb-3">
-              To restore a clean hosts file:
-            </p>
+            <p className="text-sm text-muted-foreground mb-3">To restore a clean hosts file:</p>
             <CodeBlock
               code={`# Restore from backup
 sudo cp /etc/hosts.backup /etc/hosts
@@ -608,7 +646,8 @@ sudo /etc/init.d/nscd restart        # nscd`}
 
             <TabsContent value="ubuntu" className="space-y-3 mt-4">
               <p className="text-sm text-muted-foreground">
-                Ubuntu and Debian use AppArmor by default. The group method (Method 3) works best here.
+                Ubuntu and Debian use AppArmor by default. The group method (Method 3) works best
+                here.
               </p>
               <CodeBlock
                 code={`# Recommended for Ubuntu/Debian

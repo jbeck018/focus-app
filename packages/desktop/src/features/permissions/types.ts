@@ -5,7 +5,7 @@ export interface PermissionStatus {
   hosts_file_error: string | null;
   process_monitoring_available: boolean;
   process_monitoring_error: string | null;
-  overall_status: 'fully_functional' | 'degraded' | 'non_functional';
+  overall_status: "fully_functional" | "degraded" | "non_functional";
 }
 
 export interface PermissionContextValue {

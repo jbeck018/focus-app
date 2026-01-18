@@ -3,7 +3,7 @@
 // Renders the appropriate celebration component based on tier level.
 // Should be mounted at the app root level to display celebrations globally.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Trophy, Sparkles, Star } from "lucide-react";
@@ -14,9 +14,20 @@ import {
 } from "@/hooks/use-achievement-celebration";
 import { EpicCelebration } from "./epic-celebration";
 
+// Generate sparkle positions outside of React render
+function generateSparklePositions() {
+  return Array.from({ length: 8 }).map(() => ({
+    left: 10 + Math.random() * 80,
+    top: 10 + Math.random() * 80,
+  }));
+}
+
 // Major celebration (Tier 4) - Large animated toast with confetti
 function MajorCelebration({ celebration }: { celebration: AchievementUnlockPayload }) {
   const { achievement, isFirstInCategory } = celebration;
+
+  // Pre-compute random positions on mount (lazy initializer runs once)
+  const [sparklePositions] = useState(generateSparklePositions);
 
   return (
     <motion.div
@@ -27,13 +38,13 @@ function MajorCelebration({ celebration }: { celebration: AchievementUnlockPaylo
     >
       {/* Sparkles animation */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 8 }).map((_, i) => (
+        {sparklePositions.map((pos, i) => (
           <motion.div
             key={i}
             className="absolute text-purple-400"
             style={{
-              left: `${10 + Math.random() * 80}%`,
-              top: `${10 + Math.random() * 80}%`,
+              left: `${pos.left}%`,
+              top: `${pos.top}%`,
             }}
             initial={{ scale: 0, opacity: 0 }}
             animate={{
@@ -70,7 +81,9 @@ function MajorCelebration({ celebration }: { celebration: AchievementUnlockPaylo
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <Trophy className="w-5 h-5 text-purple-500" />
-            <h3 className="font-bold text-purple-700 dark:text-purple-300">Achievement Unlocked!</h3>
+            <h3 className="font-bold text-purple-700 dark:text-purple-300">
+              Achievement Unlocked!
+            </h3>
           </div>
 
           <h4 className="font-bold text-lg mb-1 text-foreground">{achievement.name}</h4>
@@ -216,7 +229,7 @@ export function AchievementCelebrationProvider({ children }: { children: React.R
 
       {/* Tier 5 (Epic) celebrations render as full-screen modal */}
       <AnimatePresence>
-        {currentCelebration && currentCelebration.celebrationTier === 5 && (
+        {currentCelebration?.celebrationTier === 5 && (
           <EpicCelebration celebration={currentCelebration} onDismiss={dismissCelebration} />
         )}
       </AnimatePresence>

@@ -300,6 +300,7 @@ pub async fn get_current_user(state: State<'_, AppState>) -> Result<Option<UserI
 
 /// Set subscription tier (DEV ONLY - for local testing)
 /// This allows testing Pro/Team features without actual payment
+#[cfg(debug_assertions)]
 #[tauri::command]
 pub async fn dev_set_subscription_tier(
     state: State<'_, AppState>,
@@ -420,7 +421,7 @@ const GOOGLE_REDIRECT_URI: &str = "focusflow://oauth/auth-callback";
 
 // Note: Client ID should come from environment or config in production
 // For development, set GOOGLE_CLIENT_ID environment variable or use credentials store
-const GOOGLE_CLIENT_ID_DEFAULT: &str = "YOUR_GOOGLE_CLIENT_ID";
+const GOOGLE_CLIENT_ID_DEFAULT: &str = "MISSING_GOOGLE_CLIENT_ID";
 
 /// Pending OAuth state for PKCE verification
 #[derive(Debug, Clone)]
@@ -703,6 +704,9 @@ async fn get_google_client_id(_state: &State<'_, AppState>) -> String {
     }
 
     // Fall back to default placeholder (will fail auth but provides guidance)
+    tracing::warn!(
+        "Google OAuth client ID not configured. Set GOOGLE_CLIENT_ID environment variable or store in credentials."
+    );
     GOOGLE_CLIENT_ID_DEFAULT.to_string()
 }
 

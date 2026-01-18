@@ -14,14 +14,17 @@ export function DegradedModeBanner({ onFixClick }: DegradedModeBannerProps) {
   const { permissionStatus, isDegraded } = usePermissions();
   const [isVisible, setIsVisible] = useState(false);
 
-  // Animate in after a short delay
+  // Animate in after a short delay when degraded, otherwise reset visibility
   useEffect(() => {
-    if (isDegraded) {
-      const timer = setTimeout(() => setIsVisible(true), 300);
+    if (!isDegraded) {
+      // Reset visibility when no longer degraded - use timer to batch state update
+      const timer = setTimeout(() => setIsVisible(false), 0);
       return () => clearTimeout(timer);
-    } else {
-      setIsVisible(false);
     }
+
+    // Animate in after a short delay when degraded
+    const timer = setTimeout(() => setIsVisible(true), 300);
+    return () => clearTimeout(timer);
   }, [isDegraded]);
 
   // Don't render if permissions are fully functional
@@ -53,9 +56,7 @@ export function DegradedModeBanner({ onFixClick }: DegradedModeBannerProps) {
       aria-atomic="true"
       className={cn(
         "fixed bottom-4 left-4 right-4 z-50 transition-all duration-500 ease-out",
-        isVisible
-          ? "translate-y-0 opacity-100"
-          : "translate-y-4 opacity-0 pointer-events-none"
+        isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
       )}
     >
       <div
@@ -72,28 +73,35 @@ export function DegradedModeBanner({ onFixClick }: DegradedModeBannerProps) {
             {isNonFunctional ? (
               <XCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" aria-hidden="true" />
+              <AlertTriangle
+                className="h-5 w-5 text-amber-600 dark:text-amber-500"
+                aria-hidden="true"
+              />
             )}
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0 space-y-1">
-            <p className={cn(
-              "font-semibold text-sm",
-              isNonFunctional
-                ? "text-destructive dark:text-red-400"
-                : "text-amber-900 dark:text-amber-300"
-            )}>
+            <p
+              className={cn(
+                "font-semibold text-sm",
+                isNonFunctional
+                  ? "text-destructive dark:text-red-400"
+                  : "text-amber-900 dark:text-amber-300"
+              )}
+            >
               {isNonFunctional
                 ? "Blocking features are unavailable"
                 : "Blocking features are limited"}
             </p>
-            <p className={cn(
-              "text-sm",
-              isNonFunctional
-                ? "text-destructive/90 dark:text-red-400/90"
-                : "text-amber-800 dark:text-amber-400"
-            )}>
+            <p
+              className={cn(
+                "text-sm",
+                isNonFunctional
+                  ? "text-destructive/90 dark:text-red-400/90"
+                  : "text-amber-800 dark:text-amber-400"
+              )}
+            >
               Missing permissions for {missingFeatures.join(" and ")}
               {permissionStatus.hosts_file_error && (
                 <span className="block mt-1 text-xs opacity-80">
@@ -111,7 +119,8 @@ export function DegradedModeBanner({ onFixClick }: DegradedModeBannerProps) {
               onClick={onFixClick}
               className={cn(
                 "shadow-sm",
-                isDegradedOnly && "bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600"
+                isDegradedOnly &&
+                  "bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600"
               )}
             >
               <Settings className="h-4 w-4 mr-2" aria-hidden="true" />

@@ -1,12 +1,9 @@
-// features/permissions/permission-status-context.tsx - Permission status context provider
+// features/permissions/permission-status-provider.tsx - Permission status context provider
 
-import { createContext, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { PermissionStatus, PermissionContextValue } from "./types";
-
-export const PermissionStatusContext = createContext<PermissionContextValue | undefined>(
-  undefined
-);
+import { PermissionStatusContext } from "./permission-status-context";
 
 interface PermissionStatusProviderProps {
   children: React.ReactNode;
@@ -45,8 +42,7 @@ export function PermissionStatusProvider({ children }: PermissionStatusProviderP
     checkPermissions();
   }, [checkPermissions]);
 
-  const hasFullPermissions =
-    permissionStatus?.overall_status === "fully_functional" || false;
+  const hasFullPermissions = permissionStatus?.overall_status === "fully_functional" || false;
   const isDegraded =
     permissionStatus?.overall_status === "degraded" ||
     permissionStatus?.overall_status === "non_functional";
@@ -60,8 +56,6 @@ export function PermissionStatusProvider({ children }: PermissionStatusProviderP
   };
 
   return (
-    <PermissionStatusContext.Provider value={value}>
-      {children}
-    </PermissionStatusContext.Provider>
+    <PermissionStatusContext.Provider value={value}>{children}</PermissionStatusContext.Provider>
   );
 }

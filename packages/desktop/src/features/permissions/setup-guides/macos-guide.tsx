@@ -79,8 +79,10 @@ export function MacOSGuide() {
         <Terminal className="h-4 w-4" />
         <AlertTitle>macOS Permissions Setup</AlertTitle>
         <AlertDescription>
-          FocusFlow needs write access to <code className="text-xs bg-muted px-1 rounded">/etc/hosts</code>
-          to block websites at the DNS level. Choose one of the methods below based on your security preferences.
+          FocusFlow needs write access to{" "}
+          <code className="text-xs bg-muted px-1 rounded">/etc/hosts</code>
+          to block websites at the DNS level. Choose one of the methods below based on your security
+          preferences.
         </AlertDescription>
       </Alert>
 
@@ -91,9 +93,16 @@ export function MacOSGuide() {
         <AlertDescription className="space-y-2">
           <p>Each method has different security implications:</p>
           <ul className="list-disc list-inside text-sm space-y-1 mt-2">
-            <li><strong>Temporary Sudo:</strong> Most secure, requires password each launch</li>
-            <li><strong>NOPASSWD Sudoers:</strong> Convenient but allows passwordless access to hosts file</li>
-            <li><strong>File Permissions:</strong> Least secure, any process can modify hosts file</li>
+            <li>
+              <strong>Temporary Sudo:</strong> Most secure, requires password each launch
+            </li>
+            <li>
+              <strong>NOPASSWD Sudoers:</strong> Convenient but allows passwordless access to hosts
+              file
+            </li>
+            <li>
+              <strong>File Permissions:</strong> Least secure, any process can modify hosts file
+            </li>
           </ul>
         </AlertDescription>
       </Alert>
@@ -102,7 +111,10 @@ export function MacOSGuide() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-400">
+            <Badge
+              variant="secondary"
+              className="bg-green-500/10 text-green-700 dark:text-green-400"
+            >
               Recommended
             </Badge>
             <CardTitle className="text-lg">Method 1: Run with Sudo (Temporary)</CardTitle>
@@ -120,7 +132,8 @@ export function MacOSGuide() {
               Open Terminal
             </h4>
             <p className="text-sm text-muted-foreground ml-8">
-              You can find Terminal in Applications → Utilities, or press Cmd+Space and type "Terminal"
+              You can find Terminal in Applications → Utilities, or press Cmd+Space and type
+              "Terminal"
             </p>
           </div>
 
@@ -152,7 +165,8 @@ export function MacOSGuide() {
           <Alert>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription>
-              You'll need to repeat this process each time you launch FocusFlow, but your system remains secure.
+              You'll need to repeat this process each time you launch FocusFlow, but your system
+              remains secure.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -175,7 +189,8 @@ export function MacOSGuide() {
           <Alert variant="destructive">
             <ShieldAlert className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              This method allows the app to modify /etc/hosts without a password. Only use if you trust FocusFlow completely.
+              This method allows the app to modify /etc/hosts without a password. Only use if you
+              trust FocusFlow completely.
             </AlertDescription>
           </Alert>
 
@@ -220,14 +235,16 @@ export function MacOSGuide() {
 
           <CollapsibleSection title="Advanced: User-specific configuration">
             <p className="text-sm text-muted-foreground">
-              If you want to grant access only to your user (not all admin users), replace <code className="text-xs bg-muted px-1 rounded">%admin</code> with your username:
+              If you want to grant access only to your user (not all admin users), replace{" "}
+              <code className="text-xs bg-muted px-1 rounded">%admin</code> with your username:
             </p>
             <CodeBlock
               code={`# Replace 'yourusername' with your actual username
 yourusername ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/hosts, /bin/cat /etc/hosts`}
             />
             <p className="text-sm text-muted-foreground mt-2">
-              To find your username, run: <code className="text-xs bg-muted px-1 rounded">whoami</code>
+              To find your username, run:{" "}
+              <code className="text-xs bg-muted px-1 rounded">whoami</code>
             </p>
           </CollapsibleSection>
         </CardContent>
@@ -237,7 +254,10 @@ yourusername ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/hosts, /bin/cat /etc/hosts`}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-400">
+            <Badge
+              variant="secondary"
+              className="bg-amber-500/10 text-amber-700 dark:text-amber-400"
+            >
               Not Recommended
             </Badge>
             <CardTitle className="text-lg">Method 3: Modify File Permissions</CardTitle>
@@ -340,7 +360,10 @@ sudo cp /etc/hosts.backup /etc/hosts`}
               If you see "Permission denied" when trying to modify /etc/hosts:
             </p>
             <ul className="list-disc list-inside text-sm space-y-2 mt-2 ml-4">
-              <li>Make sure you're using <code className="text-xs bg-muted px-1 rounded">sudo</code> for commands that require it</li>
+              <li>
+                Make sure you're using <code className="text-xs bg-muted px-1 rounded">sudo</code>{" "}
+                for commands that require it
+              </li>
               <li>Verify your account has admin privileges (System Settings → Users & Groups)</li>
               <li>Try restarting Terminal and running the command again</li>
             </ul>
@@ -351,14 +374,19 @@ sudo cp /etc/hosts.backup /etc/hosts`}
               If websites aren't being blocked even after permissions are set:
             </p>
             <ol className="list-decimal list-inside text-sm space-y-2 ml-4">
-              <li>Flush your DNS cache:
+              <li>
+                Flush your DNS cache:
                 <CodeBlock code="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder" />
               </li>
-              <li>Check if the entries were added to /etc/hosts:
+              <li>
+                Check if the entries were added to /etc/hosts:
                 <CodeBlock code="cat /etc/hosts | grep focusflow" />
               </li>
               <li>Try restarting your browser or the blocked application</li>
-              <li>Some browsers use their own DNS (like Brave/Chrome with DNS-over-HTTPS) - disable it in browser settings</li>
+              <li>
+                Some browsers use their own DNS (like Brave/Chrome with DNS-over-HTTPS) - disable it
+                in browser settings
+              </li>
             </ol>
           </CollapsibleSection>
 
@@ -370,14 +398,15 @@ sudo cp /etc/hosts.backup /etc/hosts`}
               <li>Check system logs: Console.app → System Reports</li>
               <li>Verify /etc/hosts is not locked by another process</li>
               <li>Try running with verbose logging to see detailed errors</li>
-              <li>Ensure you have enough disk space (check with <code className="text-xs bg-muted px-1 rounded">df -h</code>)</li>
+              <li>
+                Ensure you have enough disk space (check with{" "}
+                <code className="text-xs bg-muted px-1 rounded">df -h</code>)
+              </li>
             </ul>
           </CollapsibleSection>
 
           <CollapsibleSection title="Restore original hosts file">
-            <p className="text-sm text-muted-foreground mb-3">
-              To restore a clean hosts file:
-            </p>
+            <p className="text-sm text-muted-foreground mb-3">To restore a clean hosts file:</p>
             <CodeBlock
               code={`# Create backup first
 sudo cp /etc/hosts /etc/hosts.focusflow-backup

@@ -47,9 +47,7 @@ export function SetupGuidesModal({
               <div>
                 <DialogTitle className="text-xl">{title}</DialogTitle>
                 {description && (
-                  <DialogDescription className="mt-1">
-                    {description}
-                  </DialogDescription>
+                  <DialogDescription className="mt-1">{description}</DialogDescription>
                 )}
               </div>
             </div>
@@ -96,12 +94,7 @@ export function SetupGuidesButton({
 
   return (
     <>
-      <Button
-        variant={variant}
-        size={size}
-        onClick={() => setOpen(true)}
-        className="gap-2"
-      >
+      <Button variant={variant} size={size} onClick={() => setOpen(true)} className="gap-2">
         <Shield className="h-4 w-4" />
         {children}
       </Button>

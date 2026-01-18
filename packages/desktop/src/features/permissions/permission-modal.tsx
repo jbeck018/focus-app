@@ -41,7 +41,8 @@ function PlatformInstructions({
             <ol className="list-decimal list-inside space-y-1.5 text-sm text-muted-foreground pl-2">
               <li>Open Terminal</li>
               <li>
-                Run: <code className="bg-muted px-1.5 py-0.5 rounded">sudo chmod 644 /etc/hosts</code>
+                Run:{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded">sudo chmod 644 /etc/hosts</code>
               </li>
               <li>Grant permission when prompted</li>
               <li>Restart FocusFlow</li>
@@ -132,8 +133,8 @@ export function PermissionModal({ open: controlledOpen, onOpenChange }: Permissi
   const [isRechecking, setIsRechecking] = useState(false);
 
   // Use controlled or internal state
-  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
-  const setIsOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
+  const isOpen = controlledOpen ?? internalOpen;
+  const setIsOpen = onOpenChange ?? setInternalOpen;
 
   // Detect platform
   const [platform, setPlatform] = useState<"macos" | "windows" | "linux">("macos");
@@ -201,9 +202,15 @@ export function PermissionModal({ open: controlledOpen, onOpenChange }: Permissi
 
         <div className="space-y-4 py-4">
           {/* Status Overview */}
-          <Alert variant={permissionStatus.overall_status === "non_functional" ? "destructive" : "default"}>
+          <Alert
+            variant={
+              permissionStatus.overall_status === "non_functional" ? "destructive" : "default"
+            }
+          >
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Current Status: {permissionStatus.overall_status.replace("_", " ").toUpperCase()}</AlertTitle>
+            <AlertTitle>
+              Current Status: {permissionStatus.overall_status.replace("_", " ").toUpperCase()}
+            </AlertTitle>
             <AlertDescription>
               {permissionStatus.overall_status === "degraded" &&
                 "Some blocking features are limited or unavailable."}
@@ -279,23 +286,18 @@ export function PermissionModal({ open: controlledOpen, onOpenChange }: Permissi
             <Checkbox
               id="dont-show"
               checked={dontShowAgain}
-              onCheckedChange={(checked: boolean | "indeterminate") => setDontShowAgain(checked === true)}
+              onCheckedChange={(checked: boolean | "indeterminate") =>
+                setDontShowAgain(checked === true)
+              }
             />
-            <Label
-              htmlFor="dont-show"
-              className="text-sm text-muted-foreground cursor-pointer"
-            >
+            <Label htmlFor="dont-show" className="text-sm text-muted-foreground cursor-pointer">
               Don't show this warning again
             </Label>
           </div>
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button
-            variant="outline"
-            onClick={handleOpenGuide}
-            className="w-full sm:w-auto"
-          >
+          <Button variant="outline" onClick={handleOpenGuide} className="w-full sm:w-auto">
             <ExternalLink className="h-4 w-4 mr-2" />
             Open Setup Guide
           </Button>
@@ -309,10 +311,7 @@ export function PermissionModal({ open: controlledOpen, onOpenChange }: Permissi
               <RefreshCw className={`h-4 w-4 mr-2 ${isRechecking ? "animate-spin" : ""}`} />
               Check Again
             </Button>
-            <Button
-              onClick={handleClose}
-              className="flex-1 sm:flex-initial"
-            >
+            <Button onClick={handleClose} className="flex-1 sm:flex-initial">
               Continue Anyway
             </Button>
           </div>

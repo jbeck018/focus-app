@@ -32,10 +32,7 @@ export function PermissionIntegration() {
       <DegradedModeBanner onFixClick={() => setShowPermissionModal(true)} />
 
       {/* Permission modal for fixing issues */}
-      <PermissionModal
-        open={showPermissionModal}
-        onOpenChange={setShowPermissionModal}
-      />
+      <PermissionModal open={showPermissionModal} onOpenChange={setShowPermissionModal} />
     </>
   );
 }

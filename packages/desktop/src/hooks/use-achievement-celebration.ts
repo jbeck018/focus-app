@@ -4,7 +4,7 @@
 // Listens to 'achievement-unlocked' events from the backend and displays
 // appropriate celebrations based on the tier level.
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useLayoutEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { Achievement } from "@focusflow/types";
 
@@ -42,6 +42,9 @@ export function useAchievementCelebration() {
   const [isAnimating, setIsAnimating] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Use a ref to hold the process function for recursive calls
+  const processNextRef = useRef<() => void>(() => {});
+
   // Process the next celebration in the queue
   const processNextCelebration = useCallback(() => {
     setCelebrationQueue((queue) => {
@@ -73,15 +76,20 @@ export function useAchievementCelebration() {
       timeoutRef.current = setTimeout(() => {
         setCurrentCelebration(null);
         setIsAnimating(false);
-        // Small delay before next celebration
+        // Small delay before next celebration - use ref to avoid accessing before declaration
         setTimeout(() => {
-          processNextCelebration();
+          processNextRef.current();
         }, 300);
       }, duration);
 
       return rest;
     });
   }, []);
+
+  // Keep ref in sync with the callback (must be in effect, not during render)
+  useLayoutEffect(() => {
+    processNextRef.current = processNextCelebration;
+  });
 
   // Add celebration to queue
   const addCelebration = useCallback((payload: AchievementUnlockPayload) => {
@@ -168,7 +176,7 @@ export function playCelebrationSound(tier: number) {
       audio.play().catch(() => {
         // Silently fail if audio playback is blocked
       });
-    } catch (e) {
+    } catch {
       // Audio not available
     }
   }
