@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FocusFlow Dimming Overlay</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: transparent;
+        /* Allow click-through to windows below */
+        pointer-events: none;
+      }
+
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, var(--opacity, 0.7));
+        transition: background 0.3s ease;
+        /* Allow click-through */
+        pointer-events: none;
+      }
+
+      /* Subtle gradient for visual interest */
+      .overlay::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+          ellipse at center,
+          transparent 0%,
+          rgba(0, 0, 0, 0.1) 100%
+        );
+        pointer-events: none;
+      }
+
+      /* Optional: Show FocusFlow branding in corner */
+      .branding {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        color: rgba(255, 255, 255, 0.2);
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        pointer-events: none;
+        user-select: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="overlay" id="overlay"></div>
+    <div class="branding">FocusFlow</div>
+
+    <script type="module">
+      // Import Tauri event listener
+      const { listen } = window.__TAURI__.event;
+
+      // Set initial opacity
+      let currentOpacity = 0.7;
+
+      function setOpacity(opacity) {
+        currentOpacity = Math.max(0, Math.min(1, opacity));
+        document.documentElement.style.setProperty('--opacity', currentOpacity);
+        console.log('[dimming-overlay] Opacity set to:', currentOpacity);
+      }
+
+      // Listen for opacity changes from Tauri
+      listen('set-opacity', (event) => {
+        const opacity = typeof event.payload === 'number' ? event.payload : 0.7;
+        setOpacity(opacity);
+      });
+
+      // Initialize with default opacity
+      setOpacity(currentOpacity);
+      console.log('[dimming-overlay] Overlay initialized');
+    </script>
+  </body>
+</html>

@@ -13,11 +13,17 @@ import { Calendar } from "@/features/Calendar";
 import { AICoach } from "@/features/AICoach";
 import { TeamDashboard } from "@/features/TeamDashboard";
 import { AchievementGallery } from "@/features/achievements";
+import { AchievementCelebrationProvider } from "@/features/achievements/achievement-celebration";
 import { StreakDashboard } from "@/features/streaks";
 import { AnalyticsDashboard } from "@/features/analytics";
 import { OnboardingWizard } from "@/features/onboarding/onboarding-wizard";
 import { useMiniTimerShortcut } from "@/hooks/useKeyboardShortcuts";
 import { useNeedsOnboarding } from "@/hooks/use-onboarding";
+import {
+  PermissionStatusProvider,
+  PermissionModal,
+  DegradedModeBanner,
+} from "@/features/permissions";
 
 function App() {
   const [activeView, setActiveView] = useState<ViewType>("timer");
@@ -61,58 +67,68 @@ function App() {
   };
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      {/* Skip to main content link - WCAG 2.1 Level A (2.4.1) */}
-      <SkipLink href="#main-content">Skip to main content</SkipLink>
+    <PermissionStatusProvider>
+      <AchievementCelebrationProvider>
+        <SidebarProvider defaultOpen={true}>
+          {/* Skip to main content link - WCAG 2.1 Level A (2.4.1) */}
+          <SkipLink href="#main-content">Skip to main content</SkipLink>
 
-      {/* Sidebar Navigation */}
-      <AppSidebar activeView={activeView} onViewChange={setActiveView} />
+          {/* Sidebar Navigation */}
+          <AppSidebar activeView={activeView} onViewChange={setActiveView} />
 
-      {/* Main Content Area */}
-      <SidebarInset className="flex flex-col">
-        {/* Header */}
-        <header
-          className="sticky top-0 z-10 flex h-13 shrink-0 items-center gap-2 border-b bg-background px-4"
-          role="banner"
-        >
-          <SidebarTrigger className="-ml-1" />
-          <div className="flex-1">
-            <p className="text-sm text-muted-foreground hidden md:block">
-              Stay focused, block distractions, achieve more
-            </p>
-          </div>
-        </header>
+          {/* Main Content Area */}
+          <SidebarInset className="flex flex-col">
+            {/* Header */}
+            <header
+              className="sticky top-0 z-10 flex h-13 shrink-0 items-center gap-2 border-b bg-background px-4"
+              role="banner"
+            >
+              <SidebarTrigger className="-ml-1" />
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground hidden md:block">
+                  Stay focused, block distractions, achieve more
+                </p>
+              </div>
+            </header>
 
-        {/* Main Content */}
-        <main
-          id="main-content"
-          className="flex-1 overflow-auto p-4 md:p-6"
-          tabIndex={-1}
-          role="main"
-        >
-          {/*
-            Timer view: Vertically centered (hero/focal element)
-            All other views: Top-aligned (standard page layout)
-          */}
-          <div
-            className={
-              activeView === "timer"
-                ? "min-h-full flex flex-col items-center justify-center"
-                : "w-full max-w-6xl mx-auto"
-            }
-          >
-            {activeView === "timer" ? (
-              <div className="w-full max-w-md">{renderView()}</div>
-            ) : (
-              renderView()
-            )}
-          </div>
-        </main>
-      </SidebarInset>
+            {/* Main Content */}
+            <main
+              id="main-content"
+              className="flex-1 overflow-auto p-4 md:p-6"
+              tabIndex={-1}
+              role="main"
+            >
+              {/*
+                Timer view: Vertically centered (hero/focal element)
+                All other views: Top-aligned (standard page layout)
+              */}
+              <div
+                className={
+                  activeView === "timer"
+                    ? "min-h-full flex flex-col items-center justify-center"
+                    : "w-full max-w-6xl mx-auto"
+                }
+              >
+                {activeView === "timer" ? (
+                  <div className="w-full max-w-md">{renderView()}</div>
+                ) : (
+                  renderView()
+                )}
+              </div>
+            </main>
+          </SidebarInset>
 
-      {/* Toast notifications - Accessible status region */}
-      <Toaster position="bottom-right" />
-    </SidebarProvider>
+          {/* Permission modal - shown at startup if permissions are missing */}
+          <PermissionModal />
+
+          {/* Degraded mode banner - persistent warning when blocking features are limited */}
+          <DegradedModeBanner />
+
+          {/* Toast notifications - Accessible status region */}
+          <Toaster position="bottom-right" />
+        </SidebarProvider>
+      </AchievementCelebrationProvider>
+    </PermissionStatusProvider>
   );
 }
 

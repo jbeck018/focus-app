@@ -42,6 +42,7 @@ pub async fn run(pool: &SqlitePool) -> Result<()> {
     run_if_needed(pool, 19, "create_memory_table").await?;
     run_if_needed(pool, 20, "create_conversation_summaries_table").await?;
     run_if_needed(pool, 21, "create_chat_indices").await?;
+    run_if_needed(pool, 22, "create_team_tables").await?;
 
     Ok(())
 }
@@ -80,6 +81,7 @@ async fn run_if_needed(pool: &SqlitePool, id: i32, name: &str) -> Result<()> {
             19 => create_memory_table(pool).await?,
             20 => create_conversation_summaries_table(pool).await?,
             21 => create_chat_indices(pool).await?,
+            22 => create_team_tables(pool).await?,
             _ => return Err(crate::Error::Config(format!("Unknown migration id: {}", id))),
         }
 
@@ -1157,6 +1159,145 @@ async fn create_chat_indices(pool: &SqlitePool) -> Result<()> {
         r#"
         CREATE INDEX IF NOT EXISTS idx_summaries_conversation
         ON conversation_summaries(conversation_id, created_at DESC)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Migration 22: Create team tables for TrailBase integration
+async fn create_team_tables(pool: &SqlitePool) -> Result<()> {
+    // Create teams table
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS teams (
+            id TEXT PRIMARY KEY,
+            remote_id TEXT,
+            name TEXT NOT NULL,
+            invite_code TEXT NOT NULL UNIQUE,
+            created_by TEXT NOT NULL,
+            member_count INTEGER DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_modified TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            sync_status TEXT DEFAULT 'pending'
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Create team_members table
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS team_members (
+            id TEXT PRIMARY KEY,
+            remote_id TEXT,
+            team_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            email TEXT NOT NULL,
+            display_name TEXT,
+            role TEXT NOT NULL DEFAULT 'member',
+            joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_modified TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            sync_status TEXT DEFAULT 'pending',
+            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+            UNIQUE(team_id, user_id)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Create team_shared_sessions table (for team activity)
+    // Named differently to avoid conflict with existing shared_sessions table
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS team_shared_sessions (
+            id TEXT PRIMARY KEY,
+            remote_id TEXT,
+            team_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            session_id TEXT NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT,
+            planned_duration_minutes INTEGER NOT NULL,
+            actual_duration_seconds INTEGER,
+            completed INTEGER DEFAULT 0,
+            shared_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_modified TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            sync_status TEXT DEFAULT 'pending',
+            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+            FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Create team_blocklist table (shared blocking rules)
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS team_blocklist (
+            id TEXT PRIMARY KEY,
+            remote_id TEXT,
+            team_id TEXT NOT NULL,
+            item_type TEXT NOT NULL,
+            value TEXT NOT NULL,
+            added_by TEXT NOT NULL,
+            added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_modified TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            sync_status TEXT DEFAULT 'pending',
+            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+            UNIQUE(team_id, item_type, value)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Create indices for performance
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_team_members_team_id
+        ON team_members(team_id)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_team_members_user_id
+        ON team_members(user_id)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_team_shared_sessions_team_id
+        ON team_shared_sessions(team_id)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_team_shared_sessions_user_id
+        ON team_shared_sessions(user_id)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_team_blocklist_team_id
+        ON team_blocklist(team_id)
         "#,
     )
     .execute(pool)

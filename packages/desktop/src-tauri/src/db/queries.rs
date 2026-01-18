@@ -100,6 +100,27 @@ pub async fn end_session(
     Ok(())
 }
 
+/// Update planned duration for an active session (for session extension)
+pub async fn update_session_duration(
+    pool: &SqlitePool,
+    session_id: &str,
+    new_planned_duration_minutes: i32,
+) -> Result<u64> {
+    let result = sqlx::query(
+        r#"
+        UPDATE sessions
+        SET planned_duration_minutes = ?
+        WHERE id = ? AND end_time IS NULL
+        "#,
+    )
+    .bind(new_planned_duration_minutes)
+    .bind(session_id)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
 /// Get session by ID
 pub async fn get_session(pool: &SqlitePool, id: &str) -> Result<Option<Session>> {
     let session = sqlx::query_as::<_, Session>(
@@ -609,6 +630,26 @@ pub async fn get_achievement_stats(
     .await?;
 
     Ok(stats)
+}
+
+/// Get list of categories that have at least one unlocked achievement
+pub async fn get_unlocked_categories(
+    pool: &SqlitePool,
+    user_id: Option<&str>,
+) -> Result<Vec<String>> {
+    let categories: Vec<(String,)> = sqlx::query_as(
+        r#"
+        SELECT DISTINCT a.category
+        FROM achievements a
+        INNER JOIN user_achievements ua ON a.id = ua.achievement_id
+        WHERE (ua.user_id IS NULL OR ua.user_id = ?)
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(categories.into_iter().map(|(c,)| c).collect())
 }
 
 /// Get recent unlocked achievements

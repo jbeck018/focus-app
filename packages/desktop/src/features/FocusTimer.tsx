@@ -2,7 +2,7 @@
 // Timer state is owned by Rust backend for perfect cross-window sync
 
 import { useCallback, useState, useEffect } from "react";
-import { Play, Pause, Square, Lock, Maximize2 } from "lucide-react";
+import { Play, Pause, Square, Lock, Maximize2, Plus } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button";
@@ -43,9 +43,15 @@ interface TimerTickPayload {
   isPaused: boolean;
 }
 
+// Extension duration presets in minutes
+const EXTENSION_PRESETS = [5, 10, 15, 25];
+
 export function FocusTimer() {
   const [showStartDialog, setShowStartDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showExtendDialog, setShowExtendDialog] = useState(false);
+  const [extensionMinutes, setExtensionMinutes] = useState(15);
+  const [isExtending, setIsExtending] = useState(false);
   const [duration, setDuration] = useState(25);
   const [sessionType, setSessionType] = useState<SessionType>("focus");
   const [announcement, setAnnouncement] = useState("");
@@ -161,6 +167,21 @@ export function FocusTimer() {
       console.error("Failed to toggle pause:", error);
     }
   }, []);
+
+  // Handle extending the session
+  const handleExtendSession = useCallback(async () => {
+    if (isExtending) return;
+    setIsExtending(true);
+    try {
+      await invoke("extend_session", { additionalMinutes: extensionMinutes });
+      setShowExtendDialog(false);
+      setAnnouncement(`Session extended by ${extensionMinutes} minutes`);
+    } catch (error) {
+      console.error("Failed to extend session:", error);
+    } finally {
+      setIsExtending(false);
+    }
+  }, [extensionMinutes, isExtending]);
 
   const handleStartButtonClick = () => {
     if (!canStartSession()) {
@@ -344,6 +365,16 @@ export function FocusTimer() {
               </Button>
               <Button
                 size="lg"
+                variant="secondary"
+                onClick={() => setShowExtendDialog(true)}
+                className="w-24"
+                aria-label="Extend session"
+              >
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Extend
+              </Button>
+              <Button
+                size="lg"
                 variant="destructive"
                 onClick={() => handleStopSession(false)}
                 className="w-24"
@@ -352,6 +383,67 @@ export function FocusTimer() {
                 <Square className="mr-2 h-4 w-4" aria-hidden="true" />
                 Stop
               </Button>
+
+              {/* Extend Session Dialog */}
+              <Dialog open={showExtendDialog} onOpenChange={setShowExtendDialog}>
+                <DialogContent aria-describedby="extend-dialog-description">
+                  <DialogHeader>
+                    <DialogTitle>Extend Session</DialogTitle>
+                    <DialogDescription id="extend-dialog-description">
+                      Add more time to your current focus session
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    {/* Extension Presets */}
+                    <div className="space-y-2" role="group" aria-labelledby="extend-duration-label">
+                      <Label id="extend-duration-label">Quick Add</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {EXTENSION_PRESETS.map((preset) => (
+                          <Button
+                            key={preset}
+                            variant={extensionMinutes === preset ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setExtensionMinutes(preset)}
+                            aria-label={`Extend by ${preset} minutes`}
+                            aria-pressed={extensionMinutes === preset}
+                          >
+                            +{preset} min
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Duration */}
+                    <div className="space-y-2">
+                      <Label htmlFor="extend-custom-duration">Custom (minutes)</Label>
+                      <Input
+                        id="extend-custom-duration"
+                        type="number"
+                        min={1}
+                        max={120}
+                        value={extensionMinutes}
+                        onChange={(e) =>
+                          setExtensionMinutes(
+                            Math.min(120, Math.max(1, parseInt(e.target.value) || 1))
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowExtendDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleExtendSession}
+                      disabled={isExtending}
+                      aria-label={isExtending ? "Extending session" : "Extend session"}
+                    >
+                      {isExtending ? "Extending..." : `Add ${extensionMinutes} min`}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </>
           ) : (
             <>

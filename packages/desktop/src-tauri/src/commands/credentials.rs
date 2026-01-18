@@ -90,6 +90,19 @@ pub async fn has_api_key(provider: String) -> Result<bool> {
     }
 }
 
+/// Internal function to get an API key, returning None if not found
+/// This is used by other modules that need to check for credentials
+/// without causing an error when they don't exist.
+pub async fn get_api_key_internal(provider: &str) -> Result<Option<String>> {
+    let entry = Entry::new(SERVICE_NAME, provider)
+        .map_err(|e| Error::Config(format!("Failed to create keyring entry: {}", e)))?;
+
+    match entry.get_password() {
+        Ok(key) => Ok(Some(key)),
+        Err(_) => Ok(None),
+    }
+}
+
 /// List all providers that have saved API keys
 #[command]
 pub async fn list_saved_providers() -> Result<Vec<CredentialInfo>> {

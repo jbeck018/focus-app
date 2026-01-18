@@ -672,8 +672,11 @@ fn check_grace_period(last_activity_date: &Option<String>) -> Result<(bool, Opti
     let yesterday = today - Duration::days(1);
 
     if last_date == yesterday {
+        let midnight_time = today
+            .and_hms_opt(0, 0, 0)
+            .ok_or_else(|| Error::Validation("Invalid time: 00:00:00".to_string()))?;
         let midnight = Local
-            .from_local_datetime(&today.and_hms_opt(0, 0, 0).unwrap())
+            .from_local_datetime(&midnight_time)
             .single()
             .ok_or_else(|| Error::Validation("Invalid datetime".to_string()))?;
 

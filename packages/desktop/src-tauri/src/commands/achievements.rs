@@ -1,4 +1,9 @@
 // commands/achievements.rs - Achievement system commands
+//
+// Includes a 5-tier progressive celebration system based on gamification psychology:
+// - Heavy celebrations for new users to establish habit (positive reinforcement)
+// - Lighter celebrations as users advance (avoid overjustification effect)
+// - Variable ratio reinforcement through rarity-based scaling
 
 use crate::{
     db::queries::{self, Achievement, AchievementWithStatus, UserAchievement},
@@ -7,8 +12,127 @@ use crate::{
 };
 use chrono::Timelike;
 use serde::Serialize;
-use tauri::State;
+use tauri::{Emitter, State};
 use tauri_plugin_notification::NotificationExt;
+
+/// Celebration tier determines the intensity of the unlock animation
+/// Tier 5 (Epic): Full-screen modal, fireworks, confetti 4s, fanfare, 6s duration
+/// Tier 4 (Major): Large animated toast, confetti 2s, chime, sparkles, 5s duration
+/// Tier 3 (Standard): Enhanced toast, subtle sparkle, soft ding, 4s duration
+/// Tier 2 (Light): Simple toast, icon highlight, no sound, 3s duration
+/// Tier 1 (Minimal): Badge indicator update only, no interruption
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CelebrationTier(pub u8);
+
+impl CelebrationTier {
+    pub const MINIMAL: Self = Self(1);
+    pub const LIGHT: Self = Self(2);
+    pub const STANDARD: Self = Self(3);
+    pub const MAJOR: Self = Self(4);
+    pub const EPIC: Self = Self(5);
+}
+
+/// User experience level based on total unlocked achievements
+#[derive(Debug, Clone, Copy)]
+enum UserLevel {
+    New,          // 0-3 unlocks
+    Beginner,     // 4-8 unlocks
+    Intermediate, // 9-14 unlocks
+    Advanced,     // 15-20 unlocks
+    Master,       // 21+ unlocks
+}
+
+impl UserLevel {
+    fn from_unlock_count(count: i64) -> Self {
+        match count {
+            0..=3 => Self::New,
+            4..=8 => Self::Beginner,
+            9..=14 => Self::Intermediate,
+            15..=20 => Self::Advanced,
+            _ => Self::Master,
+        }
+    }
+}
+
+/// Achievement rarity for celebration tier calculation
+#[derive(Debug, Clone, Copy)]
+enum AchievementRarity {
+    Common,
+    Rare,
+    Epic,
+    Legendary,
+}
+
+impl AchievementRarity {
+    fn from_str(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "legendary" => Self::Legendary,
+            "epic" => Self::Epic,
+            "rare" => Self::Rare,
+            _ => Self::Common,
+        }
+    }
+}
+
+/// Calculate celebration tier based on user level and achievement rarity
+/// Matrix:
+/// | User Level   | Common | Rare | Epic | Legendary |
+/// |--------------|--------|------|------|-----------|
+/// | New (0-3)    | Tier 3 | Tier 4 | Tier 5 | Tier 5 |
+/// | Beginner     | Tier 2 | Tier 3 | Tier 4 | Tier 5 |
+/// | Intermediate | Tier 1 | Tier 2 | Tier 3 | Tier 4 |
+/// | Advanced     | Tier 1 | Tier 1 | Tier 2 | Tier 3 |
+/// | Master (21+) | Tier 1 | Tier 1 | Tier 1 | Tier 2 |
+fn calculate_celebration_tier(rarity: &str, total_unlocked: i64) -> CelebrationTier {
+    let user_level = UserLevel::from_unlock_count(total_unlocked);
+    let achievement_rarity = AchievementRarity::from_str(rarity);
+
+    let tier = match (user_level, achievement_rarity) {
+        // New users (0-3 unlocks) - Heavy celebrations to establish habit
+        (UserLevel::New, AchievementRarity::Common) => 3,
+        (UserLevel::New, AchievementRarity::Rare) => 4,
+        (UserLevel::New, AchievementRarity::Epic) => 5,
+        (UserLevel::New, AchievementRarity::Legendary) => 5,
+
+        // Beginner users (4-8 unlocks)
+        (UserLevel::Beginner, AchievementRarity::Common) => 2,
+        (UserLevel::Beginner, AchievementRarity::Rare) => 3,
+        (UserLevel::Beginner, AchievementRarity::Epic) => 4,
+        (UserLevel::Beginner, AchievementRarity::Legendary) => 5,
+
+        // Intermediate users (9-14 unlocks)
+        (UserLevel::Intermediate, AchievementRarity::Common) => 1,
+        (UserLevel::Intermediate, AchievementRarity::Rare) => 2,
+        (UserLevel::Intermediate, AchievementRarity::Epic) => 3,
+        (UserLevel::Intermediate, AchievementRarity::Legendary) => 4,
+
+        // Advanced users (15-20 unlocks)
+        (UserLevel::Advanced, AchievementRarity::Common) => 1,
+        (UserLevel::Advanced, AchievementRarity::Rare) => 1,
+        (UserLevel::Advanced, AchievementRarity::Epic) => 2,
+        (UserLevel::Advanced, AchievementRarity::Legendary) => 3,
+
+        // Master users (21+ unlocks) - Minimal interruption, intrinsic motivation
+        (UserLevel::Master, AchievementRarity::Common) => 1,
+        (UserLevel::Master, AchievementRarity::Rare) => 1,
+        (UserLevel::Master, AchievementRarity::Epic) => 1,
+        (UserLevel::Master, AchievementRarity::Legendary) => 2,
+    };
+
+    CelebrationTier(tier)
+}
+
+/// Payload for achievement-unlocked event
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementUnlockPayload {
+    pub achievement: Achievement,
+    pub celebration_tier: u8,
+    pub is_first_in_category: bool,
+    pub total_unlocked: i64,
+    pub user_level: String,
+}
 
 #[derive(Debug, Serialize)]
 pub struct AchievementStatsResponse {
@@ -19,8 +143,10 @@ pub struct AchievementStatsResponse {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AchievementCheckResult {
     pub newly_unlocked: Vec<Achievement>,
+    pub celebration_payloads: Vec<AchievementUnlockPayload>,
 }
 
 /// Get all achievements with unlock status
@@ -94,6 +220,16 @@ pub async fn check_achievements(
     let user_id_ref = user_id.as_deref();
 
     let mut newly_unlocked = Vec::new();
+
+    // Get current unlock count before checking (for celebration tier calculation)
+    let (_, initial_unlocked, _) = queries::get_achievement_stats(
+        state.pool(),
+        user_id_ref,
+    ).await?;
+
+    // Track categories that have been unlocked for "first in category" detection
+    let existing_categories = queries::get_unlocked_categories(state.pool(), user_id_ref).await
+        .unwrap_or_default();
 
     // Get the session to check special achievements
     let session = queries::get_session(state.pool(), &session_id).await?;
@@ -247,12 +383,58 @@ pub async fn check_achievements(
         .await?,
     );
 
-    // Send notifications for newly unlocked achievements
-    for achievement in &newly_unlocked {
-        send_achievement_notification(&state, achievement).await;
+    // Build celebration payloads and emit events
+    let mut celebration_payloads = Vec::new();
+
+    for (i, achievement) in newly_unlocked.iter().enumerate() {
+        // Calculate tier based on unlock count at time of this achievement
+        let unlocks_at_time = initial_unlocked + i as i64;
+        let tier = calculate_celebration_tier(&achievement.rarity, unlocks_at_time);
+
+        // Check if this is the first achievement in its category
+        let is_first_in_category = !existing_categories.contains(&achievement.category);
+
+        let user_level = match UserLevel::from_unlock_count(unlocks_at_time) {
+            UserLevel::New => "new",
+            UserLevel::Beginner => "beginner",
+            UserLevel::Intermediate => "intermediate",
+            UserLevel::Advanced => "advanced",
+            UserLevel::Master => "master",
+        };
+
+        let payload = AchievementUnlockPayload {
+            achievement: achievement.clone(),
+            celebration_tier: tier.0,
+            is_first_in_category,
+            total_unlocked: unlocks_at_time + 1,
+            user_level: user_level.to_string(),
+        };
+
+        celebration_payloads.push(payload.clone());
+
+        // Emit event for each achievement (allows frontend to queue celebrations)
+        if let Err(e) = state.app_handle.emit("achievement-unlocked", &payload) {
+            tracing::warn!("Failed to emit achievement-unlocked event: {}", e);
+        }
+
+        // Send system notification (Tier 3+ gets notification)
+        if tier.0 >= 3 {
+            send_achievement_notification(&state, achievement, tier.0).await;
+        }
+
+        tracing::info!(
+            "Achievement unlocked: {} (tier {}, category: {}, first_in_cat: {})",
+            achievement.name,
+            tier.0,
+            achievement.category,
+            is_first_in_category
+        );
     }
 
-    Ok(AchievementCheckResult { newly_unlocked })
+    Ok(AchievementCheckResult {
+        newly_unlocked,
+        celebration_payloads,
+    })
 }
 
 /// Helper function to check threshold-based achievements
@@ -305,9 +487,30 @@ async fn check_special_achievement(
 }
 
 /// Send notification for newly unlocked achievement
-async fn send_achievement_notification(state: &AppState, achievement: &Achievement) {
-    let title = format!("Achievement Unlocked: {}", achievement.name);
-    let body = format!("{} {} - {} points!", achievement.icon, achievement.description, achievement.points);
+/// Tier 5: Extra celebratory language
+/// Tier 4: Enthusiastic
+/// Tier 3: Standard congratulations
+async fn send_achievement_notification(state: &AppState, achievement: &Achievement, tier: u8) {
+    let title = match tier {
+        5 => format!("🎉 EPIC ACHIEVEMENT: {}", achievement.name),
+        4 => format!("🌟 Achievement Unlocked: {}", achievement.name),
+        _ => format!("Achievement Unlocked: {}", achievement.name),
+    };
+
+    let body = match tier {
+        5 => format!(
+            "{} {} - {} points! You're on fire!",
+            achievement.icon, achievement.description, achievement.points
+        ),
+        4 => format!(
+            "{} {} - {} points! Keep it up!",
+            achievement.icon, achievement.description, achievement.points
+        ),
+        _ => format!(
+            "{} {} - {} points",
+            achievement.icon, achievement.description, achievement.points
+        ),
+    };
 
     if let Err(e) = state
         .app_handle

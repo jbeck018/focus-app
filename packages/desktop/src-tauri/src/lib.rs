@@ -117,6 +117,10 @@ pub fn run() {
             commands::blocking::get_elevation_instructions,
             commands::blocking::check_hosts_file_permissions,
 
+            // Comprehensive permission checking
+            commands::permissions::check_permissions,
+            commands::permissions::get_permission_instructions,
+
             // Advanced blocking commands
             commands::blocking_advanced::create_blocking_schedule,
             commands::blocking_advanced::get_blocking_schedules,
@@ -151,6 +155,8 @@ pub fn run() {
             commands::auth::is_authenticated,
             commands::auth::get_current_user,
             commands::auth::dev_set_subscription_tier,
+            commands::auth::start_google_oauth,
+            commands::auth::complete_google_oauth,
 
             // Journal commands
             commands::journal::create_journal_entry,
@@ -286,6 +292,18 @@ pub fn run() {
             commands::onboarding::is_onboarding_complete,
             commands::onboarding::get_onboarding_data,
             commands::onboarding::reset_onboarding,
+
+            // Screen dimming commands
+            commands::dimming::enable_screen_dimming,
+            commands::dimming::disable_screen_dimming,
+            commands::dimming::get_dimming_state,
+            commands::dimming::set_dimming_opacity,
+
+            // Notification control commands
+            commands::notification_control::pause_system_notifications,
+            commands::notification_control::resume_system_notifications,
+            commands::notification_control::get_notification_control_state,
+            commands::notification_control::check_notification_permission,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

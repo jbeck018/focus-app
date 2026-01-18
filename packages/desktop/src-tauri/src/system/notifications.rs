@@ -4,12 +4,10 @@ use tauri::AppHandle;
 use tauri_plugin_notification::{NotificationExt, Result as NotificationResult};
 
 /// Notification helper for consistent formatting across the app
-#[allow(dead_code)]
 pub struct NotificationManager {
     app_handle: AppHandle,
 }
 
-#[allow(dead_code)]
 impl NotificationManager {
     pub fn new(app_handle: AppHandle) -> Self {
         Self { app_handle }
@@ -87,7 +85,6 @@ impl NotificationManager {
 }
 
 /// Schedule periodic notifications during long focus sessions
-#[allow(dead_code)]
 pub async fn schedule_break_reminders(
     app_handle: AppHandle,
     interval_minutes: u64,

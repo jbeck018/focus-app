@@ -250,13 +250,17 @@ export function useAnalyticsDashboard(filters: ChartFilters) {
       }));
 
       // Transform block statistics into distraction data
+      // Trend calculation heuristic based on block count:
+      // - blockCount > 10: "up" (high distraction, getting worse)
+      // - blockCount > 3: "stable" (moderate distraction)
+      // - blockCount <= 3: "down" (low distraction, improving)
       const topDistractions: DistractionData[] = (blockStatsRaw?.top_blocked_items ?? []).map(
         (item) => ({
           name: item.item_value,
           type: item.item_type === "app" ? ("app" as const) : ("website" as const),
           blockedCount: item.count,
-          lastBlocked: null, // TODO: Add lastBlocked timestamp from Rust
-          trend: "stable" as const, // TODO: Calculate trend from historical data
+          lastBlocked: null, // Backend doesn't provide this data yet
+          trend: item.count > 10 ? "up" : item.count > 3 ? "stable" : "down",
         })
       );
 

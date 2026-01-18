@@ -5,11 +5,11 @@ use crate::{
     commands::timer,
     db::queries::{self, Session},
     state::{ActiveSession, AppState, SessionType, TimerState},
+    system::notifications::NotificationManager,
     Error, Result,
 };
 use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Manager, State};
-use tauri_plugin_notification::NotificationExt;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +18,19 @@ pub struct StartSessionRequest {
     pub session_type: SessionType,
     pub blocked_apps: Vec<String>,
     pub blocked_websites: Vec<String>,
+    /// Enable screen dimming overlay during focus mode
+    #[serde(default)]
+    pub enable_dimming: bool,
+    /// Dimming opacity (0.0-1.0)
+    #[serde(default = "default_dimming_opacity")]
+    pub dimming_opacity: f32,
+    /// Pause system notifications during focus mode
+    #[serde(default)]
+    pub pause_notifications: bool,
+}
+
+fn default_dimming_opacity() -> f32 {
+    0.7
 }
 
 #[derive(Debug, Serialize)]
@@ -35,17 +48,26 @@ const FREE_TIER_DAILY_LIMIT: i64 = 3;
 /// Start a new focus session
 ///
 /// This command:
-/// 1. Enforces subscription-based session limits
-/// 2. Creates session record in database
-/// 3. Updates active session state
-/// 4. Enables blocking for specified apps/websites
-/// 5. Broadcasts session-count-changed event
+/// 1. Validates input parameters
+/// 2. Enforces subscription-based session limits
+/// 3. Creates session record in database
+/// 4. Updates active session state
+/// 5. Enables blocking for specified apps/websites
+/// 6. Broadcasts session-count-changed event
 #[tauri::command]
 pub async fn start_focus_session(
     request: StartSessionRequest,
     state: State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<SessionResponse> {
+    // Validate duration
+    if request.planned_duration_minutes <= 0 {
+        return Err(Error::Validation("Duration must be positive".into()));
+    }
+    if request.planned_duration_minutes > 480 {
+        return Err(Error::Validation("Duration cannot exceed 8 hours".into()));
+    }
+
     // Check if there's already an active session
     {
         let active = state.active_session.read().await;
@@ -146,6 +168,41 @@ pub async fn start_focus_session(
     // Start the backend timer broadcast loop
     timer::start_timer_loop(state.app_handle.clone(), (*state).clone());
 
+    // Enable screen dimming if requested
+    if request.enable_dimming {
+        let dimming_state = (*state).clone();
+        let dimming_handle = app_handle.clone();
+        let opacity = request.dimming_opacity;
+        let session_id = response.id.clone();
+        tauri::async_runtime::spawn(async move {
+            if let Err(e) = super::dimming::enable_dimming_internal(
+                &dimming_state,
+                &dimming_handle,
+                opacity,
+                true,
+                Some(session_id),
+            ).await {
+                tracing::warn!("Failed to enable screen dimming: {}", e);
+            }
+        });
+    }
+
+    // Pause notifications if requested
+    if request.pause_notifications {
+        let notification_state = (*state).clone();
+        let notification_handle = app_handle.clone();
+        let session_id = response.id.clone();
+        tauri::async_runtime::spawn(async move {
+            if let Err(e) = super::notification_control::pause_notifications_internal(
+                &notification_state,
+                &notification_handle,
+                Some(session_id),
+            ).await {
+                tracing::warn!("Failed to pause notifications: {}", e);
+            }
+        });
+    }
+
     // Broadcast session count changed event to all windows
     let sessions_today = queries::count_todays_sessions(state.pool()).await.unwrap_or(1);
     if let Err(e) = app_handle.emit(
@@ -158,19 +215,18 @@ pub async fn start_focus_session(
         tracing::warn!("Failed to emit session-count-changed: {}", e);
     }
 
-    // Send notification
-    if let Err(e) = state
-        .app_handle
-        .notification()
-        .builder()
-        .title("Focus Session Started")
-        .body(format!(
-            "Stay focused for {} minutes!",
-            request.planned_duration_minutes
-        ))
-        .show()
-    {
-        tracing::warn!("Failed to send notification: {}", e);
+    // Send session started notification via NotificationManager
+    let notification_manager = NotificationManager::new(app_handle.clone());
+    if let Err(e) = notification_manager.session_started(request.planned_duration_minutes) {
+        tracing::warn!("Failed to send session started notification: {}", e);
+    }
+
+    // Schedule break reminders for long sessions (>25 minutes)
+    if request.planned_duration_minutes > 25 {
+        let reminder_handle = app_handle.clone();
+        tauri::async_runtime::spawn(async move {
+            crate::system::notifications::schedule_break_reminders(reminder_handle, 25).await;
+        });
     }
 
     Ok(response)
@@ -214,6 +270,28 @@ pub async fn end_focus_session(
         // Don't fail the session end if hosts file clearing fails
     }
 
+    // Disable screen dimming if it was enabled
+    {
+        let dimming_state = state.dimming_state.read().await;
+        if dimming_state.enabled {
+            drop(dimming_state);
+            if let Err(e) = super::dimming::force_disable_dimming(&state, &state.app_handle).await {
+                tracing::warn!("Failed to disable screen dimming: {}", e);
+            }
+        }
+    }
+
+    // Resume notifications if they were paused
+    {
+        let notification_state = state.notification_control_state.read().await;
+        if notification_state.paused {
+            drop(notification_state);
+            if let Err(e) = super::notification_control::force_resume_notifications(&state, &state.app_handle).await {
+                tracing::warn!("Failed to resume notifications: {}", e);
+            }
+        }
+    }
+
     // Update analytics
     let date = end_time.format("%Y-%m-%d").to_string();
     let duration = session.elapsed_seconds();
@@ -242,22 +320,16 @@ pub async fn end_focus_session(
         }
     }
 
-    // Send completion notification
-    let notification_body = if completed {
-        format!("Great job! You focused for {} seconds", duration)
+    // Send completion notification via NotificationManager
+    let notification_manager = NotificationManager::new(state.app_handle.clone());
+    if completed {
+        if let Err(e) = notification_manager.session_completed(duration) {
+            tracing::warn!("Failed to send session completed notification: {}", e);
+        }
     } else {
-        "Session ended early".to_string()
-    };
-
-    if let Err(e) = state
-        .app_handle
-        .notification()
-        .builder()
-        .title("Focus Session Ended")
-        .body(notification_body)
-        .show()
-    {
-        tracing::warn!("Failed to send notification: {}", e);
+        if let Err(e) = notification_manager.session_abandoned() {
+            tracing::warn!("Failed to send session abandoned notification: {}", e);
+        }
     }
 
     Ok(SessionResponse {
@@ -319,45 +391,74 @@ pub async fn toggle_session_pause(
 }
 
 /// Extend the current session by additional minutes
-/// Updates the planned duration and emits "session-extended" event
+/// Updates the planned duration, persists to database, and broadcasts to all windows
 #[tauri::command]
 pub async fn extend_session(
     additional_minutes: i32,
     state: State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<i32> {
-    let new_duration = {
+    // Validate input
+    if additional_minutes <= 0 {
+        return Err(Error::InvalidSession(
+            "Extension must be at least 1 minute".to_string(),
+        ));
+    }
+    if additional_minutes > 120 {
+        return Err(Error::InvalidSession(
+            "Extension cannot exceed 120 minutes".to_string(),
+        ));
+    }
+
+    let (session_id, new_duration) = {
         let mut active = state.active_session.write().await;
         let session = active.as_mut().ok_or_else(|| {
             Error::InvalidSession("No active session to extend".to_string())
         })?;
 
         session.planned_duration_minutes += additional_minutes;
-        session.planned_duration_minutes
+        (session.id.clone(), session.planned_duration_minutes)
     };
 
-    // Emit event to all windows about the extension
-    if let Some(window) = app_handle.get_webview_window("main") {
-        if let Err(e) = window.emit(
-            "session-extended",
-            serde_json::json!({
-                "plannedDurationMinutes": new_duration,
-                "additionalMinutes": additional_minutes,
-            }),
-        ) {
-            tracing::warn!("Failed to emit extension event: {}", e);
-        }
-    }
-    // Also emit to mini-timer window if it exists
-    if let Some(window) = app_handle.get_webview_window("mini-timer") {
-        let _ = window.emit(
-            "session-extended",
-            serde_json::json!({
-                "plannedDurationMinutes": new_duration,
-                "additionalMinutes": additional_minutes,
-            }),
+    // Persist to database
+    let rows_affected = queries::update_session_duration(
+        state.pool(),
+        &session_id,
+        new_duration,
+    ).await?;
+
+    if rows_affected == 0 {
+        tracing::warn!(
+            "No rows updated when extending session {} - session may have ended",
+            session_id
         );
     }
+
+    // Broadcast to ALL windows using app-level emit
+    if let Err(e) = app_handle.emit(
+        "session-extended",
+        serde_json::json!({
+            "sessionId": session_id,
+            "plannedDurationMinutes": new_duration,
+            "additionalMinutes": additional_minutes,
+        }),
+    ) {
+        tracing::warn!("Failed to emit extension event: {}", e);
+    }
+
+    // Send notification via NotificationManager
+    let notification_manager = NotificationManager::new(state.app_handle.clone());
+    if let Err(e) = notification_manager.custom(
+        "Session Extended",
+        &format!("+{} minutes. New duration: {} minutes", additional_minutes, new_duration),
+    ) {
+        tracing::warn!("Failed to send extension notification: {}", e);
+    }
+
+    tracing::info!(
+        "Session {} extended by {} minutes (new total: {})",
+        session_id, additional_minutes, new_duration
+    );
 
     Ok(new_duration)
 }

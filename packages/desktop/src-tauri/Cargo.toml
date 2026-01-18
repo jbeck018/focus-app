@@ -95,9 +95,18 @@ keyring = "2.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.26"
+objc = "0.2"  # For NSWindow overlay management
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.58", features = ["Win32_Foundation", "Win32_System_Threading"] }
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",  # For overlay window management
+    "Win32_Graphics_Gdi",             # For layered windows
+] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "4"  # For D-Bus notification daemon control
 
 [features]
 # Note: macos-private-api is in default features but only applies on macOS

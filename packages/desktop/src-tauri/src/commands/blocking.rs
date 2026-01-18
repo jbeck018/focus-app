@@ -65,9 +65,47 @@ pub async fn add_blocked_website(
 ) -> Result<()> {
     // Validate domain format
     let domain = request.value.trim().to_lowercase();
-    if domain.is_empty() || domain.contains('/') {
+
+    // Check for empty domain
+    if domain.is_empty() {
+        return Err(Error::InvalidInput(
+            "Domain cannot be empty".to_string(),
+        ));
+    }
+
+    // Check domain length (max 255 chars per DNS spec)
+    if domain.len() > 253 {
+        return Err(Error::InvalidInput(
+            "Domain name is too long (max 253 characters)".to_string(),
+        ));
+    }
+
+    // Check for at least one dot (e.g., "example.com")
+    if !domain.contains('.') {
+        return Err(Error::InvalidInput(
+            "Invalid domain format. Domain must contain at least one dot (e.g., 'example.com')".to_string(),
+        ));
+    }
+
+    // Check for protocol or path characters
+    if domain.contains('/') || domain.contains(':') {
         return Err(Error::InvalidInput(
             "Invalid domain format. Use 'example.com' without protocol or path".to_string(),
+        ));
+    }
+
+    // Check for invalid characters (only alphanumeric, hyphens, and dots allowed)
+    let valid_domain = domain.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.');
+    if !valid_domain {
+        return Err(Error::InvalidInput(
+            "Domain contains invalid characters. Only letters, numbers, hyphens, and dots are allowed".to_string(),
+        ));
+    }
+
+    // Check that domain doesn't start or end with hyphen or dot
+    if domain.starts_with('.') || domain.ends_with('.') || domain.starts_with('-') || domain.ends_with('-') {
+        return Err(Error::InvalidInput(
+            "Domain cannot start or end with a dot or hyphen".to_string(),
         ));
     }
 

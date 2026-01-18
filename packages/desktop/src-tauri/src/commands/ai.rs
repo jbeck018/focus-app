@@ -339,30 +339,90 @@ pub async fn delete_model(
 
     #[cfg(feature = "local-ai")]
     {
-        let state_clone = state.inner().clone();
+        use tokio::fs;
 
+        // Get models directory
+        let models_dir = state
+            .app_handle
+            .path()
+            .app_data_dir()
+            .map_err(|e| Error::System(format!("Failed to get app data dir: {}", e)))?
+            .join("models");
+
+        let state_clone = state.inner().clone();
+        let model_name_clone = model_name.clone();
+
+        // Check if model is currently loaded
         tokio::task::spawn_blocking(move || {
             let rt = tokio::runtime::Handle::current();
             rt.block_on(async {
                 let engine_lock = state_clone.llm_engine.read().await;
-                let engine = engine_lock
-                    .as_ref()
-                    .ok_or_else(|| Error::NotFound("LLM engine not available".into()))?;
-
-                if engine.is_loaded().await && engine.model_info().name == model_name {
-                    return Err(Error::InvalidInput(
-                        "Cannot delete currently loaded model. Unload it first.".into(),
-                    ));
+                if let Some(engine) = engine_lock.as_ref() {
+                    if engine.is_loaded().await && engine.model_info().name == model_name_clone {
+                        return Err(Error::InvalidInput(
+                            "Cannot delete currently loaded model. Unload it first.".into(),
+                        ));
+                    }
                 }
-
-                info!("Model deletion not yet implemented");
-                Err(Error::System("Model deletion not yet implemented".into()))
+                Ok::<(), Error>(())
             })
         })
         .await
         .map_err(|e| Error::System(format!("Task join error: {}", e)))??;
 
-        Ok(())
+        // Try to find and delete the model file
+        // First try exact path
+        let model_path = models_dir.join(&model_name);
+        if model_path.exists() {
+            fs::remove_file(&model_path)
+                .await
+                .map_err(|e| Error::System(format!("Failed to delete model {}: {}", model_name, e)))?;
+            info!("Deleted model: {}", model_name);
+            return Ok(());
+        }
+
+        // Try with common extensions
+        for ext in &[".gguf", ".bin", ".safetensors"] {
+            let path_with_ext = models_dir.join(format!("{}{}", model_name, ext));
+            if path_with_ext.exists() {
+                fs::remove_file(&path_with_ext)
+                    .await
+                    .map_err(|e| Error::System(format!("Failed to delete model: {}", e)))?;
+                info!("Deleted model: {}{}", model_name, ext);
+                return Ok(());
+            }
+        }
+
+        // Try to find by searching directory for files containing the model name
+        if models_dir.exists() {
+            let mut entries = fs::read_dir(&models_dir)
+                .await
+                .map_err(|e| Error::System(format!("Failed to read models dir: {}", e)))?;
+
+            while let Some(entry) = entries
+                .next_entry()
+                .await
+                .map_err(|e| Error::System(format!("Failed to read entry: {}", e)))?
+            {
+                let file_name = entry.file_name().to_string_lossy().to_string();
+                if file_name.contains(&model_name) {
+                    let metadata = entry
+                        .metadata()
+                        .await
+                        .map_err(|e| Error::System(format!("Failed to get metadata: {}", e)))?;
+
+                    if metadata.is_file() {
+                        fs::remove_file(entry.path())
+                            .await
+                            .map_err(|e| Error::System(format!("Failed to delete model: {}", e)))?;
+                        info!("Deleted model file: {}", file_name);
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
+        Err(Error::NotFound(format!("Model {} not found", model_name)))
     }
 }
 
@@ -433,43 +493,162 @@ pub async fn toggle_ai_coach(
 
 /// Get total cache size of all models
 #[tauri::command]
-pub async fn get_models_cache_size(_state: State<'_, AppState>) -> Result<u64> {
-    Ok(0)
+pub async fn get_models_cache_size(state: State<'_, AppState>) -> Result<u64> {
+    // Get the app data directory for models
+    let models_dir = state
+        .app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| Error::System(format!("Failed to get app data dir: {}", e)))?
+        .join("models");
+
+    // If models directory doesn't exist, return 0
+    if !models_dir.exists() {
+        return Ok(0);
+    }
+
+    // Calculate total size of all files in models directory recursively
+    let total_size = calculate_dir_size(&models_dir).await?;
+
+    Ok(total_size)
+}
+
+/// Recursively calculate the total size of all files in a directory
+fn calculate_dir_size(
+    path: &std::path::Path,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<u64>> + Send + '_>> {
+    Box::pin(async move {
+        use tokio::fs;
+
+        let mut total_size: u64 = 0;
+        let mut entries = fs::read_dir(path)
+            .await
+            .map_err(|e| Error::System(format!("Failed to read directory: {}", e)))?;
+
+        while let Some(entry) = entries
+            .next_entry()
+            .await
+            .map_err(|e| Error::System(format!("Failed to read entry: {}", e)))?
+        {
+            let metadata = entry
+                .metadata()
+                .await
+                .map_err(|e| Error::System(format!("Failed to get metadata: {}", e)))?;
+
+            if metadata.is_file() {
+                total_size += metadata.len();
+            } else if metadata.is_dir() {
+                // Recursively calculate size of subdirectories
+                total_size += calculate_dir_size(&entry.path()).await?;
+            }
+        }
+
+        Ok(total_size)
+    })
+}
+
+/// Synchronously calculate the total size of all files in a directory
+fn calculate_dir_size_sync(path: &std::path::Path) -> Result<u64> {
+    use std::fs;
+
+    let mut total_size: u64 = 0;
+
+    if !path.exists() {
+        return Ok(0);
+    }
+
+    let entries = fs::read_dir(path)
+        .map_err(|e| Error::System(format!("Failed to read directory: {}", e)))?;
+
+    for entry in entries {
+        let entry = entry.map_err(|e| Error::System(format!("Failed to read entry: {}", e)))?;
+        let metadata = entry
+            .metadata()
+            .map_err(|e| Error::System(format!("Failed to get metadata: {}", e)))?;
+
+        if metadata.is_file() {
+            total_size += metadata.len();
+        } else if metadata.is_dir() {
+            // Recursively calculate size of subdirectories
+            total_size += calculate_dir_size_sync(&entry.path())?;
+        }
+    }
+
+    Ok(total_size)
 }
 
 /// Clear all downloaded models
+/// Returns the total bytes cleared
 #[tauri::command]
-pub async fn clear_models_cache(state: State<'_, AppState>) -> Result<()> {
-    #[cfg(not(feature = "local-ai"))]
-    {
-        Ok(())
+pub async fn clear_models_cache(state: State<'_, AppState>) -> Result<u64> {
+    use tokio::fs;
+
+    // Get the models directory
+    let models_dir = state
+        .app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| Error::System(format!("Failed to get app data dir: {}", e)))?
+        .join("models");
+
+    // If models directory doesn't exist, nothing to clear
+    if !models_dir.exists() {
+        return Ok(0);
     }
 
     #[cfg(feature = "local-ai")]
     {
+        // Check if any model is currently loaded
         let state_clone = state.inner().clone();
 
         tokio::task::spawn_blocking(move || {
             let rt = tokio::runtime::Handle::current();
             rt.block_on(async {
                 let engine_lock = state_clone.llm_engine.read().await;
-                let engine = engine_lock
-                    .as_ref()
-                    .ok_or_else(|| Error::NotFound("LLM engine not available".into()))?;
-
-                if engine.is_loaded().await {
-                    return Err(Error::InvalidInput(
-                        "Cannot clear cache while model is loaded. Unload it first.".into(),
-                    ));
+                if let Some(engine) = engine_lock.as_ref() {
+                    if engine.is_loaded().await {
+                        return Err(Error::InvalidInput(
+                            "Cannot clear cache while model is loaded. Unload it first.".into(),
+                        ));
+                    }
                 }
-
-                info!("Cache clearing not yet implemented");
-                Err(Error::System("Cache clearing not yet implemented".into()))
+                Ok::<(), Error>(())
             })
         })
         .await
         .map_err(|e| Error::System(format!("Task join error: {}", e)))??;
-
-        Ok(())
     }
+
+    // Calculate size and delete all files/directories in models folder
+    let mut cleared_size: u64 = 0;
+    let mut entries = fs::read_dir(&models_dir)
+        .await
+        .map_err(|e| Error::System(format!("Failed to read models dir: {}", e)))?;
+
+    while let Some(entry) = entries
+        .next_entry()
+        .await
+        .map_err(|e| Error::System(format!("Failed to read entry: {}", e)))?
+    {
+        let metadata = entry
+            .metadata()
+            .await
+            .map_err(|e| Error::System(format!("Failed to get metadata: {}", e)))?;
+
+        if metadata.is_file() {
+            cleared_size += metadata.len();
+            fs::remove_file(entry.path())
+                .await
+                .map_err(|e| Error::System(format!("Failed to delete file: {}", e)))?;
+        } else if metadata.is_dir() {
+            // Calculate size before removing directory
+            cleared_size += calculate_dir_size_sync(&entry.path())?;
+            fs::remove_dir_all(entry.path())
+                .await
+                .map_err(|e| Error::System(format!("Failed to delete directory: {}", e)))?;
+        }
+    }
+
+    info!("Cleared {} bytes from models cache", cleared_size);
+    Ok(cleared_size)
 }

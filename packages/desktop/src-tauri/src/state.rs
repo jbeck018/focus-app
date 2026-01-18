@@ -1,9 +1,10 @@
 // state.rs - Application state management with Arc for thread-safe sharing
 
 use crate::ai::{LlmEngine, ModelConfig};
+use crate::commands::auth::{AuthState, PendingOAuthState};
 use crate::oauth::{google::GoogleCalendar, microsoft::MicrosoftCalendar, Pkce, TokenManager};
 use crate::trailbase::TrailBaseClient;
-use crate::{commands::auth::AuthState, db::Database, Error, Result};
+use crate::{db::Database, Error, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
@@ -13,6 +14,10 @@ use tauri::Manager;
 use tokio::sync::RwLock;
 use tracing::info;
 use uuid::Uuid;
+
+// Re-export system state types
+pub use crate::system::dimming::DimmingState;
+pub use crate::system::notification_control::NotificationControlState;
 
 /// Application state shared across all commands
 ///
@@ -33,6 +38,12 @@ pub struct AppState {
     pub google_calendar: Arc<GoogleCalendar>,
     pub microsoft_calendar: Arc<MicrosoftCalendar>,
     pub oauth_flow_state: Arc<RwLock<HashMap<String, Pkce>>>,
+    /// Screen dimming overlay state for focus mode
+    pub dimming_state: Arc<RwLock<DimmingState>>,
+    /// Notification control state for pausing system notifications
+    pub notification_control_state: Arc<RwLock<NotificationControlState>>,
+    /// Pending Google OAuth state for PKCE verification
+    pub pending_oauth: Arc<RwLock<Option<PendingOAuthState>>>,
     pub app_handle: tauri::AppHandle,
 }
 
@@ -107,6 +118,9 @@ impl AppState {
             google_calendar: Arc::new(google_calendar),
             microsoft_calendar: Arc::new(microsoft_calendar),
             oauth_flow_state: Arc::new(RwLock::new(HashMap::new())),
+            dimming_state: Arc::new(RwLock::new(DimmingState::default())),
+            notification_control_state: Arc::new(RwLock::new(NotificationControlState::default())),
+            pending_oauth: Arc::new(RwLock::new(None)),
             app_handle,
         })
     }

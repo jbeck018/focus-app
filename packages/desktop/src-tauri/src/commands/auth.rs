@@ -1,8 +1,12 @@
 // commands/auth.rs - Authentication commands for TrailBase integration
+//
+// Supports email/password authentication and Google OAuth sign-in.
 
 use crate::{AppState, Error, Result};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use tauri::State;
 
 /// TrailBase API configuration
@@ -400,6 +404,342 @@ pub async fn restore_auth_state(state: &AppState) -> Result<()> {
             tracing::info!("Restored auth state from stored tokens");
         }
     }
+
+    Ok(())
+}
+
+// ============================================================================
+// Google OAuth Sign-In
+// ============================================================================
+
+/// Google OAuth configuration
+const GOOGLE_AUTH_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
+const GOOGLE_USERINFO_URL: &str = "https://www.googleapis.com/oauth2/v2/userinfo";
+const GOOGLE_REDIRECT_URI: &str = "focusflow://oauth/auth-callback";
+
+// Note: Client ID should come from environment or config in production
+// For development, set GOOGLE_CLIENT_ID environment variable or use credentials store
+const GOOGLE_CLIENT_ID_DEFAULT: &str = "YOUR_GOOGLE_CLIENT_ID";
+
+/// Pending OAuth state for PKCE verification
+#[derive(Debug, Clone)]
+pub struct PendingOAuthState {
+    pub state: String,
+    pub code_verifier: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Google OAuth response
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GoogleOAuthResponse {
+    pub auth_url: String,
+    pub state: String,
+}
+
+/// Google user info
+#[derive(Debug, Deserialize)]
+pub struct GoogleUserInfo {
+    pub id: String,
+    pub email: String,
+    pub name: Option<String>,
+    pub picture: Option<String>,
+}
+
+/// Generate PKCE code verifier (random 43-128 char string)
+fn generate_code_verifier() -> String {
+    let mut rng = rand::thread_rng();
+    let bytes: Vec<u8> = (0..32).map(|_| rng.gen::<u8>()).collect();
+    URL_SAFE_NO_PAD.encode(&bytes)
+}
+
+/// Generate PKCE code challenge from verifier (SHA256 + base64url)
+fn generate_code_challenge(verifier: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(verifier.as_bytes());
+    let hash = hasher.finalize();
+    URL_SAFE_NO_PAD.encode(&hash)
+}
+
+/// Generate random state parameter
+fn generate_state() -> String {
+    let mut rng = rand::thread_rng();
+    let bytes: Vec<u8> = (0..16).map(|_| rng.gen::<u8>()).collect();
+    URL_SAFE_NO_PAD.encode(&bytes)
+}
+
+/// Start Google OAuth flow - returns auth URL to open in browser
+///
+/// Uses PKCE (Proof Key for Code Exchange) for security in desktop apps.
+#[tauri::command]
+pub async fn start_google_oauth(
+    state: State<'_, AppState>,
+) -> Result<GoogleOAuthResponse> {
+    // Generate PKCE values
+    let code_verifier = generate_code_verifier();
+    let code_challenge = generate_code_challenge(&code_verifier);
+    let oauth_state = generate_state();
+
+    // Get client ID from credentials store or use default
+    let client_id = get_google_client_id(&state).await;
+
+    // Build auth URL
+    let auth_url = format!(
+        "{}?\
+        client_id={}&\
+        redirect_uri={}&\
+        response_type=code&\
+        scope={}&\
+        state={}&\
+        access_type=offline&\
+        prompt=consent&\
+        code_challenge={}&\
+        code_challenge_method=S256",
+        GOOGLE_AUTH_URL,
+        urlencoding::encode(&client_id),
+        urlencoding::encode(GOOGLE_REDIRECT_URI),
+        urlencoding::encode("openid email profile"),
+        urlencoding::encode(&oauth_state),
+        urlencoding::encode(&code_challenge)
+    );
+
+    // Store pending OAuth state for verification
+    {
+        let mut pending = state.pending_oauth.write().await;
+        *pending = Some(PendingOAuthState {
+            state: oauth_state.clone(),
+            code_verifier,
+            created_at: chrono::Utc::now(),
+        });
+    }
+
+    tracing::info!("Started Google OAuth flow");
+
+    Ok(GoogleOAuthResponse {
+        auth_url,
+        state: oauth_state,
+    })
+}
+
+/// Complete Google OAuth flow - exchange code for tokens
+///
+/// Called after user is redirected back from Google with auth code.
+#[tauri::command]
+pub async fn complete_google_oauth(
+    code: String,
+    received_state: String,
+    state: State<'_, AppState>,
+) -> Result<AuthResponse> {
+    // Verify state and get code verifier
+    let code_verifier = {
+        let pending = state.pending_oauth.read().await;
+        let pending_state = pending.as_ref().ok_or_else(|| {
+            Error::Auth("No pending OAuth state found".into())
+        })?;
+
+        // Verify state matches
+        if pending_state.state != received_state {
+            return Err(Error::Auth("OAuth state mismatch - possible CSRF attack".into()));
+        }
+
+        // Check if state hasn't expired (10 minute limit)
+        let elapsed = chrono::Utc::now() - pending_state.created_at;
+        if elapsed.num_minutes() > 10 {
+            return Err(Error::Auth("OAuth state expired".into()));
+        }
+
+        pending_state.code_verifier.clone()
+    };
+
+    // Clear pending state
+    {
+        let mut pending = state.pending_oauth.write().await;
+        *pending = None;
+    }
+
+    // Exchange code for Google tokens
+    let client_id = get_google_client_id(&state).await;
+    let client = reqwest::Client::new();
+
+    #[derive(Serialize)]
+    struct TokenRequest {
+        client_id: String,
+        code: String,
+        code_verifier: String,
+        grant_type: String,
+        redirect_uri: String,
+    }
+
+    #[derive(Deserialize)]
+    struct GoogleTokenResponse {
+        access_token: String,
+        id_token: String,
+        #[allow(dead_code)]
+        refresh_token: Option<String>,
+        #[allow(dead_code)]
+        expires_in: i64,
+    }
+
+    let token_response = client
+        .post(GOOGLE_TOKEN_URL)
+        .json(&TokenRequest {
+            client_id: client_id.clone(),
+            code,
+            code_verifier,
+            grant_type: "authorization_code".to_string(),
+            redirect_uri: GOOGLE_REDIRECT_URI.to_string(),
+        })
+        .send()
+        .await
+        .map_err(|e| Error::Network(format!("Token exchange failed: {}", e)))?;
+
+    if !token_response.status().is_success() {
+        let error_text = token_response.text().await.unwrap_or_default();
+        return Err(Error::Auth(format!("Google token exchange failed: {}", error_text)));
+    }
+
+    let google_tokens: GoogleTokenResponse = token_response
+        .json()
+        .await
+        .map_err(|e| Error::Auth(format!("Invalid Google token response: {}", e)))?;
+
+    // Get user info from Google
+    let userinfo_response = client
+        .get(GOOGLE_USERINFO_URL)
+        .bearer_auth(&google_tokens.access_token)
+        .send()
+        .await
+        .map_err(|e| Error::Network(format!("Failed to get user info: {}", e)))?;
+
+    if !userinfo_response.status().is_success() {
+        let error_text = userinfo_response.text().await.unwrap_or_default();
+        return Err(Error::Auth(format!("Failed to get Google user info: {}", error_text)));
+    }
+
+    let google_user: GoogleUserInfo = userinfo_response
+        .json()
+        .await
+        .map_err(|e| Error::Auth(format!("Invalid Google user info: {}", e)))?;
+
+    tracing::info!("Google OAuth successful for: {}", google_user.email);
+
+    // Exchange Google ID token with TrailBase for our JWT tokens
+    let auth_state = state.auth_state.read().await;
+    let trailbase_url = auth_state.trailbase_url.clone();
+    drop(auth_state);
+
+    #[derive(Serialize)]
+    struct TrailBaseOAuthRequest {
+        provider: String,
+        id_token: String,
+        email: String,
+        provider_user_id: String,
+    }
+
+    let trailbase_response = client
+        .post(format!("{}/api/auth/oauth/google", trailbase_url))
+        .json(&TrailBaseOAuthRequest {
+            provider: "google".to_string(),
+            id_token: google_tokens.id_token,
+            email: google_user.email.clone(),
+            provider_user_id: google_user.id,
+        })
+        .send()
+        .await
+        .map_err(|e| Error::Network(format!("TrailBase OAuth request failed: {}", e)))?;
+
+    if !trailbase_response.status().is_success() {
+        let status = trailbase_response.status();
+        let error_text = trailbase_response.text().await.unwrap_or_default();
+        return Err(Error::Auth(format!(
+            "TrailBase OAuth failed ({}): {}",
+            status, error_text
+        )));
+    }
+
+    let auth_response: AuthResponse = trailbase_response
+        .json()
+        .await
+        .map_err(|e| Error::Auth(format!("Invalid TrailBase response: {}", e)))?;
+
+    // Store tokens in state
+    {
+        let mut auth_state = state.auth_state.write().await;
+        auth_state.is_authenticated = true;
+        auth_state.user = Some(auth_response.user.clone());
+        auth_state.access_token = Some(auth_response.access_token.clone());
+        auth_state.refresh_token = Some(auth_response.refresh_token.clone());
+    }
+
+    // Store tokens securely
+    let state_ref = (*state).clone();
+    store_auth_tokens_internal(&state_ref, &auth_response).await?;
+
+    // Update local user_id
+    update_local_user_id_internal(&state_ref, &auth_response.user.id).await?;
+
+    tracing::info!("User authenticated via Google: {}", auth_response.user.email);
+
+    Ok(auth_response)
+}
+
+/// Get Google client ID from credentials or fallback
+async fn get_google_client_id(_state: &State<'_, AppState>) -> String {
+    // Try environment variable first
+    if let Ok(client_id) = std::env::var("GOOGLE_CLIENT_ID") {
+        if !client_id.is_empty() && client_id != "YOUR_GOOGLE_CLIENT_ID" {
+            return client_id;
+        }
+    }
+
+    // Try to get from credentials store
+    if let Ok(Some(client_id)) = crate::commands::credentials::get_api_key_internal(
+        "google_oauth_client_id",
+    ).await {
+        if !client_id.is_empty() {
+            return client_id;
+        }
+    }
+
+    // Fall back to default placeholder (will fail auth but provides guidance)
+    GOOGLE_CLIENT_ID_DEFAULT.to_string()
+}
+
+// Internal helpers that don't require State wrapper
+async fn store_auth_tokens_internal(state: &AppState, auth: &AuthResponse) -> Result<()> {
+    sqlx::query(
+        "INSERT OR REPLACE INTO user_settings (key, value, updated_at) VALUES
+         ('auth_access_token', ?, CURRENT_TIMESTAMP),
+         ('auth_refresh_token', ?, CURRENT_TIMESTAMP),
+         ('auth_user_id', ?, CURRENT_TIMESTAMP),
+         ('auth_user_email', ?, CURRENT_TIMESTAMP)"
+    )
+    .bind(&auth.access_token)
+    .bind(&auth.refresh_token)
+    .bind(&auth.user.id)
+    .bind(&auth.user.email)
+    .execute(state.pool())
+    .await?;
+
+    Ok(())
+}
+
+async fn update_local_user_id_internal(state: &AppState, user_id: &str) -> Result<()> {
+    sqlx::query("UPDATE sessions SET user_id = ? WHERE user_id IS NULL")
+        .bind(user_id)
+        .execute(state.pool())
+        .await?;
+
+    sqlx::query("UPDATE blocked_items SET user_id = ? WHERE user_id IS NULL")
+        .bind(user_id)
+        .execute(state.pool())
+        .await?;
+
+    sqlx::query("UPDATE daily_analytics SET user_id = ? WHERE user_id IS NULL")
+        .bind(user_id)
+        .execute(state.pool())
+        .await?;
 
     Ok(())
 }
