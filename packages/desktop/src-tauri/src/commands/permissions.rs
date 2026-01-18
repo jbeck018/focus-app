@@ -238,7 +238,7 @@ async fn check_hosts_file_detailed() -> (bool, Option<String>) {
     if let Err(e) = tokio::fs::read_to_string(&hosts_path).await {
         return (
             false,
-            Some(format!("Cannot read hosts file: {}", e.to_string())),
+            Some(format!("Cannot read hosts file: {e}")),
         );
     }
 

@@ -61,6 +61,7 @@ impl NotificationManager {
     }
 
     /// Send blocked app warning
+    #[allow(dead_code)]
     pub fn blocked_app_warning(&self, app_name: &str) -> NotificationResult<()> {
         self.app_handle
             .notification()

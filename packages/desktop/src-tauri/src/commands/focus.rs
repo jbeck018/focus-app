@@ -326,10 +326,8 @@ pub async fn end_focus_session(
         if let Err(e) = notification_manager.session_completed(duration) {
             tracing::warn!("Failed to send session completed notification: {}", e);
         }
-    } else {
-        if let Err(e) = notification_manager.session_abandoned() {
-            tracing::warn!("Failed to send session abandoned notification: {}", e);
-        }
+    } else if let Err(e) = notification_manager.session_abandoned() {
+        tracing::warn!("Failed to send session abandoned notification: {}", e);
     }
 
     Ok(SessionResponse {

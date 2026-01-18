@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Notification control state for pausing system notifications
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct NotificationControlState {
     /// Whether notifications are currently paused
     pub paused: bool,
@@ -19,18 +19,6 @@ pub struct NotificationControlState {
     pub previous_dnd_enabled: Option<bool>,
     /// Platform-specific restoration data
     pub restore_data: Option<String>,
-}
-
-impl Default for NotificationControlState {
-    fn default() -> Self {
-        Self {
-            paused: false,
-            session_id: None,
-            paused_at: None,
-            previous_dnd_enabled: None,
-            restore_data: None,
-        }
-    }
 }
 
 impl NotificationControlState {

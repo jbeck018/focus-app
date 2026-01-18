@@ -25,6 +25,7 @@ use tauri_plugin_notification::NotificationExt;
 #[serde(rename_all = "camelCase")]
 pub struct CelebrationTier(pub u8);
 
+#[allow(dead_code)]
 impl CelebrationTier {
     pub const MINIMAL: Self = Self(1);
     pub const LIGHT: Self = Self(2);

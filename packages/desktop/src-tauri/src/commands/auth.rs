@@ -441,6 +441,7 @@ pub struct GoogleOAuthResponse {
 
 /// Google user info
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct GoogleUserInfo {
     pub id: String,
     pub email: String,
@@ -452,7 +453,7 @@ pub struct GoogleUserInfo {
 fn generate_code_verifier() -> String {
     let mut rng = rand::thread_rng();
     let bytes: Vec<u8> = (0..32).map(|_| rng.gen::<u8>()).collect();
-    URL_SAFE_NO_PAD.encode(&bytes)
+    URL_SAFE_NO_PAD.encode(bytes)
 }
 
 /// Generate PKCE code challenge from verifier (SHA256 + base64url)
@@ -460,14 +461,14 @@ fn generate_code_challenge(verifier: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(verifier.as_bytes());
     let hash = hasher.finalize();
-    URL_SAFE_NO_PAD.encode(&hash)
+    URL_SAFE_NO_PAD.encode(hash)
 }
 
 /// Generate random state parameter
 fn generate_state() -> String {
     let mut rng = rand::thread_rng();
     let bytes: Vec<u8> = (0..16).map(|_| rng.gen::<u8>()).collect();
-    URL_SAFE_NO_PAD.encode(&bytes)
+    URL_SAFE_NO_PAD.encode(bytes)
 }
 
 /// Start Google OAuth flow - returns auth URL to open in browser
