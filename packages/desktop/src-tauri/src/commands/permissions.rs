@@ -542,7 +542,7 @@ mod tests {
     #[test]
     fn test_get_hosts_path() {
         let path = get_hosts_path();
-        assert!(path.as_os_str().len() > 0);
+        assert!(!path.as_os_str().is_empty());
 
         #[cfg(target_os = "windows")]
         assert!(path
