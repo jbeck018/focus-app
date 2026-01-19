@@ -68,18 +68,26 @@ pub async fn start_focus_session(
         return Err(Error::Validation("Duration cannot exceed 8 hours".into()));
     }
 
-    // Check if there's already an active session
-    {
-        let active = state.active_session.read().await;
-        if active.is_some() {
-            return Err(Error::InvalidSession(
-                "A session is already active".to_string(),
-            ));
-        }
+    // Validate and sanitize blocked apps (prevent injection attacks)
+    validate_blocked_apps(&request.blocked_apps)?;
+
+    // Validate and sanitize blocked websites (prevent injection attacks)
+    validate_blocked_websites(&request.blocked_websites)?;
+
+    // SECURITY FIX: Hold write lock during entire check-and-set operation
+    // This prevents TOCTOU race condition where multiple sessions could be started simultaneously
+    let mut active = state.active_session.write().await;
+
+    // Check if there's already an active session (while holding write lock)
+    if active.is_some() {
+        return Err(Error::InvalidSession(
+            "A session is already active".to_string(),
+        ));
     }
 
     // Enforce session limits for free tier users
-    {
+    // Cache the session count to avoid duplicate queries
+    let sessions_today = {
         let auth_state = state.auth_state.read().await;
         let subscription_tier = auth_state
             .user
@@ -89,15 +97,18 @@ pub async fn start_focus_session(
 
         // Free tier users have a daily limit
         if subscription_tier == "free" || subscription_tier.is_empty() {
-            let sessions_today = queries::count_todays_sessions(state.pool()).await?;
-            if sessions_today >= FREE_TIER_DAILY_LIMIT {
+            let sessions_count = queries::count_todays_sessions(state.pool()).await?;
+            if sessions_count >= FREE_TIER_DAILY_LIMIT {
                 return Err(Error::SessionLimitReached(format!(
                     "Daily session limit reached ({}/{}). Upgrade to Pro for unlimited sessions.",
-                    sessions_today, FREE_TIER_DAILY_LIMIT
+                    sessions_count, FREE_TIER_DAILY_LIMIT
                 )));
             }
+            sessions_count
+        } else {
+            0
         }
-    }
+    };
 
     // Create new session
     let session = ActiveSession::new(
@@ -121,13 +132,16 @@ pub async fn start_focus_session(
     )
     .await?;
 
-    // Add blocked items to database
+    // Batch insert all blocked items in a single query to avoid N+1 queries
+    let mut blocked_items = Vec::new();
     for app in &request.blocked_apps {
-        queries::insert_blocked_item(state.pool(), "app", app).await?;
+        blocked_items.push(("app", app.as_str()));
     }
-
     for website in &request.blocked_websites {
-        queries::insert_blocked_item(state.pool(), "website", website).await?;
+        blocked_items.push(("website", website.as_str()));
+    }
+    if !blocked_items.is_empty() {
+        queries::insert_blocked_items_batch(state.pool(), blocked_items).await?;
     }
 
     // Enable blocking and update state
@@ -153,11 +167,11 @@ pub async fn start_focus_session(
         session_type: format!("{:?}", session.session_type).to_lowercase(),
     };
 
-    // Set active session
-    {
-        let mut active = state.active_session.write().await;
-        *active = Some(session);
-    }
+    // Set active session (still holding write lock from line 83)
+    *active = Some(session);
+
+    // Release write lock before proceeding with timer initialization
+    drop(active);
 
     // Initialize and start timer state
     {
@@ -165,8 +179,12 @@ pub async fn start_focus_session(
         *timer_state = TimerState::new_running();
     }
 
-    // Start the backend timer broadcast loop
-    timer::start_timer_loop(state.app_handle.clone(), (*state).clone());
+    // Start the backend timer broadcast loop and store cancellation sender
+    {
+        let cancel_tx = timer::start_timer_loop(state.app_handle.clone(), (*state).clone());
+        let mut timer_cancellation = state.timer_cancellation.write().await;
+        *timer_cancellation = Some(cancel_tx);
+    }
 
     // Enable screen dimming if requested
     if request.enable_dimming {
@@ -204,11 +222,17 @@ pub async fn start_focus_session(
     }
 
     // Broadcast session count changed event to all windows
-    let sessions_today = queries::count_todays_sessions(state.pool()).await.unwrap_or(1);
+    // Use cached sessions_today if available, otherwise query (for pro/team users)
+    let sessions_count = if sessions_today > 0 {
+        sessions_today + 1  // New session was just created
+    } else {
+        // For pro/team users or if not cached, query the count
+        queries::count_todays_sessions(state.pool()).await.unwrap_or(1)
+    };
     if let Err(e) = app_handle.emit(
         "session-count-changed",
         serde_json::json!({
-            "sessionsToday": sessions_today,
+            "sessionsToday": sessions_count,
             "dailyLimit": FREE_TIER_DAILY_LIMIT,
         }),
     ) {
@@ -224,9 +248,10 @@ pub async fn start_focus_session(
     // Schedule break reminders for long sessions (>25 minutes)
     if request.planned_duration_minutes > 25 {
         let reminder_handle = app_handle.clone();
-        tauri::async_runtime::spawn(async move {
-            crate::system::notifications::schedule_break_reminders(reminder_handle, 25).await;
-        });
+        let cancel_tx = crate::system::notifications::schedule_break_reminders(reminder_handle, 25);
+        // Store the cancellation sender in state
+        let mut break_cancellation = state.break_reminder_cancellation.write().await;
+        *break_cancellation = Some(cancel_tx);
     }
 
     Ok(response)
@@ -245,11 +270,23 @@ pub async fn end_focus_session(
         })?
     };
 
-    // Stop the timer and reset timer state
+    // Stop the timer loop and reset timer state
     {
         let mut timer_state = state.timer_state.write().await;
         timer_state.stop();
         *timer_state = TimerState::default();
+    }
+
+    // Cancel the timer broadcast loop
+    timer::stop_timer_loop(&state).await;
+
+    // Cancel break reminder loop if it was started
+    {
+        let mut break_cancellation = state.break_reminder_cancellation.write().await;
+        if let Some(sender) = break_cancellation.take() {
+            let _ = sender.send(());
+            tracing::debug!("Break reminder loop cancelled");
+        }
     }
 
     let end_time = chrono::Utc::now();
@@ -493,4 +530,130 @@ pub async fn get_todays_session_count(
         daily_limit: FREE_TIER_DAILY_LIMIT,
         is_unlimited,
     })
+}
+
+// ============================================================================
+// Input Validation Helpers
+// ============================================================================
+
+/// Validate blocked apps list for security
+///
+/// Prevents:
+/// - Empty strings
+/// - Null bytes (injection attacks)
+/// - Path traversal attempts
+/// - Shell metacharacters
+fn validate_blocked_apps(apps: &[String]) -> Result<()> {
+    for app in apps {
+        let trimmed = app.trim();
+
+        // Reject empty strings
+        if trimmed.is_empty() {
+            return Err(Error::InvalidInput(
+                "App name cannot be empty".to_string(),
+            ));
+        }
+
+        // Reject null bytes (prevent injection)
+        if trimmed.contains('\0') {
+            return Err(Error::InvalidInput(
+                "App name contains invalid characters".to_string(),
+            ));
+        }
+
+        // Reject path traversal attempts
+        if trimmed.contains("..") || trimmed.contains('/') || trimmed.contains('\\') {
+            return Err(Error::InvalidInput(
+                "App name cannot contain path separators".to_string(),
+            ));
+        }
+
+        // Reject shell metacharacters that could be used for injection
+        let dangerous_chars = ['$', '`', '|', '&', ';', '<', '>', '(', ')', '{', '}', '[', ']', '!', '#'];
+        if trimmed.chars().any(|c| dangerous_chars.contains(&c)) {
+            return Err(Error::InvalidInput(
+                "App name contains invalid shell metacharacters".to_string(),
+            ));
+        }
+
+        // Check maximum length (reasonable limit for process names)
+        if trimmed.len() > 255 {
+            return Err(Error::InvalidInput(
+                "App name is too long (max 255 characters)".to_string(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+/// Validate blocked websites list for security
+///
+/// Prevents:
+/// - Empty strings
+/// - Null bytes (injection attacks)
+/// - Invalid domain formats
+/// - Path traversal attempts
+fn validate_blocked_websites(websites: &[String]) -> Result<()> {
+    for website in websites {
+        let domain = website.trim().to_lowercase();
+
+        // Reject empty strings
+        if domain.is_empty() {
+            return Err(Error::InvalidInput(
+                "Domain cannot be empty".to_string(),
+            ));
+        }
+
+        // Reject null bytes (prevent injection)
+        if domain.contains('\0') {
+            return Err(Error::InvalidInput(
+                "Domain contains invalid characters".to_string(),
+            ));
+        }
+
+        // Check domain length (max 253 chars per DNS spec)
+        if domain.len() > 253 {
+            return Err(Error::InvalidInput(
+                "Domain name is too long (max 253 characters)".to_string(),
+            ));
+        }
+
+        // Require at least one dot (e.g., "example.com")
+        if !domain.contains('.') {
+            return Err(Error::InvalidInput(
+                "Invalid domain format. Domain must contain at least one dot (e.g., 'example.com')".to_string(),
+            ));
+        }
+
+        // Reject protocol or path characters
+        if domain.contains('/') || domain.contains(':') {
+            return Err(Error::InvalidInput(
+                "Invalid domain format. Use 'example.com' without protocol or path".to_string(),
+            ));
+        }
+
+        // Only allow alphanumeric, hyphens, and dots
+        if !domain.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.') {
+            return Err(Error::InvalidInput(
+                "Domain contains invalid characters. Only letters, numbers, hyphens, and dots are allowed".to_string(),
+            ));
+        }
+
+        // Reject domains starting or ending with hyphen or dot
+        if domain.starts_with('.') || domain.ends_with('.') || domain.starts_with('-') || domain.ends_with('-') {
+            return Err(Error::InvalidInput(
+                "Domain cannot start or end with a dot or hyphen".to_string(),
+            ));
+        }
+
+        // Reject consecutive dots (invalid DNS)
+        if domain.contains("..") {
+            return Err(Error::InvalidInput(
+                "Domain cannot contain consecutive dots".to_string(),
+            ));
+        }
+    }
+
+    Ok(())
 }

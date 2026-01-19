@@ -11,7 +11,7 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::Manager;
-use tokio::sync::RwLock;
+use tokio::sync::{oneshot, RwLock};
 use tracing::{info, warn};
 use uuid::Uuid;
 
@@ -44,6 +44,10 @@ pub struct AppState {
     pub notification_control_state: Arc<RwLock<NotificationControlState>>,
     /// Pending Google OAuth state for PKCE verification
     pub pending_oauth: Arc<RwLock<Option<PendingOAuthState>>>,
+    /// Cancellation sender for timer loop (sent when session ends)
+    pub timer_cancellation: Arc<RwLock<Option<oneshot::Sender<()>>>>,
+    /// Cancellation sender for break reminder loop
+    pub break_reminder_cancellation: Arc<RwLock<Option<oneshot::Sender<()>>>>,
     pub app_handle: tauri::AppHandle,
 }
 
@@ -125,6 +129,8 @@ impl AppState {
             dimming_state: Arc::new(RwLock::new(DimmingState::default())),
             notification_control_state: Arc::new(RwLock::new(NotificationControlState::default())),
             pending_oauth: Arc::new(RwLock::new(None)),
+            timer_cancellation: Arc::new(RwLock::new(None)),
+            break_reminder_cancellation: Arc::new(RwLock::new(None)),
             app_handle,
         })
     }

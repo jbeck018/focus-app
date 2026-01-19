@@ -11,6 +11,93 @@ use tokio::time::{interval, Duration};
 const MONITOR_INTERVAL_MS: u64 = 2000; // Check every 2 seconds
 const GRACE_PERIOD_MS: u64 = 3000; // Give 3 seconds before killing
 
+/// Critical system processes that should never be terminated
+/// Platform-specific protection lists to prevent accidental system damage
+#[cfg(target_os = "windows")]
+const PROTECTED_PROCESSES: &[&str] = &[
+    "system",
+    "smss.exe",
+    "csrss.exe",
+    "wininit.exe",
+    "winlogon.exe",
+    "services.exe",
+    "lsass.exe",
+    "svchost.exe",
+    "dwm.exe",
+    "explorer.exe",
+    "taskmgr.exe",
+    "conhost.exe",
+    "audiodg.exe",
+    "fontdrvhost.exe",
+    "spoolsv.exe",
+    "runtimebroker.exe",
+    "sihost.exe",
+    "taskhostw.exe",
+    "registry",
+    "memory compression",
+];
+
+#[cfg(target_os = "macos")]
+const PROTECTED_PROCESSES: &[&str] = &[
+    "kernel_task",
+    "launchd",
+    "WindowServer",
+    "loginwindow",
+    "SystemUIServer",
+    "Dock",
+    "Finder",
+    "Activity Monitor",
+    "Console",
+    "Terminal",
+    "iTerm2",
+    "sysmond",
+    "diskarbitrationd",
+    "configd",
+    "notifyd",
+    "opendirectoryd",
+    "powerd",
+    "mds",
+    "mds_stores",
+    "mdworker",
+    "coreaudiod",
+    "hidd",
+    "coreservicesd",
+    "UserEventAgent",
+];
+
+#[cfg(target_os = "linux")]
+const PROTECTED_PROCESSES: &[&str] = &[
+    "systemd",
+    "init",
+    "kthreadd",
+    "ksoftirqd",
+    "kworker",
+    "rcu_sched",
+    "rcu_bh",
+    "migration",
+    "watchdog",
+    "dbus-daemon",
+    "X",
+    "Xorg",
+    "xfce4-session",
+    "gnome-session",
+    "kde-session",
+    "lightdm",
+    "gdm",
+    "sddm",
+    "systemd-logind",
+    "systemd-journald",
+    "systemd-udevd",
+    "pulseaudio",
+    "pipewire",
+    "NetworkManager",
+    "wpa_supplicant",
+];
+
+/// Default fallback for unsupported platforms
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+const PROTECTED_PROCESSES: &[&str] = &[];
+
 /// Match types for process blocking
 #[derive(Debug, Clone, PartialEq)]
 enum MatchType {
@@ -106,6 +193,78 @@ fn normalize_process_name(name: &str) -> String {
     normalized
 }
 
+/// Check if a process is protected from termination
+///
+/// Returns true if the process is a critical system process that should never be killed.
+/// This prevents accidental system instability or crashes.
+fn is_protected_process(process_name: &str) -> bool {
+    let normalized = normalize_process_name(process_name);
+
+    PROTECTED_PROCESSES.iter().any(|&protected| {
+        let normalized_protected = normalize_process_name(protected);
+        normalized == normalized_protected
+    })
+}
+
+/// Check if a process is owned by the current user
+///
+/// Returns true if the process is owned by the current user.
+/// System processes (PID < 1000 on Unix, user id 0/SYSTEM on Windows) are considered non-user processes.
+#[cfg(target_os = "windows")]
+fn is_user_owned_process(process: &sysinfo::Process) -> bool {
+    // On Windows, check if the process is running under the current user
+    // System processes typically run under SYSTEM or other service accounts
+    // We can use the process user id to determine ownership
+
+    // As a safety measure, if we can't determine ownership, we assume it's not user-owned
+    if let Some(user_id) = process.user_id() {
+        // Get current user's SID (simplified check - system processes have well-known SIDs)
+        let user_id_str = format!("{:?}", user_id);
+
+        // System account SIDs start with S-1-5-18, S-1-5-19, S-1-5-20
+        // Local Service: S-1-5-19
+        // Network Service: S-1-5-20
+        // System: S-1-5-18
+        if user_id_str.starts_with("S-1-5-18") ||
+           user_id_str.starts_with("S-1-5-19") ||
+           user_id_str.starts_with("S-1-5-20") {
+            return false;
+        }
+
+        true
+    } else {
+        // If we can't determine ownership, err on the side of caution
+        false
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn is_user_owned_process(process: &sysinfo::Process) -> bool {
+    // On Unix-like systems, check if the process UID matches current user
+    // System processes typically run as root (UID 0) or low UIDs (< 1000)
+
+    if let Some(user_id) = process.user_id() {
+        // Get the numeric UID
+        let user_id_str = format!("{:?}", user_id);
+
+        // Try to parse as a number
+        if let Ok(uid) = user_id_str.parse::<u32>() {
+            // System processes typically have UID < 1000
+            // User processes have UID >= 1000 on most systems
+            return uid >= 1000;
+        }
+    }
+
+    // If we can't determine ownership, err on the side of caution
+    false
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+fn is_user_owned_process(_process: &sysinfo::Process) -> bool {
+    // On unsupported platforms, assume processes are not user-owned for safety
+    false
+}
+
 /// Start the process monitoring loop
 ///
 /// This runs in the background and checks for blocked processes at regular intervals.
@@ -173,6 +332,16 @@ pub async fn start_monitoring_loop(state: AppState) -> Result<()> {
         // Check for blocked processes
         for (pid, process) in system.processes() {
             let process_name = process.name().to_string_lossy();
+
+            // Safety check: Skip protected system processes
+            if is_protected_process(&process_name) {
+                continue;
+            }
+
+            // Safety check: Only terminate user-owned processes
+            if !is_user_owned_process(process) {
+                continue;
+            }
 
             // Check if this process matches any blocked rule
             let is_blocked = matchers.iter().any(|matcher| matcher.matches(&process_name));
@@ -268,19 +437,45 @@ pub async fn start_monitoring_loop(state: AppState) -> Result<()> {
 
 /// Terminate a process by PID
 ///
-/// Uses platform-specific APIs for graceful then forceful termination
+/// Uses platform-specific APIs for graceful then forceful termination.
+/// Includes safety checks to prevent terminating critical system processes.
 fn terminate_process(pid: sysinfo::Pid) -> Result<()> {
     let mut system = System::new();
     system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
     if let Some(process) = system.process(pid) {
+        let process_name = process.name().to_string_lossy();
+
+        // Safety check 1: Verify it's not a protected system process
+        if is_protected_process(&process_name) {
+            return Err(Error::System(format!(
+                "Refusing to terminate protected system process: {} (PID: {})",
+                process_name, pid
+            )));
+        }
+
+        // Safety check 2: Verify it's user-owned
+        if !is_user_owned_process(process) {
+            return Err(Error::System(format!(
+                "Refusing to terminate non-user-owned process: {} (PID: {})",
+                process_name, pid
+            )));
+        }
+
+        // All safety checks passed, attempt termination
+        tracing::debug!(
+            "Terminating user process: {} (PID: {})",
+            process_name,
+            pid
+        );
+
         // Try graceful termination first
         if process.kill() {
             Ok(())
         } else {
             Err(Error::System(format!(
-                "Failed to terminate process with PID {}",
-                pid
+                "Failed to terminate process {} (PID: {})",
+                process_name, pid
             )))
         }
     } else {
@@ -464,5 +659,112 @@ mod tests {
         assert!(matcher.matches("a.exe"));
         assert!(!matcher.matches("ab"));
         assert!(!matcher.matches("ba"));
+    }
+
+    #[test]
+    fn test_protected_processes() {
+        // Test Windows protected processes
+        #[cfg(target_os = "windows")]
+        {
+            assert!(is_protected_process("explorer.exe"));
+            assert!(is_protected_process("Explorer.exe"));
+            assert!(is_protected_process("EXPLORER.EXE"));
+            assert!(is_protected_process("explorer"));
+            assert!(is_protected_process("csrss.exe"));
+            assert!(is_protected_process("winlogon.exe"));
+            assert!(is_protected_process("system"));
+
+            // Should not protect user applications
+            assert!(!is_protected_process("chrome.exe"));
+            assert!(!is_protected_process("notepad.exe"));
+            assert!(!is_protected_process("slack.exe"));
+        }
+
+        // Test macOS protected processes
+        #[cfg(target_os = "macos")]
+        {
+            assert!(is_protected_process("kernel_task"));
+            assert!(is_protected_process("launchd"));
+            assert!(is_protected_process("WindowServer"));
+            assert!(is_protected_process("Finder"));
+            assert!(is_protected_process("Dock"));
+
+            // Should not protect user applications
+            assert!(!is_protected_process("Chrome"));
+            assert!(!is_protected_process("Slack"));
+            assert!(!is_protected_process("Safari"));
+        }
+
+        // Test Linux protected processes
+        #[cfg(target_os = "linux")]
+        {
+            assert!(is_protected_process("systemd"));
+            assert!(is_protected_process("init"));
+            assert!(is_protected_process("Xorg"));
+            assert!(is_protected_process("dbus-daemon"));
+
+            // Should not protect user applications
+            assert!(!is_protected_process("chrome"));
+            assert!(!is_protected_process("firefox"));
+            assert!(!is_protected_process("slack"));
+        }
+    }
+
+    #[test]
+    fn test_protected_processes_normalization() {
+        // Test that protected process checking uses same normalization
+        #[cfg(target_os = "windows")]
+        {
+            // explorer.exe is in the protected list
+            assert!(is_protected_process("explorer"));
+            assert!(is_protected_process("explorer.exe"));
+            assert!(is_protected_process("Explorer"));
+            assert!(is_protected_process("EXPLORER"));
+            assert!(is_protected_process("EXPLORER.EXE"));
+        }
+    }
+
+    #[test]
+    fn test_safety_prevents_system_damage() {
+        // Verify that critical system processes are protected on all platforms
+
+        #[cfg(target_os = "windows")]
+        {
+            // Windows critical processes
+            let critical = ["system", "csrss.exe", "winlogon.exe", "services.exe", "lsass.exe"];
+            for process in critical.iter() {
+                assert!(
+                    is_protected_process(process),
+                    "Critical Windows process '{}' should be protected",
+                    process
+                );
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            // macOS critical processes
+            let critical = ["kernel_task", "launchd", "WindowServer"];
+            for process in critical.iter() {
+                assert!(
+                    is_protected_process(process),
+                    "Critical macOS process '{}' should be protected",
+                    process
+                );
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            // Linux critical processes
+            let critical = ["systemd", "init", "kthreadd"];
+            for process in critical.iter() {
+                assert!(
+                    is_protected_process(process),
+                    "Critical Linux process '{}' should be protected",
+                    process
+                );
+            }
+        }
     }
 }

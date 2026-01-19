@@ -263,6 +263,41 @@ pub async fn get_blocked_items(
     Ok(items)
 }
 
+/// Batch insert multiple blocked items in a single query to avoid N sequential inserts
+pub async fn insert_blocked_items_batch(
+    pool: &SqlitePool,
+    items: Vec<(&str, &str)>,
+) -> Result<()> {
+    if items.is_empty() {
+        return Ok(());
+    }
+
+    // Build dynamic query with placeholders for each item
+    let mut query_str = String::from(
+        "INSERT INTO blocked_items (item_type, value, match_type) VALUES "
+    );
+
+    for (i, _) in items.iter().enumerate() {
+        if i > 0 {
+            query_str.push_str(", ");
+        }
+        query_str.push_str("(?, ?, 'exact')");
+    }
+
+    query_str.push_str(" ON CONFLICT(item_type, value) DO UPDATE SET enabled = 1");
+
+    let mut query = sqlx::query(&query_str);
+
+    // Bind all parameters
+    for (item_type, value) in items {
+        query = query.bind(item_type).bind(value);
+    }
+
+    query.execute(pool).await?;
+
+    Ok(())
+}
+
 // ============================================================================
 // Analytics Queries
 // ============================================================================
@@ -447,6 +482,9 @@ pub async fn get_achievements_with_status(
     pool: &SqlitePool,
     user_id: Option<&str>,
 ) -> Result<Vec<AchievementWithStatus>> {
+    // Pre-calculate all progress metrics in a single query to avoid N+1 queries
+    let progress_data = fetch_all_achievement_progress(pool, user_id).await?;
+
     let rows = sqlx::query_as::<_, AchievementWithStatusRow>(
         r#"
         SELECT
@@ -473,39 +511,143 @@ pub async fn get_achievements_with_status(
     .fetch_all(pool)
     .await?;
 
-    // Calculate progress for each achievement
-    let mut achievements = Vec::new();
-    for row in rows {
-        let progress = calculate_achievement_progress(pool, user_id, &row.key, &row.category).await?;
-        let progress_percentage = if row.threshold > 0 {
-            (progress as f64 / row.threshold as f64) * 100.0
-        } else {
-            0.0
-        };
+    // Build achievements using pre-calculated progress data
+    let achievements = rows
+        .into_iter()
+        .map(|row| {
+            let progress = progress_data.get(row.key.as_str()).copied().unwrap_or(0);
+            let progress_percentage = if row.threshold > 0 {
+                (progress as f64 / row.threshold as f64) * 100.0
+            } else {
+                0.0
+            };
 
-        achievements.push(AchievementWithStatus {
-            id: row.id,
-            key: row.key,
-            name: row.name,
-            description: row.description,
-            icon: row.icon,
-            category: row.category,
-            rarity: row.rarity,
-            threshold: row.threshold,
-            points: row.points,
-            hidden: row.hidden,
-            display_order: row.display_order,
-            unlocked: row.unlocked,
-            unlocked_at: row.unlocked_at,
-            progress,
-            progress_percentage,
-        });
-    }
+            AchievementWithStatus {
+                id: row.id,
+                key: row.key,
+                name: row.name,
+                description: row.description,
+                icon: row.icon,
+                category: row.category,
+                rarity: row.rarity,
+                threshold: row.threshold,
+                points: row.points,
+                hidden: row.hidden,
+                display_order: row.display_order,
+                unlocked: row.unlocked,
+                unlocked_at: row.unlocked_at,
+                progress,
+                progress_percentage,
+            }
+        })
+        .collect();
 
     Ok(achievements)
 }
 
+/// Fetch all achievement progress data in a single query using UNION to calculate metrics by category
+/// This replaces individual queries per achievement with a single batch query
+async fn fetch_all_achievement_progress(
+    pool: &SqlitePool,
+    user_id: Option<&str>,
+) -> Result<std::collections::HashMap<String, i64>> {
+    // Query all progress metrics at once grouped by key
+    let results: Vec<(String, i64)> = sqlx::query_as(
+        r#"
+        -- Session achievements progress
+        SELECT 'first_session' as key,
+               COALESCE(COUNT(CASE WHEN s.completed = 1 THEN 1 END), 0) as progress
+        FROM sessions s
+        WHERE (s.user_id IS NULL OR s.user_id = ?)
+
+        UNION ALL
+
+        SELECT 'streak_master' as key,
+               COALESCE(MAX(streak_count), 0) as progress
+        FROM (
+            WITH RECURSIVE dates(date, streak) AS (
+                SELECT date(start_time), 1
+                FROM sessions
+                WHERE completed = 1
+                    AND (user_id IS NULL OR user_id = ?)
+                ORDER BY start_time DESC
+                LIMIT 1
+
+                UNION ALL
+
+                SELECT date(s.start_time), d.streak + 1
+                FROM sessions s
+                JOIN dates d ON date(s.start_time) = date(d.date, '-1 day')
+                WHERE s.completed = 1
+                    AND (s.user_id IS NULL OR s.user_id = ?)
+            )
+            SELECT MAX(streak) as streak_count FROM dates
+        )
+
+        UNION ALL
+
+        SELECT 'time_master' as key,
+               COALESCE(SUM(actual_duration_seconds) / 3600, 0) as progress
+        FROM sessions
+        WHERE completed = 1
+            AND session_type = 'focus'
+            AND (user_id IS NULL OR user_id = ?)
+
+        UNION ALL
+
+        SELECT 'blocker' as key,
+               COALESCE(COUNT(*), 0) as progress
+        FROM block_attempts
+        WHERE user_id IS NULL OR user_id = ?
+
+        UNION ALL
+
+        SELECT 'weekend_warrior' as key,
+               COALESCE(COUNT(*), 0) as progress
+        FROM sessions
+        WHERE completed = 1
+            AND CAST(strftime('%w', start_time) AS INTEGER) IN (0, 6)
+            AND (user_id IS NULL OR user_id = ?)
+
+        UNION ALL
+
+        SELECT 'perfectionist' as key,
+               COALESCE(COUNT(*), 0) as progress
+        FROM sessions
+        WHERE completed = 1
+            AND actual_duration_seconds >= planned_duration_minutes * 60
+            AND (user_id IS NULL OR user_id = ?)
+
+        UNION ALL
+
+        SELECT 'zero_distractions' as key,
+               COALESCE(COUNT(DISTINCT s.id), 0) as progress
+        FROM sessions s
+        WHERE s.completed = 1
+            AND (s.user_id IS NULL OR s.user_id = ?)
+            AND NOT EXISTS (
+                SELECT 1 FROM block_attempts ba
+                WHERE ba.session_id = s.id
+            )
+        "#,
+    )
+    .bind(user_id)
+    .bind(user_id)
+    .bind(user_id)
+    .bind(user_id)
+    .bind(user_id)
+    .bind(user_id)
+    .bind(user_id)
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(results.into_iter().collect())
+}
+
 /// Calculate progress for an achievement based on its key and category
+/// Note: This function is replaced by batch calculation in fetch_all_achievement_progress
+#[allow(dead_code)]
 async fn calculate_achievement_progress(
     pool: &SqlitePool,
     user_id: Option<&str>,

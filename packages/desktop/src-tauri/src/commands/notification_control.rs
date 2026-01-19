@@ -273,11 +273,12 @@ async fn check_notification_permission_impl() -> Result<NotificationPermissionSt
 async fn get_dnd_state_macos() -> Option<bool> {
     // Try to read DND state from defaults
     // This is a best-effort approach as macOS Focus modes are complex
-    use std::process::Command;
+    use tokio::process::Command;
 
     let output = Command::new("defaults")
         .args(["read", "com.apple.controlcenter", "NSStatusItem Visible FocusModes"])
         .output()
+        .await
         .ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -374,9 +375,50 @@ async fn check_permission_macos() -> Result<NotificationPermissionStatus> {
 #[cfg(target_os = "windows")]
 async fn get_dnd_state_windows() -> Option<bool> {
     // Windows Focus Assist state can be read from registry
-    // HKCU\Software\Microsoft\Windows\CurrentVersion\CloudStore\Store\...
-    // This is complex and version-dependent
-    None
+    // Try multiple registry locations for different Windows versions
+    use tokio::process::Command;
+
+    // Try reading the priority only mode state (Windows 10+)
+    let result = Command::new("powershell")
+        .args([
+            "-Command",
+            r#"
+            # Check QuietHoursProfile (0 = Off, 1 = Priority Only, 2 = Alarms Only)
+            $regPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\QuietHours'
+            if (Test-Path $regPath) {
+                $profile = Get-ItemProperty -Path $regPath -Name 'Profile' -ErrorAction SilentlyContinue
+                if ($profile -and $profile.Profile -gt 0) {
+                    Write-Output 'true'
+                    exit 0
+                }
+            }
+
+            # Fallback: Check notification settings
+            $notifPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings'
+            if (Test-Path $notifPath) {
+                $allowToasts = Get-ItemProperty -Path $notifPath -Name 'NOC_GLOBAL_SETTING_ALLOW_TOASTS_ABOVE_LOCK' -ErrorAction SilentlyContinue
+                if ($allowToasts -and $allowToasts.NOC_GLOBAL_SETTING_ALLOW_TOASTS_ABOVE_LOCK -eq 0) {
+                    Write-Output 'true'
+                    exit 0
+                }
+            }
+
+            Write-Output 'false'
+            "#,
+        ])
+        .output()
+        .await
+        .ok()?;
+
+    if result.status.success() {
+        let stdout = String::from_utf8_lossy(&result.stdout);
+        let is_enabled = stdout.trim() == "true";
+        tracing::debug!("Windows Focus Assist state: {}", is_enabled);
+        Some(is_enabled)
+    } else {
+        tracing::debug!("Could not read Windows Focus Assist state");
+        None
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -389,7 +431,7 @@ async fn enable_dnd_windows() -> Result<()> {
     tracing::debug!("Windows Focus Assist enable requested");
 
     // For now, we'll set a registry value that enables "Priority Only" mode
-    use std::process::Command;
+    use tokio::process::Command;
 
     let result = Command::new("powershell")
         .args([
@@ -400,7 +442,8 @@ async fn enable_dnd_windows() -> Result<()> {
             Set-ItemProperty -Path $regPath -Name 'NOC_GLOBAL_SETTING_ALLOW_TOASTS_ABOVE_LOCK' -Value 0 -Type DWord
             "#,
         ])
-        .output();
+        .output()
+        .await;
 
     match result {
         Ok(output) if output.status.success() => {
@@ -421,7 +464,7 @@ async fn enable_dnd_windows() -> Result<()> {
 
 #[cfg(target_os = "windows")]
 async fn disable_dnd_windows() -> Result<()> {
-    use std::process::Command;
+    use tokio::process::Command;
 
     let result = Command::new("powershell")
         .args([
@@ -433,7 +476,8 @@ async fn disable_dnd_windows() -> Result<()> {
             }
             "#,
         ])
-        .output();
+        .output()
+        .await;
 
     if let Ok(output) = result {
         if !output.status.success() {
@@ -477,11 +521,12 @@ async fn get_dnd_state_linux() -> Option<bool> {
 
 #[cfg(target_os = "linux")]
 async fn get_dunst_paused() -> Option<bool> {
-    use std::process::Command;
+    use tokio::process::Command;
 
     let output = Command::new("dunstctl")
         .arg("is-paused")
         .output()
+        .await
         .ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -490,11 +535,12 @@ async fn get_dunst_paused() -> Option<bool> {
 
 #[cfg(target_os = "linux")]
 async fn get_gnome_dnd() -> Option<bool> {
-    use std::process::Command;
+    use tokio::process::Command;
 
     let output = Command::new("gsettings")
         .args(["get", "org.gnome.desktop.notifications", "show-banners"])
         .output()
+        .await
         .ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -504,13 +550,14 @@ async fn get_gnome_dnd() -> Option<bool> {
 
 #[cfg(target_os = "linux")]
 async fn enable_dnd_linux() -> Result<()> {
-    use std::process::Command;
+    use tokio::process::Command;
 
     // Try dunst first (common on many Linux distros)
     let dunst_result = Command::new("dunstctl")
         .arg("set-paused")
         .arg("true")
-        .output();
+        .output()
+        .await;
 
     if let Ok(output) = dunst_result {
         if output.status.success() {
@@ -522,7 +569,8 @@ async fn enable_dnd_linux() -> Result<()> {
     // Try GNOME
     let gnome_result = Command::new("gsettings")
         .args(["set", "org.gnome.desktop.notifications", "show-banners", "false"])
-        .output();
+        .output()
+        .await;
 
     if let Ok(output) = gnome_result {
         if output.status.success() {
@@ -540,7 +588,8 @@ async fn enable_dnd_linux() -> Result<()> {
             "FocusFlow",
             "Focus session active",
         ])
-        .output();
+        .output()
+        .await;
 
     if let Ok(output) = kde_result {
         if output.status.success() {
@@ -555,18 +604,20 @@ async fn enable_dnd_linux() -> Result<()> {
 
 #[cfg(target_os = "linux")]
 async fn disable_dnd_linux() -> Result<()> {
-    use std::process::Command;
+    use tokio::process::Command;
 
     // Resume dunst
     let _ = Command::new("dunstctl")
         .arg("set-paused")
         .arg("false")
-        .output();
+        .output()
+        .await;
 
     // Resume GNOME
     let _ = Command::new("gsettings")
         .args(["set", "org.gnome.desktop.notifications", "show-banners", "true"])
-        .output();
+        .output()
+        .await;
 
     // Note: KDE inhibition should auto-expire when the calling process exits
 
@@ -575,12 +626,13 @@ async fn disable_dnd_linux() -> Result<()> {
 
 #[cfg(target_os = "linux")]
 async fn check_permission_linux() -> Result<NotificationPermissionStatus> {
-    use std::process::Command;
+    use tokio::process::Command;
 
     // Check for dunst
     let has_dunst = Command::new("which")
         .arg("dunstctl")
         .output()
+        .await
         .map(|o| o.status.success())
         .unwrap_or(false);
 
@@ -588,6 +640,7 @@ async fn check_permission_linux() -> Result<NotificationPermissionStatus> {
     let has_gnome = Command::new("which")
         .arg("gsettings")
         .output()
+        .await
         .map(|o| o.status.success())
         .unwrap_or(false);
 

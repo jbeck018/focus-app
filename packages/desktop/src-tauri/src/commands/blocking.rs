@@ -28,16 +28,47 @@ pub async fn add_blocked_app(
     request: AddBlockedItemRequest,
     state: State<'_, AppState>,
 ) -> Result<()> {
-    // Validate process name format
-    if request.value.trim().is_empty() {
+    // Validate process name format - enhanced security
+    let app_name = request.value.trim();
+
+    if app_name.is_empty() {
         return Err(Error::InvalidInput(
             "Process name cannot be empty".to_string(),
         ));
     }
 
-    queries::insert_blocked_item(state.pool(), "app", &request.value).await?;
+    // Reject null bytes (prevent injection attacks)
+    if app_name.contains('\0') {
+        return Err(Error::InvalidInput(
+            "Process name contains invalid characters".to_string(),
+        ));
+    }
 
-    tracing::info!("Added blocked app: {}", request.value);
+    // Reject path traversal attempts
+    if app_name.contains("..") || app_name.contains('/') || app_name.contains('\\') {
+        return Err(Error::InvalidInput(
+            "Process name cannot contain path separators".to_string(),
+        ));
+    }
+
+    // Reject shell metacharacters that could be used for command injection
+    let dangerous_chars = ['$', '`', '|', '&', ';', '<', '>', '(', ')', '{', '}', '[', ']', '!', '#', '*', '?', '~'];
+    if app_name.chars().any(|c| dangerous_chars.contains(&c)) {
+        return Err(Error::InvalidInput(
+            "Process name contains invalid shell metacharacters".to_string(),
+        ));
+    }
+
+    // Check maximum length (reasonable limit for process names)
+    if app_name.len() > 255 {
+        return Err(Error::InvalidInput(
+            "Process name is too long (max 255 characters)".to_string(),
+        ));
+    }
+
+    queries::insert_blocked_item(state.pool(), "app", app_name).await?;
+
+    tracing::info!("Added blocked app: {}", app_name);
 
     Ok(())
 }

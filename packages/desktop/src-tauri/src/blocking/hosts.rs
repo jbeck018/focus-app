@@ -162,6 +162,8 @@ fn remove_focusflow_entries(content: &str) -> String {
 }
 
 /// Add FocusFlow entries to hosts content
+///
+/// Security: Validates domains before writing to hosts file to prevent injection
 fn add_focusflow_entries(content: &str, domains: &[String]) -> String {
     let mut result = content.to_string();
 
@@ -175,17 +177,26 @@ fn add_focusflow_entries(content: &str, domains: &[String]) -> String {
     result.push('\n');
 
     for domain in domains {
-        // Add both with and without www
-        result.push_str(&format!("127.0.0.1 {}\n", domain));
+        // SECURITY: Sanitize domain to prevent hosts file injection
+        let sanitized = sanitize_domain_for_hosts(domain);
 
-        if !domain.starts_with("www.") {
-            result.push_str(&format!("127.0.0.1 www.{}\n", domain));
+        // Skip invalid domains
+        if sanitized.is_empty() {
+            tracing::warn!("Skipping invalid domain: {}", domain);
+            continue;
+        }
+
+        // Add both with and without www
+        result.push_str(&format!("127.0.0.1 {}\n", sanitized));
+
+        if !sanitized.starts_with("www.") {
+            result.push_str(&format!("127.0.0.1 www.{}\n", sanitized));
         }
 
         // Also block IPv6
-        result.push_str(&format!("::1 {}\n", domain));
-        if !domain.starts_with("www.") {
-            result.push_str(&format!("::1 www.{}\n", domain));
+        result.push_str(&format!("::1 {}\n", sanitized));
+        if !sanitized.starts_with("www.") {
+            result.push_str(&format!("::1 www.{}\n", sanitized));
         }
     }
 
@@ -195,33 +206,95 @@ fn add_focusflow_entries(content: &str, domains: &[String]) -> String {
     result
 }
 
+/// Sanitize domain name for safe hosts file entry
+///
+/// Removes any characters that could be used for injection attacks
+/// Returns empty string if domain is invalid
+fn sanitize_domain_for_hosts(domain: &str) -> String {
+    let domain = domain.trim().to_lowercase();
+
+    // Reject empty, very long, or domains with null bytes
+    if domain.is_empty() || domain.len() > 253 || domain.contains('\0') {
+        return String::new();
+    }
+
+    // Reject domains with newlines, carriage returns, or tabs (hosts file injection)
+    if domain.contains('\n') || domain.contains('\r') || domain.contains('\t') {
+        return String::new();
+    }
+
+    // Reject domains with spaces or hash (could break hosts file format)
+    if domain.contains(' ') || domain.contains('#') {
+        return String::new();
+    }
+
+    // Only allow valid DNS characters: alphanumeric, hyphens, and dots
+    if !domain.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.') {
+        return String::new();
+    }
+
+    // Reject invalid formats
+    if domain.starts_with('.') || domain.ends_with('.')
+        || domain.starts_with('-') || domain.ends_with('-')
+        || domain.contains("..") || !domain.contains('.') {
+        return String::new();
+    }
+
+    domain
+}
+
 /// Flush DNS cache after modifying hosts file
+///
+/// Security: Uses Command::new() with separate arguments to prevent command injection.
+/// All commands are hardcoded system binaries with static arguments.
 async fn flush_dns_cache() {
     #[cfg(target_os = "macos")]
     {
-        let _ = tokio::process::Command::new("dscacheutil")
+        // Execute dscacheutil with static argument
+        if let Err(e) = tokio::process::Command::new("dscacheutil")
             .arg("-flushcache")
             .output()
-            .await;
-        let _ = tokio::process::Command::new("killall")
+            .await
+        {
+            tracing::debug!("Failed to execute dscacheutil: {}", e);
+        }
+
+        // Execute killall with static arguments
+        if let Err(e) = tokio::process::Command::new("killall")
             .args(["-HUP", "mDNSResponder"])
             .output()
-            .await;
+            .await
+        {
+            tracing::debug!("Failed to execute killall: {}", e);
+        }
     }
 
     #[cfg(target_os = "windows")]
     {
-        let _ = tokio::process::Command::new("ipconfig")
+        // Execute ipconfig with static argument
+        if let Err(e) = tokio::process::Command::new("ipconfig")
             .arg("/flushdns")
             .output()
-            .await;
+            .await
+        {
+            tracing::debug!("Failed to execute ipconfig: {}", e);
+        }
     }
 
     #[cfg(target_os = "linux")]
     {
-        // Different distributions use different DNS services
+        // Try multiple DNS cache flush methods for different distributions
+        // All use hardcoded commands with static arguments
+
+        // systemd-resolved (Ubuntu, Debian, Fedora, etc.)
         let _ = tokio::process::Command::new("systemd-resolve")
             .arg("--flush-caches")
+            .output()
+            .await;
+
+        // resolvectl (newer systemd)
+        let _ = tokio::process::Command::new("resolvectl")
+            .arg("flush-caches")
             .output()
             .await;
     }

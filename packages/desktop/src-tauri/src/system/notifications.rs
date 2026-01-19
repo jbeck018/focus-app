@@ -86,21 +86,35 @@ impl NotificationManager {
 }
 
 /// Schedule periodic notifications during long focus sessions
-pub async fn schedule_break_reminders(
+/// Returns a cancellation sender that can be used to stop the loop
+pub fn schedule_break_reminders(
     app_handle: AppHandle,
     interval_minutes: u64,
-) {
+) -> tokio::sync::oneshot::Sender<()> {
+    use tokio::sync::oneshot;
+
+    let (cancel_tx, mut cancel_rx) = oneshot::channel();
     let notifications = NotificationManager::new(app_handle);
 
-    let mut interval = tokio::time::interval(
-        tokio::time::Duration::from_secs(interval_minutes * 60)
-    );
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(
+            tokio::time::Duration::from_secs(interval_minutes * 60)
+        );
 
-    loop {
-        interval.tick().await;
-
-        if let Err(e) = notifications.break_reminder() {
-            tracing::warn!("Failed to send break reminder: {}", e);
+        loop {
+            tokio::select! {
+                _ = &mut cancel_rx => {
+                    tracing::info!("Break reminder loop cancelled");
+                    break;
+                }
+                _ = interval.tick() => {
+                    if let Err(e) = notifications.break_reminder() {
+                        tracing::warn!("Failed to send break reminder: {}", e);
+                    }
+                }
+            }
         }
-    }
+    });
+
+    cancel_tx
 }

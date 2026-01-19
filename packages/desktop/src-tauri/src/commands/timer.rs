@@ -10,6 +10,7 @@ use crate::{
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter, State};
+use tokio::sync::oneshot;
 use tokio::time::{interval, Duration};
 use tracing::{debug, error, info, trace};
 
@@ -33,109 +34,138 @@ pub struct TimerTickPayload {
 ///
 /// This spawns a background task that ticks every second and broadcasts
 /// timer state to ALL windows. Only one loop runs at a time.
-pub fn start_timer_loop(app_handle: AppHandle, state: AppState) {
+/// Returns a cancellation sender that can be used to stop the loop.
+pub fn start_timer_loop(app_handle: AppHandle, state: AppState) -> oneshot::Sender<()> {
     // Ensure only one timer loop runs
     if TIMER_LOOP_RUNNING.swap(true, Ordering::SeqCst) {
-        debug!("Timer loop already running, will use existing loop");
-        return;
+        debug!("Timer loop already running, cancelling and starting new one");
+        // Cancel any existing timer
+        if let Ok(mut cancel_guard) = state.timer_cancellation.try_write() {
+            if let Some(sender) = cancel_guard.take() {
+                let _ = sender.send(());
+            }
+        }
     }
 
     info!("Starting backend timer broadcast loop");
+
+    let (cancel_tx, mut cancel_rx) = oneshot::channel();
 
     tokio::spawn(async move {
         let mut tick_interval = interval(Duration::from_secs(1));
         let mut idle_ticks = 0u32;
 
         loop {
-            tick_interval.tick().await;
-
-            // Get current session and timer state
-            let (session, timer_state) = {
-                let session_guard = state.active_session.read().await;
-                let timer_guard = state.timer_state.read().await;
-                (session_guard.clone(), timer_guard.clone())
-            };
-
-            // Check if we have an active session
-            let Some(session) = session else {
-                // No active session - increment idle counter
-                idle_ticks += 1;
-
-                // After 60 seconds of no session, stop the loop to save resources
-                // It will restart when a new session begins
-                if idle_ticks >= 60 {
-                    debug!("Timer loop idle for 60s, stopping");
+            tokio::select! {
+                _ = &mut cancel_rx => {
+                    info!("Timer loop cancelled by session end");
                     TIMER_LOOP_RUNNING.store(false, Ordering::SeqCst);
                     break;
                 }
-                continue;
-            };
+                _ = tick_interval.tick() => {
+                    // Get current session and timer state
+                    let (session, timer_state) = {
+                        let session_guard = state.active_session.read().await;
+                        let timer_guard = state.timer_state.read().await;
+                        (session_guard.clone(), timer_guard.clone())
+                    };
 
-            // Reset idle counter when we have a session
-            idle_ticks = 0;
+                    // Check if we have an active session
+                    let Some(session) = session else {
+                        // No active session - increment idle counter
+                        idle_ticks += 1;
 
-            // Only broadcast if timer is running
-            if !timer_state.is_running {
-                trace!("Timer state is_running=false, skipping broadcast");
-                continue;
-            }
+                        // After 60 seconds of no session, stop the loop to save resources
+                        // It will restart when a new session begins
+                        if idle_ticks >= 60 {
+                            debug!("Timer loop idle for 60s, stopping");
+                            TIMER_LOOP_RUNNING.store(false, Ordering::SeqCst);
+                            break;
+                        }
+                        continue;
+                    };
 
-            // Calculate elapsed time accounting for pauses
-            let elapsed = timer_state.calculate_elapsed(session.start_time);
-            let planned_seconds = session.planned_duration_minutes as i64 * 60;
-            let remaining = (planned_seconds - elapsed).max(0);
+                    // Reset idle counter when we have a session
+                    idle_ticks = 0;
 
-            let payload = TimerTickPayload {
-                session_id: session.id.clone(),
-                elapsed_seconds: elapsed,
-                remaining_seconds: remaining,
-                planned_duration_minutes: session.planned_duration_minutes,
-                session_type: format!("{:?}", session.session_type).to_lowercase(),
-                is_running: !timer_state.is_paused,
-                is_paused: timer_state.is_paused,
-            };
+                    // Only broadcast if timer is running
+                    if !timer_state.is_running {
+                        trace!("Timer state is_running=false, skipping broadcast");
+                        continue;
+                    }
 
-            // Broadcast to ALL windows using app-level emit
-            if let Err(e) = app_handle.emit("timer-tick", &payload) {
-                error!("Failed to broadcast timer tick: {}", e);
-            } else {
-                // Log every 5 seconds at debug level, every second at trace level
-                if elapsed % 5 == 0 {
-                    debug!(
-                        "Timer tick broadcast: elapsed={}s remaining={}s paused={}",
-                        elapsed,
-                        remaining,
-                        timer_state.is_paused
-                    );
-                } else {
-                    trace!(
-                        "Timer tick: session={} elapsed={}s remaining={}s paused={}",
-                        session.id,
-                        elapsed,
-                        remaining,
-                        timer_state.is_paused
-                    );
-                }
-            }
+                    // Calculate elapsed time accounting for pauses
+                    let elapsed = timer_state.calculate_elapsed(session.start_time);
+                    let planned_seconds = session.planned_duration_minutes as i64 * 60;
+                    let remaining = (planned_seconds - elapsed).max(0);
 
-            // Auto-complete notification when time is up
-            if remaining == 0 && elapsed >= planned_seconds && !timer_state.is_paused {
-                debug!("Session {} timer completed", session.id);
-                if let Err(e) = app_handle.emit("timer-completed", &payload) {
-                    error!("Failed to emit timer-completed: {}", e);
+                    let payload = TimerTickPayload {
+                        session_id: session.id.clone(),
+                        elapsed_seconds: elapsed,
+                        remaining_seconds: remaining,
+                        planned_duration_minutes: session.planned_duration_minutes,
+                        session_type: format!("{:?}", session.session_type).to_lowercase(),
+                        is_running: !timer_state.is_paused,
+                        is_paused: timer_state.is_paused,
+                    };
+
+                    // Broadcast to ALL windows using app-level emit
+                    if let Err(e) = app_handle.emit("timer-tick", &payload) {
+                        error!("Failed to broadcast timer tick: {}", e);
+                    } else {
+                        // Log every 5 seconds at debug level, every second at trace level
+                        if elapsed % 5 == 0 {
+                            debug!(
+                                "Timer tick broadcast: elapsed={}s remaining={}s paused={}",
+                                elapsed,
+                                remaining,
+                                timer_state.is_paused
+                            );
+                        } else {
+                            trace!(
+                                "Timer tick: session={} elapsed={}s remaining={}s paused={}",
+                                session.id,
+                                elapsed,
+                                remaining,
+                                timer_state.is_paused
+                            );
+                        }
+                    }
+
+                    // Auto-complete notification when time is up
+                    if remaining == 0 && elapsed >= planned_seconds && !timer_state.is_paused {
+                        debug!("Session {} timer completed", session.id);
+                        if let Err(e) = app_handle.emit("timer-completed", &payload) {
+                            error!("Failed to emit timer-completed: {}", e);
+                        }
+                    }
                 }
             }
         }
 
         info!("Timer loop ended");
     });
+
+    cancel_tx
 }
 
 /// Ensure timer loop is running (call when session starts or mini-timer opens)
-pub fn ensure_timer_loop_running(app_handle: AppHandle, state: AppState) {
+pub async fn ensure_timer_loop_running(app_handle: AppHandle, state: AppState) {
     if !TIMER_LOOP_RUNNING.load(Ordering::SeqCst) {
         debug!("Timer loop not running, starting it");
-        start_timer_loop(app_handle, state);
+        let cancel_tx = start_timer_loop(app_handle, state.clone());
+        // Store the cancellation sender in state
+        let mut cancellation = state.timer_cancellation.write().await;
+        *cancellation = Some(cancel_tx);
+    }
+}
+
+/// Stop the timer loop (call when session ends)
+pub async fn stop_timer_loop(state: &AppState) {
+    let mut cancellation = state.timer_cancellation.write().await;
+    if let Some(sender) = cancellation.take() {
+        debug!("Sending timer loop cancellation signal");
+        let _ = sender.send(());
     }
 }
 
@@ -185,7 +215,7 @@ pub async fn get_timer_state(
     }
 
     // Ensure timer loop is running when a window requests state
-    ensure_timer_loop_running(app_handle, (*state).clone());
+    ensure_timer_loop_running(app_handle, (*state).clone()).await;
 
     let elapsed = timer_state.calculate_elapsed(session.start_time);
     let planned_seconds = session.planned_duration_minutes as i64 * 60;
