@@ -38,12 +38,11 @@ export function Example2_SessionCompleteHandler() {
 
   const handleSessionComplete = () => {
     // Your existing session completion logic
-    console.log("Session completed!");
 
     // Update streak history for today
     updateStreak.mutate(undefined, {
-      onSuccess: (data) => {
-        console.log("Streak updated:", data);
+      onSuccess: () => {
+        // Streak updated successfully
       },
       onError: (error) => {
         console.error("Failed to update streak:", error);
@@ -221,8 +220,7 @@ export function Example7_FocusTimerIntegration() {
   const updateStreak = useUpdateStreakHistory();
 
   const handleTimerComplete = useCallback(() => {
-    console.log("Timer completed!");
-    // Update streak history
+    // Timer completed - update streak history
     updateStreak.mutate();
   }, [updateStreak]);
 

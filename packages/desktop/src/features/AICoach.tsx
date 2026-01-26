@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useCoachChat } from "@/hooks/useCoach";
 import { useLlmStatusManager } from "@/hooks/useLlmStatus";
 import { useConversations, useConversation } from "@/hooks/useChatHistory";
@@ -366,8 +365,10 @@ export function AICoach() {
                 ? "Downloading model..."
                 : "Loading model..."}
             </p>
-            {/* Mock progress - in real implementation, this would come from backend */}
-            <Progress value={33} className="w-64 mt-2" />
+            {/* Indeterminate progress - actual progress tracking would require backend events */}
+            <div className="w-64 mt-2 h-2 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary animate-pulse w-full opacity-70" />
+            </div>
             <p className="text-xs text-muted-foreground mt-2">This may take a few minutes</p>
           </div>
         )}

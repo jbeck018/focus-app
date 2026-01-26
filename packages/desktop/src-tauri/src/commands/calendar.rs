@@ -451,12 +451,69 @@ pub async fn get_meeting_load(
         .max_by_key(|(_, count)| *count)
         .map(|(day, _)| day);
 
-    // Calculate longest free block
+    // Calculate longest free block by analyzing gaps between events
     let longest_free_block_minutes = if events.is_empty() {
-        480 // 8 hours
+        480 // 8 hours (full work day)
     } else {
-        // This is a simplified calculation
-        120 // Default to 2 hours
+        // Parse and sort events by start time
+        let mut parsed_events: Vec<(DateTime<Utc>, DateTime<Utc>)> = events
+            .iter()
+            .filter(|e| e.is_busy)
+            .filter_map(|e| {
+                let start = DateTime::parse_from_rfc3339(&e.start_time).ok()?.with_timezone(&Utc);
+                let end = DateTime::parse_from_rfc3339(&e.end_time).ok()?.with_timezone(&Utc);
+                Some((start, end))
+            })
+            .collect();
+
+        parsed_events.sort_by_key(|(start, _)| *start);
+
+        if parsed_events.is_empty() {
+            480 // No busy events, full 8 hour day free
+        } else {
+            let mut max_gap: i64 = 0;
+
+            // Check gap from start of work day (9am) to first meeting
+            let work_day_start = now.date_naive()
+                .and_hms_opt(9, 0, 0)
+                .map(|t| t.and_utc());
+
+            if let Some(day_start) = work_day_start {
+                if let Some((first_start, _)) = parsed_events.first() {
+                    if *first_start > day_start {
+                        let gap = (*first_start - day_start).num_minutes();
+                        max_gap = max_gap.max(gap);
+                    }
+                }
+            }
+
+            // Check gaps between consecutive events
+            for window in parsed_events.windows(2) {
+                if let [(_, prev_end), (next_start, _)] = window {
+                    if next_start > prev_end {
+                        let gap = (*next_start - *prev_end).num_minutes();
+                        max_gap = max_gap.max(gap);
+                    }
+                }
+            }
+
+            // Check gap from last meeting to end of work day (6pm)
+            let work_day_end = now.date_naive()
+                .and_hms_opt(18, 0, 0)
+                .map(|t| t.and_utc());
+
+            if let Some(day_end) = work_day_end {
+                if let Some((_, last_end)) = parsed_events.last() {
+                    if day_end > *last_end {
+                        let gap = (day_end - *last_end).num_minutes();
+                        max_gap = max_gap.max(gap);
+                    }
+                }
+            }
+
+            // Return at least 0, cap at 480 (8 hours)
+            max_gap.clamp(0, 480) as i32
+        }
     };
 
     Ok(MeetingLoad {

@@ -573,7 +573,7 @@ export function FocusTimer() {
                           // Sync session count with new tier
                           await syncSessionCount();
                           setShowUpgradeDialog(false);
-                          console.log("[Dev] Upgraded to Pro tier");
+                          // Dev: Upgraded to Pro tier
                         } catch (error) {
                           console.error("[Dev] Failed to upgrade:", error);
                         }
@@ -599,7 +599,7 @@ export function FocusTimer() {
             aria-live="polite"
             onDoubleClick={() => {
               useAuthStore.getState().resetDailySessionCount();
-              console.log("[Dev] Daily session count reset");
+              // Dev: Daily session count reset
             }}
             title="Double-click to reset (dev)"
           >

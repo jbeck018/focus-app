@@ -71,7 +71,7 @@ export function useGoogleAuth() {
           setUser(userInfo);
           setAuthenticated(true);
 
-          console.log("Google OAuth completed successfully");
+          // OAuth completed successfully
         } catch (e) {
           const errorMessage = e instanceof Error ? e.message : "OAuth failed";
           setError(errorMessage);

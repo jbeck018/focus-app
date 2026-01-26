@@ -53,7 +53,7 @@ export function MiniTimerWindow() {
     });
 
     const unlistenComplete = listen<TimerTickPayload>("timer-completed", () => {
-      console.debug("[mini-timer] Session completed");
+      // Session completed
       setBackendState(null);
       setDisplaySeconds(null);
     });
@@ -61,7 +61,7 @@ export function MiniTimerWindow() {
     const unlistenExtend = listen<{ plannedDurationMinutes: number }>(
       "session-extended",
       (event) => {
-        console.debug("[mini-timer] Session extended:", event.payload);
+        // Session extended
         setBackendState((prev) =>
           prev ? { ...prev, plannedDurationMinutes: event.payload.plannedDurationMinutes } : null
         );
@@ -72,7 +72,7 @@ export function MiniTimerWindow() {
     invoke<TimerTickPayload | null>("get_timer_state")
       .then((state) => {
         if (state) {
-          console.debug("[mini-timer] Initial state:", { remaining: state.remainingSeconds });
+          // Initial state loaded
           setBackendState(state);
           setDisplaySeconds(state.remainingSeconds);
         }
@@ -156,7 +156,6 @@ export function MiniTimerWindow() {
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     // Future: Show context menu with settings options
-    console.log("Context menu requested");
   }, []);
 
   return (

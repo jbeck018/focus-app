@@ -60,7 +60,7 @@ export function useAchievementCelebration() {
       // Skip tier 1 (minimal) - no visual celebration needed
       if (next.celebrationTier === 1) {
         // Still emit for badge updates, but don't show visual celebration
-        console.log("[celebration] Tier 1 achievement - badge update only:", next.achievement.name);
+        // Tier 1 achievement - badge update only, no visual celebration
         return rest;
       }
 
@@ -137,7 +137,7 @@ export function useAchievementCelebration() {
   // Listen for achievement unlock events
   useEffect(() => {
     const unlisten = listen<AchievementUnlockPayload>("achievement-unlocked", (event) => {
-      console.log("[celebration] Achievement unlocked:", event.payload);
+      // Achievement unlocked event received
       addCelebration(event.payload);
     });
 
