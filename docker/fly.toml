@@ -9,8 +9,7 @@ primary_region = "dfw"
 
 [env]
   TRAILBASE_LOG_LEVEL = "info"
-  TRAILBASE_DATA_DIR = "/data"
-  TRAILBASE_CONFIG_DIR = "/config"
+  # TrailBase uses /app/traildepot as default data dir (matches volume mount)
 
 [http_service]
   internal_port = 4000
