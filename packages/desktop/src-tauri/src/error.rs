@@ -75,6 +75,9 @@ pub enum Error {
 
     #[error("OAuth not configured: {0}")]
     OAuthNotConfigured(String),
+
+    #[error("Cryptography error: {0}")]
+    Crypto(String),
 }
 
 // Implement conversions from common error types

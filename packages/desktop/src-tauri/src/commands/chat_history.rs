@@ -874,3 +874,539 @@ pub async fn update_conversation_title(
 
     Ok(())
 }
+
+/// Update conversation summary
+///
+/// Updates the summary field for a conversation, useful after AI summarization.
+#[tauri::command]
+pub async fn update_conversation_summary(
+    state: State<'_, AppState>,
+    conversation_id: String,
+    summary: String,
+) -> Result<()> {
+    let rows_affected = sqlx::query(
+        r#"
+        UPDATE conversations
+        SET summary = ?, last_modified = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND deleted = 0
+        "#,
+    )
+    .bind(&summary)
+    .bind(&conversation_id)
+    .execute(state.pool())
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(Error::NotFound(format!(
+            "Conversation not found: {}",
+            conversation_id
+        )));
+    }
+
+    info!("Updated summary for conversation: {}", conversation_id);
+    Ok(())
+}
+
+/// Clear all messages in a conversation
+///
+/// Soft deletes all messages in a conversation while keeping the conversation itself.
+/// Resets the message count and total tokens.
+#[tauri::command]
+pub async fn clear_conversation_messages(
+    state: State<'_, AppState>,
+    conversation_id: String,
+) -> Result<i32> {
+    // Verify conversation exists
+    let exists: Option<(i32,)> = sqlx::query_as(
+        "SELECT message_count FROM conversations WHERE id = ? AND deleted = 0",
+    )
+    .bind(&conversation_id)
+    .fetch_optional(state.pool())
+    .await?;
+
+    let message_count = match exists {
+        Some((count,)) => count,
+        None => {
+            return Err(Error::NotFound(format!(
+                "Conversation not found: {}",
+                conversation_id
+            )));
+        }
+    };
+
+    // Soft delete all messages
+    sqlx::query(
+        r#"
+        UPDATE messages
+        SET deleted = 1, last_modified = CURRENT_TIMESTAMP
+        WHERE conversation_id = ? AND deleted = 0
+        "#,
+    )
+    .bind(&conversation_id)
+    .execute(state.pool())
+    .await?;
+
+    // Reset conversation counters
+    sqlx::query(
+        r#"
+        UPDATE conversations
+        SET message_count = 0, total_tokens = 0,
+            updated_at = CURRENT_TIMESTAMP, last_modified = CURRENT_TIMESTAMP
+        WHERE id = ?
+        "#,
+    )
+    .bind(&conversation_id)
+    .execute(state.pool())
+    .await?;
+
+    info!(
+        "Cleared {} messages from conversation: {}",
+        message_count, conversation_id
+    );
+    Ok(message_count)
+}
+
+/// Get messages with pagination support
+///
+/// Returns messages with offset-based pagination for loading large chat histories.
+#[tauri::command]
+pub async fn get_messages_paginated(
+    state: State<'_, AppState>,
+    conversation_id: String,
+    limit: Option<i32>,
+    offset: Option<i32>,
+) -> Result<PaginatedMessages> {
+    let limit = limit.unwrap_or(50).min(200);
+    let offset = offset.unwrap_or(0);
+
+    // Get total count
+    let total: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND deleted = 0",
+    )
+    .bind(&conversation_id)
+    .fetch_one(state.pool())
+    .await?;
+
+    // Get messages with pagination
+    let messages = sqlx::query_as::<_, (String, String, String, String, Option<i32>, Option<String>, Option<String>, String)>(
+        r#"
+        SELECT id, conversation_id, role, content, token_count, tool_calls, model_used, created_at
+        FROM messages
+        WHERE conversation_id = ? AND deleted = 0
+        ORDER BY created_at ASC
+        LIMIT ? OFFSET ?
+        "#,
+    )
+    .bind(&conversation_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(state.pool())
+    .await?
+    .into_iter()
+    .map(|(id, conversation_id, role, content, token_count, tool_calls, model_used, created_at)| {
+        let role = match role.as_str() {
+            "user" => MessageRole::User,
+            "assistant" => MessageRole::Assistant,
+            "system" => MessageRole::System,
+            _ => MessageRole::User,
+        };
+
+        Message {
+            id,
+            conversation_id,
+            role,
+            content,
+            token_count,
+            tool_calls,
+            model_used,
+            created_at,
+        }
+    })
+    .collect();
+
+    Ok(PaginatedMessages {
+        messages,
+        total: total.0 as i32,
+        limit,
+        offset,
+        has_more: offset + limit < total.0 as i32,
+    })
+}
+
+/// Paginated messages response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaginatedMessages {
+    pub messages: Vec<Message>,
+    pub total: i32,
+    pub limit: i32,
+    pub offset: i32,
+    pub has_more: bool,
+}
+
+/// Search messages across conversations
+///
+/// Searches message content with optional conversation filter.
+/// Returns matching messages with context.
+#[tauri::command]
+pub async fn search_messages(
+    state: State<'_, AppState>,
+    query: String,
+    conversation_id: Option<String>,
+    limit: Option<i32>,
+) -> Result<Vec<MessageSearchResult>> {
+    let user_id = state.get_user_id().await;
+    let limit = limit.unwrap_or(20).min(100);
+    let search_pattern = format!("%{}%", query.to_lowercase());
+
+    let results = if let Some(conv_id) = conversation_id {
+        // Search within a specific conversation
+        sqlx::query_as::<_, (String, String, String, String, Option<i32>, String, String, String)>(
+            r#"
+            SELECT m.id, m.conversation_id, m.role, m.content, m.token_count, m.created_at,
+                   c.title, c.created_at as conv_created_at
+            FROM messages m
+            JOIN conversations c ON m.conversation_id = c.id
+            WHERE m.conversation_id = ? AND m.deleted = 0 AND c.deleted = 0
+              AND LOWER(m.content) LIKE ?
+            ORDER BY m.created_at DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(&conv_id)
+        .bind(&search_pattern)
+        .bind(limit)
+        .fetch_all(state.pool())
+        .await?
+    } else {
+        // Search across all user's conversations
+        sqlx::query_as::<_, (String, String, String, String, Option<i32>, String, String, String)>(
+            r#"
+            SELECT m.id, m.conversation_id, m.role, m.content, m.token_count, m.created_at,
+                   c.title, c.created_at as conv_created_at
+            FROM messages m
+            JOIN conversations c ON m.conversation_id = c.id
+            WHERE m.deleted = 0 AND c.deleted = 0
+              AND (c.user_id = ? OR c.user_id IS NULL)
+              AND LOWER(m.content) LIKE ?
+            ORDER BY m.created_at DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(&user_id)
+        .bind(&search_pattern)
+        .bind(limit)
+        .fetch_all(state.pool())
+        .await?
+    };
+
+    let search_results = results
+        .into_iter()
+        .map(|(id, conversation_id, role, content, token_count, created_at, conv_title, _)| {
+            let role = match role.as_str() {
+                "user" => MessageRole::User,
+                "assistant" => MessageRole::Assistant,
+                "system" => MessageRole::System,
+                _ => MessageRole::User,
+            };
+
+            // Create a snippet with context around the match
+            let snippet = create_search_snippet(&content, &query, 100);
+
+            MessageSearchResult {
+                message_id: id,
+                conversation_id,
+                conversation_title: conv_title,
+                role,
+                snippet,
+                full_content: content,
+                token_count,
+                created_at,
+            }
+        })
+        .collect();
+
+    Ok(search_results)
+}
+
+/// Search result for a message
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MessageSearchResult {
+    pub message_id: String,
+    pub conversation_id: String,
+    pub conversation_title: String,
+    pub role: MessageRole,
+    pub snippet: String,
+    pub full_content: String,
+    pub token_count: Option<i32>,
+    pub created_at: String,
+}
+
+/// Create a search snippet with context around the match
+fn create_search_snippet(content: &str, query: &str, context_chars: usize) -> String {
+    let lower_content = content.to_lowercase();
+    let lower_query = query.to_lowercase();
+
+    if let Some(pos) = lower_content.find(&lower_query) {
+        let start = pos.saturating_sub(context_chars);
+        let end = (pos + query.len() + context_chars).min(content.len());
+
+        let mut snippet = String::new();
+        if start > 0 {
+            snippet.push_str("...");
+        }
+        snippet.push_str(&content[start..end]);
+        if end < content.len() {
+            snippet.push_str("...");
+        }
+        snippet
+    } else {
+        // Return truncated content if query not found (shouldn't happen)
+        if content.len() > context_chars * 2 {
+            format!("{}...", &content[..context_chars * 2])
+        } else {
+            content.to_string()
+        }
+    }
+}
+
+/// Export chat history to JSON
+///
+/// Exports one or all conversations with their messages to a JSON structure.
+/// Useful for backup, migration, or sharing.
+#[tauri::command]
+pub async fn export_chat_history(
+    state: State<'_, AppState>,
+    conversation_id: Option<String>,
+    include_memories: Option<bool>,
+) -> Result<ChatHistoryExport> {
+    let user_id = state.get_user_id().await;
+    let include_memories = include_memories.unwrap_or(true);
+
+    let conversations = if let Some(conv_id) = conversation_id {
+        // Export single conversation
+        let conv = get_conversation(state.clone(), conv_id.clone()).await?;
+        vec![conv]
+    } else {
+        // Export all non-deleted conversations
+        let conv_list = sqlx::query_as::<_, (String,)>(
+            r#"
+            SELECT id FROM conversations
+            WHERE deleted = 0 AND (user_id = ? OR user_id IS NULL)
+            ORDER BY updated_at DESC
+            "#,
+        )
+        .bind(&user_id)
+        .fetch_all(state.pool())
+        .await?;
+
+        let mut conversations = Vec::new();
+        for (id,) in conv_list {
+            if let Ok(conv) = get_conversation(state.clone(), id).await {
+                conversations.push(conv);
+            }
+        }
+        conversations
+    };
+
+    let memories = if include_memories {
+        get_memories(state.clone(), None, Some(1000)).await?
+    } else {
+        Vec::new()
+    };
+
+    // Calculate totals before moving conversations
+    let total_conversations = conversations.len() as i32;
+    let total_messages: i32 = conversations.iter().map(|c| c.messages.len() as i32).sum();
+
+    let export = ChatHistoryExport {
+        version: "1.0".to_string(),
+        exported_at: Utc::now().to_rfc3339(),
+        conversations,
+        memories,
+        total_conversations,
+        total_messages,
+    };
+
+    info!(
+        "Exported {} conversations with {} total messages",
+        export.total_conversations, export.total_messages
+    );
+
+    Ok(export)
+}
+
+/// Chat history export structure
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatHistoryExport {
+    pub version: String,
+    pub exported_at: String,
+    pub conversations: Vec<ConversationWithMessages>,
+    pub memories: Vec<Memory>,
+    pub total_conversations: i32,
+    pub total_messages: i32,
+}
+
+/// Link conversation to a focus session
+///
+/// Associates a conversation with a focus session for context tracking.
+#[tauri::command]
+pub async fn link_conversation_to_session(
+    state: State<'_, AppState>,
+    conversation_id: String,
+    session_id: String,
+) -> Result<()> {
+    // Verify conversation exists
+    let conv_exists: Option<(i32,)> = sqlx::query_as(
+        "SELECT 1 FROM conversations WHERE id = ? AND deleted = 0",
+    )
+    .bind(&conversation_id)
+    .fetch_optional(state.pool())
+    .await?;
+
+    if conv_exists.is_none() {
+        return Err(Error::NotFound(format!(
+            "Conversation not found: {}",
+            conversation_id
+        )));
+    }
+
+    // Verify session exists
+    let session_exists: Option<(i32,)> = sqlx::query_as(
+        "SELECT 1 FROM sessions WHERE id = ?",
+    )
+    .bind(&session_id)
+    .fetch_optional(state.pool())
+    .await?;
+
+    if session_exists.is_none() {
+        return Err(Error::NotFound(format!(
+            "Session not found: {}",
+            session_id
+        )));
+    }
+
+    // Insert or update the link
+    sqlx::query(
+        r#"
+        INSERT INTO conversation_sessions (conversation_id, session_id, linked_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(conversation_id, session_id) DO UPDATE SET linked_at = CURRENT_TIMESTAMP
+        "#,
+    )
+    .bind(&conversation_id)
+    .bind(&session_id)
+    .execute(state.pool())
+    .await?;
+
+    info!(
+        "Linked conversation {} to session {}",
+        conversation_id, session_id
+    );
+    Ok(())
+}
+
+/// Get conversations linked to a session
+///
+/// Returns all conversations that have been associated with a focus session.
+#[tauri::command]
+pub async fn get_session_conversations(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> Result<Vec<ConversationSummary>> {
+    let conversations = sqlx::query_as::<_, (String, String, Option<String>, i32, String, String)>(
+        r#"
+        SELECT c.id, c.title, c.summary, c.message_count, c.created_at, c.updated_at
+        FROM conversations c
+        JOIN conversation_sessions cs ON c.id = cs.conversation_id
+        WHERE cs.session_id = ? AND c.deleted = 0
+        ORDER BY cs.linked_at DESC
+        "#,
+    )
+    .bind(&session_id)
+    .fetch_all(state.pool())
+    .await?;
+
+    let summaries = conversations
+        .into_iter()
+        .map(|(id, title, summary, message_count, created_at, updated_at)| {
+            ConversationSummary {
+                id,
+                title,
+                summary,
+                message_count,
+                created_at,
+                updated_at,
+            }
+        })
+        .collect();
+
+    Ok(summaries)
+}
+
+/// Delete a memory entry
+///
+/// Soft deletes a memory by ID.
+#[tauri::command]
+pub async fn delete_memory(
+    state: State<'_, AppState>,
+    memory_id: String,
+) -> Result<()> {
+    let rows_affected = sqlx::query(
+        r#"
+        UPDATE memory
+        SET deleted = 1, last_modified = CURRENT_TIMESTAMP
+        WHERE id = ?
+        "#,
+    )
+    .bind(&memory_id)
+    .execute(state.pool())
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(Error::NotFound(format!(
+            "Memory not found: {}",
+            memory_id
+        )));
+    }
+
+    info!("Deleted memory: {}", memory_id);
+    Ok(())
+}
+
+/// Get total conversation count
+///
+/// Returns the total number of conversations for pagination.
+#[tauri::command]
+pub async fn get_conversation_count(
+    state: State<'_, AppState>,
+    include_archived: Option<bool>,
+) -> Result<i32> {
+    let user_id = state.get_user_id().await;
+    let include_archived = include_archived.unwrap_or(false);
+
+    let count: (i64,) = if include_archived {
+        sqlx::query_as(
+            r#"
+            SELECT COUNT(*) FROM conversations
+            WHERE deleted = 0 AND (user_id = ? OR user_id IS NULL)
+            "#,
+        )
+        .bind(&user_id)
+        .fetch_one(state.pool())
+        .await?
+    } else {
+        sqlx::query_as(
+            r#"
+            SELECT COUNT(*) FROM conversations
+            WHERE deleted = 0 AND archived = 0 AND (user_id = ? OR user_id IS NULL)
+            "#,
+        )
+        .bind(&user_id)
+        .fetch_one(state.pool())
+        .await?
+    };
+
+    Ok(count.0 as i32)
+}

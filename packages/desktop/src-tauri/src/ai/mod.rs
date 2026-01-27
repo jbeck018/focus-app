@@ -1,18 +1,59 @@
 // ai/mod.rs - Local AI module for privacy-first coaching
 //
+// # Overview
+//
 // This module provides 100% local LLM inference using llama.cpp with no network calls.
 // Designed for privacy-conscious users who want AI coaching without data leaving their device.
 //
-// Architecture:
+// # Feature Flag: `local-ai`
+//
+// The local AI functionality is controlled by the `local-ai` Cargo feature flag.
+// When enabled, the application can:
+// - Download and run local models like Phi-3.5-mini or TinyLlama
+// - Perform AI inference entirely on the user's device
+// - Provide privacy-first AI coaching with zero data leaving the machine
+//
+// When disabled:
+// - Local AI provider is marked as unavailable
+// - Users are directed to use cloud providers instead
+// - The application still functions with cloud-based AI providers
+//
+// ## Enabling Local AI
+//
+// In Cargo.toml, local-ai is included in default features:
+// ```toml
+// [features]
+// default = ["custom-protocol", "macos-private-api", "local-ai"]
+// local-ai = ["llama-cpp-2"]
+// ```
+//
+// To build without local AI (smaller binary, faster compilation):
+// ```bash
+// cargo build --release --no-default-features --features custom-protocol
+// ```
+//
+// ## Supported Models
+//
+// When local-ai is enabled, the following models are supported:
+// - **phi-3.5-mini** (Recommended): Microsoft's Phi-3.5-mini (3.8B params, ~2.3 GB)
+//   - Best balance of quality and speed
+//   - Context size: 16,384 tokens
+// - **tinyllama**: TinyLlama (1.1B params, ~670 MB)
+//   - Fastest option, lower quality
+//   - Context size: 4,096 tokens
+//
+// # Architecture
+//
 // - system_prompts: Modular prompt components (identity, framework, guidelines)
 // - prompt_templates: High-level prompt building interface
-// - llm_engine: Local LLM inference (llama.cpp binding)
-// - model_manager: Model download and lifecycle management
+// - llm_engine: Local LLM inference (llama.cpp binding) [requires local-ai feature]
+// - model_manager: Model download and lifecycle management [requires local-ai feature]
 // - guidelines: Parlant-style guideline types and matching logic
 // - guideline_registry: Registry of all available coaching guidelines
 // - orchestrator: Dynamic guideline evaluation and prompt building
 // - tools: Tool definitions and handlers for agent actions
 // - tool_parser: Parse tool calls from LLM output
+// - providers: Multi-provider abstraction (cloud + local)
 
 #[cfg(feature = "local-ai")]
 pub mod llm_engine;

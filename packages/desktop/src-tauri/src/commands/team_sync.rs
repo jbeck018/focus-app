@@ -4,6 +4,7 @@
 
 #![allow(clippy::type_complexity)]
 
+use crate::db::crypto::encrypt;
 use crate::trailbase::{
     client::{AuthResponse, Credentials, TeamConnection, TrailBaseClient},
     models::{Member, SharedSession, SyncStatus},
@@ -57,13 +58,16 @@ pub async fn connect_team(
     // Authenticate
     let auth_response = client.authenticate(credentials).await?;
 
+    // Encrypt the API key before storage
+    let encrypted_api_key = encrypt(&auth_response.access_token)?;
+
     // Store connection info
     let connection = TeamConnection {
         id: uuid::Uuid::new_v4().to_string(),
         server_url: server_url.clone(),
         team_id: None, // Will be set when joining/creating team
         user_id: Some(auth_response.user_id.clone()),
-        api_key: Some(auth_response.access_token.clone()),
+        api_key: Some(encrypted_api_key.clone()),
         connected_at: Utc::now().timestamp(),
     };
 
@@ -77,7 +81,7 @@ pub async fn connect_team(
     .bind(&connection.server_url)
     .bind(&connection.team_id)
     .bind(&connection.user_id)
-    .bind(&connection.api_key)
+    .bind(&encrypted_api_key)
     .bind(connection.connected_at)
     .execute(state.pool())
     .await?;

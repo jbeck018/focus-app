@@ -46,6 +46,9 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle();
 
+            // Initialize encryption subsystem
+            db::crypto::init_encryption()?;
+
             // Initialize application state
             let state = tauri::async_runtime::block_on(async {
                 AppState::new(handle.clone()).await
@@ -196,13 +199,22 @@ pub fn run() {
             commands::chat_history::archive_conversation,
             commands::chat_history::add_message,
             commands::chat_history::get_recent_messages,
+            commands::chat_history::get_messages_paginated,
             commands::chat_history::save_memory,
             commands::chat_history::get_memories,
             commands::chat_history::get_relevant_memories,
+            commands::chat_history::delete_memory,
             commands::chat_history::auto_archive_old_conversations,
             commands::chat_history::cleanup_expired_memories,
             commands::chat_history::build_conversation_context,
             commands::chat_history::update_conversation_title,
+            commands::chat_history::update_conversation_summary,
+            commands::chat_history::clear_conversation_messages,
+            commands::chat_history::search_messages,
+            commands::chat_history::export_chat_history,
+            commands::chat_history::link_conversation_to_session,
+            commands::chat_history::get_session_conversations,
+            commands::chat_history::get_conversation_count,
 
             // AI/LLM management commands
             commands::ai::get_available_models,
@@ -230,6 +242,7 @@ pub fn run() {
             commands::ai_providers::test_provider_connection,
             commands::ai_providers::stream_chat,
             commands::ai_providers::complete_chat,
+            commands::ai_providers::is_local_ai_available,
 
             // Credential management commands
             commands::credentials::save_api_key,
@@ -238,7 +251,7 @@ pub fn run() {
             commands::credentials::has_api_key,
             commands::credentials::list_saved_providers,
 
-            // Team commands (legacy mock commands)
+            // Team commands (local storage with sync queue)
             commands::team::get_current_team,
             commands::team::create_team,
             commands::team::join_team,

@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+use crate::db::crypto::{decrypt, encrypt};
 use crate::oauth::provider::{OAuthProvider, TokenResponse};
 use crate::{Error, Result};
 
@@ -83,6 +84,14 @@ impl TokenManager {
             .execute(&self.pool)
             .await?;
 
+        // Encrypt tokens before storage
+        let encrypted_access_token = encrypt(&token_response.access_token)?;
+        let encrypted_refresh_token = token_response
+            .refresh_token
+            .as_ref()
+            .map(|t| encrypt(t))
+            .transpose()?;
+
         // Insert new token
         sqlx::query(
             r#"
@@ -94,8 +103,8 @@ impl TokenManager {
         )
         .bind(&id)
         .bind(provider_name)
-        .bind(&token_response.access_token)
-        .bind(&token_response.refresh_token)
+        .bind(&encrypted_access_token)
+        .bind(&encrypted_refresh_token)
         .bind(expires_at)
         .bind(&token_response.scope)
         .bind(now)
@@ -194,13 +203,19 @@ impl TokenManager {
             Some((
                 id,
                 provider,
-                access_token,
-                refresh_token,
+                encrypted_access_token,
+                encrypted_refresh_token,
                 expires_at,
                 scopes,
                 created_at,
                 updated_at,
             )) => {
+                // Decrypt tokens (handles both encrypted and legacy plaintext)
+                let access_token = decrypt(&encrypted_access_token)?;
+                let refresh_token = encrypted_refresh_token
+                    .map(|t| decrypt(&t))
+                    .transpose()?;
+
                 let token = StoredToken {
                     id,
                     provider,
@@ -245,6 +260,14 @@ impl TokenManager {
         let now = Utc::now().timestamp();
         let expires_at = now + token_response.expires_in;
 
+        // Encrypt tokens before storage
+        let encrypted_access_token = encrypt(&token_response.access_token)?;
+        let encrypted_refresh_token = token_response
+            .refresh_token
+            .as_ref()
+            .map(|t| encrypt(t))
+            .transpose()?;
+
         sqlx::query(
             r#"
             UPDATE oauth_tokens
@@ -253,8 +276,8 @@ impl TokenManager {
             WHERE provider = ?
             "#,
         )
-        .bind(&token_response.access_token)
-        .bind(&token_response.refresh_token)
+        .bind(&encrypted_access_token)
+        .bind(&encrypted_refresh_token)
         .bind(expires_at)
         .bind(&token_response.scope)
         .bind(now)

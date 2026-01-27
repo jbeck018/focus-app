@@ -2,7 +2,7 @@
 // Main AI settings dialog with provider configuration
 
 import * as React from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, Lock, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import {
   useDownloadModel,
   useModelDownloadStatus,
   useModelDownloadProgress,
+  useLocalAIStatus,
 } from "@/hooks/useAIProviders";
 
 import { APIKeyInput } from "./APIKeyInput";
@@ -136,6 +137,7 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
   const saveApiKey = useSaveApiKey();
   const downloadModel = useDownloadModel();
   const { data: downloadStatus } = useModelDownloadStatus();
+  const { data: localAIStatus, isLoading: localAILoading } = useLocalAIStatus();
 
   // Local state for form
   const [selectedProvider, setSelectedProvider] = React.useState<ProviderType>("local");
@@ -311,11 +313,13 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
   }, [onOpenChange]);
 
   const requiresApiKey = selectedProvider !== "local";
+  const localAIUnavailable = selectedProvider === "local" && !localAIStatus?.available;
   const canSave =
     selectedModel &&
     (!requiresApiKey || apiKey.trim().length > 0) &&
     !isSaving &&
-    !downloadStatus?.isDownloading;
+    !downloadStatus?.isDownloading &&
+    !localAIUnavailable;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -360,103 +364,142 @@ export function AISettingsDialog({ open, onOpenChange }: AISettingsDialogProps) 
 
             {/* Local Provider */}
             <TabsContent value="local" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="local-model">Model</Label>
-                <Select
-                  value={selectedModel}
-                  onValueChange={setSelectedModel}
-                  disabled={downloadStatus?.isDownloading}
-                >
-                  <SelectTrigger id="local-model">
-                    <SelectValue placeholder="Select a model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {models.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        <div className="flex items-center justify-between gap-2">
-                          <span>{model.name}</span>
-                          {model.recommended && (
-                            <span className="text-xs text-primary">(Recommended)</span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedModel && (
-                  <p className="text-sm text-muted-foreground">
-                    {(() => {
-                      const model = models.find((m) => m.id === selectedModel);
-                      const sizeMb = model?.sizeMb;
-                      return (
-                        <>
-                          {model?.description}
-                          {sizeMb ? ` - ${(sizeMb / 1024).toFixed(1)} GB` : ""}
-                        </>
-                      );
-                    })()}
-                  </p>
-                )}
-              </div>
-
-              {/* Show download progress or error */}
-              {(downloadStatus?.isDownloading ?? downloadStatus?.error) && (
-                <ModelDownloadProgress
-                  progress={downloadStatus.progress}
-                  error={downloadStatus.error}
-                  isDownloading={downloadStatus.isDownloading}
-                  modelName={downloadStatus.modelName ?? selectedModel}
-                  onRetry={async () => {
-                    const modelToDownload = downloadStatus.modelName ?? selectedModel;
-                    if (modelToDownload) {
-                      try {
-                        await downloadModel.mutateAsync(modelToDownload);
-                        toast.success("Model download restarted");
-                      } catch (error) {
-                        const message =
-                          error instanceof Error ? error.message : "Failed to restart download";
-                        toast.error(message);
-                      }
-                    }
-                  }}
-                />
+              {/* Show loading state while checking local AI availability */}
+              {localAILoading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    Checking local AI availability...
+                  </span>
+                </div>
               )}
 
-              {/* Show download button when not downloading and no error */}
-              {selectedModel && !downloadStatus?.isDownloading && !downloadStatus?.error && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={async () => {
-                    try {
-                      await downloadModel.mutateAsync(selectedModel);
-                      toast.success("Model download started");
-                    } catch (error) {
-                      const message =
-                        error instanceof Error ? error.message : "Failed to start download";
-                      toast.error(message);
-                    }
-                  }}
-                  disabled={downloadModel.isPending}
-                >
-                  {downloadModel.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Starting Download...
-                    </>
-                  ) : (
-                    "Download Model"
+              {/* Show unavailable message when local AI is not compiled in */}
+              {!localAILoading && localAIStatus && !localAIStatus.available && (
+                <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+                  <Info className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-700 dark:text-amber-400">
+                    Local AI Not Available
+                  </AlertTitle>
+                  <AlertDescription className="text-amber-600/90 dark:text-amber-300/90">
+                    {localAIStatus.reason ??
+                      "Local AI is not available in this build. Please use a cloud provider instead."}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Show local AI configuration when available */}
+              {!localAILoading && localAIStatus?.available && (
+                <>
+                  {/* Privacy badge */}
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <Lock className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">Privacy-First</span>
+                    <span className="text-xs text-muted-foreground">
+                      All processing happens on your device
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="local-model">Model</Label>
+                    <Select
+                      value={selectedModel}
+                      onValueChange={setSelectedModel}
+                      disabled={downloadStatus?.isDownloading}
+                    >
+                      <SelectTrigger id="local-model">
+                        <SelectValue placeholder="Select a model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {models.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            <div className="flex items-center justify-between gap-2">
+                              <span>{model.name}</span>
+                              {model.recommended && (
+                                <span className="text-xs text-primary">(Recommended)</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedModel && (
+                      <p className="text-sm text-muted-foreground">
+                        {(() => {
+                          const model = models.find((m) => m.id === selectedModel);
+                          const sizeMb = model?.sizeMb;
+                          return (
+                            <>
+                              {model?.description}
+                              {sizeMb ? ` - ${(sizeMb / 1024).toFixed(1)} GB` : ""}
+                            </>
+                          );
+                        })()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Show download progress or error */}
+                  {(downloadStatus?.isDownloading ?? downloadStatus?.error) && (
+                    <ModelDownloadProgress
+                      progress={downloadStatus.progress}
+                      error={downloadStatus.error}
+                      isDownloading={downloadStatus.isDownloading}
+                      modelName={downloadStatus.modelName ?? selectedModel}
+                      onRetry={async () => {
+                        const modelToDownload = downloadStatus.modelName ?? selectedModel;
+                        if (modelToDownload) {
+                          try {
+                            await downloadModel.mutateAsync(modelToDownload);
+                            toast.success("Model download restarted");
+                          } catch (error) {
+                            const message =
+                              error instanceof Error ? error.message : "Failed to restart download";
+                            toast.error(message);
+                          }
+                        }
+                      }}
+                    />
                   )}
-                </Button>
-              )}
 
-              <Alert>
-                <AlertDescription className="text-xs">
-                  Local models run privately on your device. First-time setup requires downloading
-                  the model.
-                </AlertDescription>
-              </Alert>
+                  {/* Show download button when not downloading and no error */}
+                  {selectedModel && !downloadStatus?.isDownloading && !downloadStatus?.error && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={async () => {
+                        try {
+                          await downloadModel.mutateAsync(selectedModel);
+                          toast.success("Model download started");
+                        } catch (error) {
+                          const message =
+                            error instanceof Error ? error.message : "Failed to start download";
+                          toast.error(message);
+                        }
+                      }}
+                      disabled={downloadModel.isPending}
+                    >
+                      {downloadModel.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Starting Download...
+                        </>
+                      ) : (
+                        "Download Model"
+                      )}
+                    </Button>
+                  )}
+
+                  <Alert>
+                    <AlertDescription className="text-xs">
+                      Local models run privately on your device using llama.cpp. First-time setup
+                      requires downloading the model (1-3 GB depending on model choice). No data
+                      ever leaves your device.
+                    </AlertDescription>
+                  </Alert>
+                </>
+              )}
             </TabsContent>
 
             {/* OpenAI Provider */}

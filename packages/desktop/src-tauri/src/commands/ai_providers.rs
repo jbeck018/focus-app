@@ -1,8 +1,24 @@
 // commands/ai_providers.rs - Commands for managing LLM providers
+//
+// This module provides Tauri commands for managing AI providers including:
+// - Listing available providers (cloud and local)
+// - Setting the active provider
+// - Testing provider connections
+// - Streaming chat completions
+//
+// ## Local AI Support
+//
+// The local AI provider uses llama.cpp for on-device inference. This requires
+// the `local-ai` feature flag to be enabled at compile time. When enabled,
+// users can download and run models like Phi-3.5-mini or TinyLlama entirely
+// on their device without any data leaving their machine.
+//
+// To check if local AI is available at runtime, use the `is_local_ai_available`
+// command which returns detailed availability information.
 
 use crate::ai::providers::{
-    create_provider, list_available_providers, CompletionOptions, LlmProvider, Message,
-    ProviderConfig, ProviderInfo,
+    create_provider, is_local_ai_enabled, list_available_providers, CompletionOptions, LlmProvider,
+    Message, ProviderConfig, ProviderInfo,
 };
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
@@ -17,6 +33,101 @@ static ACTIVE_PROVIDER: once_cell::sync::Lazy<RwLock<Option<Box<dyn LlmProvider>
 /// Active provider configuration (sanitized)
 static ACTIVE_CONFIG: once_cell::sync::Lazy<RwLock<Option<ProviderConfig>>> =
     once_cell::sync::Lazy::new(|| RwLock::new(None));
+
+/// Local AI availability status
+///
+/// Provides detailed information about whether local AI is available
+/// and why it may not be available.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LocalAIStatus {
+    /// Whether local AI is available in this build
+    pub available: bool,
+    /// Whether the local-ai feature flag was enabled at compile time
+    pub feature_enabled: bool,
+    /// Human-readable reason if unavailable
+    pub reason: Option<String>,
+    /// Available local models (empty if feature is disabled)
+    pub available_models: Vec<String>,
+}
+
+/// Check if local AI is available in this build.
+///
+/// This command checks whether the application was compiled with local AI support
+/// and returns detailed status information. Use this to determine whether to show
+/// local AI options in the UI.
+///
+/// # Returns
+/// - `LocalAIStatus` with availability information
+///
+/// # Example Response (local-ai enabled)
+/// ```json
+/// {
+///   "available": true,
+///   "feature_enabled": true,
+///   "reason": null,
+///   "available_models": ["phi-3.5-mini", "tinyllama"]
+/// }
+/// ```
+///
+/// # Example Response (local-ai disabled)
+/// ```json
+/// {
+///   "available": false,
+///   "feature_enabled": false,
+///   "reason": "Local AI is not enabled in this build. The application was compiled without the 'local-ai' feature flag.",
+///   "available_models": []
+/// }
+/// ```
+#[command]
+pub async fn is_local_ai_available() -> Result<LocalAIStatus> {
+    debug!("Checking local AI availability");
+
+    let feature_enabled = is_local_ai_enabled();
+
+    if feature_enabled {
+        #[cfg(feature = "local-ai")]
+        {
+            use crate::ai::ModelConfig;
+            let models: Vec<String> = ModelConfig::all_models()
+                .into_iter()
+                .map(|m| m.name)
+                .collect();
+
+            info!("Local AI is available with {} models", models.len());
+            Ok(LocalAIStatus {
+                available: true,
+                feature_enabled: true,
+                reason: None,
+                available_models: models,
+            })
+        }
+
+        #[cfg(not(feature = "local-ai"))]
+        {
+            // This branch should never execute if feature_enabled is true,
+            // but we need it for compilation when the feature is disabled
+            Ok(LocalAIStatus {
+                available: false,
+                feature_enabled: false,
+                reason: Some("Local AI is not enabled in this build.".to_string()),
+                available_models: vec![],
+            })
+        }
+    } else {
+        info!("Local AI is not available (feature disabled)");
+        Ok(LocalAIStatus {
+            available: false,
+            feature_enabled: false,
+            reason: Some(
+                "Local AI is not enabled in this build. The application was compiled without \
+                the 'local-ai' feature flag. Please use a cloud provider or contact the \
+                developer for a build with local AI support."
+                    .to_string(),
+            ),
+            available_models: vec![],
+        })
+    }
+}
 
 /// List all available provider types
 #[command]
@@ -108,9 +219,29 @@ pub async fn list_models(provider: String) -> Result<Vec<crate::ai::providers::M
 }
 
 /// Set the active provider
+///
+/// This command sets the active AI provider for the application.
+/// For cloud providers, this validates the API key and model.
+/// For local providers, this checks if local AI is enabled and available.
+///
+/// # Errors
+/// - Returns an error if the local provider is selected but local AI is not available
+/// - Returns an error if the provider fails the health check
+/// - Returns an error if the API key is invalid (for cloud providers)
 #[command]
 pub async fn set_active_provider(app: AppHandle, config: ProviderConfig) -> Result<()> {
     info!("Setting active provider: {}", config.provider_name());
+
+    // For local provider, check if local AI is available first
+    if let ProviderConfig::Local { .. } = &config {
+        if !is_local_ai_enabled() {
+            return Err(Error::Config(
+                "Local AI is not available in this build. The application was compiled without \
+                the 'local-ai' feature flag. Please select a cloud provider instead."
+                    .to_string(),
+            ));
+        }
+    }
 
     // For local provider, resolve model ID to path using app data directory
     let resolved_config = if let ProviderConfig::Local { model_path } = &config {

@@ -1,4 +1,18 @@
 // ai/providers/local.rs - Wrapper around existing llama.cpp LlmEngine
+//
+// This module provides the local AI provider implementation using llama.cpp.
+// It wraps the LlmEngine to provide a consistent interface with cloud providers.
+//
+// # Feature Flag
+//
+// This provider requires the `local-ai` feature flag to function.
+// When the feature is disabled, all methods return errors indicating
+// that local AI is not available.
+//
+// # Privacy
+//
+// Unlike cloud providers, the local provider processes all data on-device.
+// No network calls are made during inference, ensuring complete privacy.
 
 use super::traits::LlmProvider;
 use super::types::{
@@ -6,6 +20,8 @@ use super::types::{
     StreamChunk, TokenUsage,
 };
 use crate::Result;
+#[cfg(not(feature = "local-ai"))]
+use crate::Error;
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 use tracing::debug;

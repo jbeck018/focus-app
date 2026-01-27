@@ -14,7 +14,7 @@ pub use local::LocalProvider;
 pub use openai::OpenAiProvider;
 pub use openrouter::OpenRouterProvider;
 pub use traits::LlmProvider;
-pub use types::{CompletionOptions, Message, ModelInfo, ProviderConfig, ProviderInfo};
+pub use types::{CompletionOptions, Message, ModelInfo, ProviderConfig, ProviderInfo, is_local_ai_enabled};
 
 use crate::Result;
 

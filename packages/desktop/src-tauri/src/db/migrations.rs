@@ -1,5 +1,6 @@
 // db/migrations.rs - Database schema migrations
 
+use crate::db::crypto::{encrypt_if_needed, is_encrypted};
 use crate::Result;
 use sqlx::SqlitePool;
 
@@ -43,6 +44,8 @@ pub async fn run(pool: &SqlitePool) -> Result<()> {
     run_if_needed(pool, 20, "create_conversation_summaries_table").await?;
     run_if_needed(pool, 21, "create_chat_indices").await?;
     run_if_needed(pool, 22, "create_team_tables").await?;
+    run_if_needed(pool, 23, "create_conversation_sessions_table").await?;
+    run_if_needed(pool, 24, "encrypt_sensitive_data").await?;
 
     Ok(())
 }
@@ -82,6 +85,8 @@ async fn run_if_needed(pool: &SqlitePool, id: i32, name: &str) -> Result<()> {
             20 => create_conversation_summaries_table(pool).await?,
             21 => create_chat_indices(pool).await?,
             22 => create_team_tables(pool).await?,
+            23 => create_conversation_sessions_table(pool).await?,
+            24 => encrypt_sensitive_data(pool).await?,
             _ => return Err(crate::Error::Config(format!("Unknown migration id: {}", id))),
         }
 
@@ -1302,6 +1307,124 @@ async fn create_team_tables(pool: &SqlitePool) -> Result<()> {
     )
     .execute(pool)
     .await?;
+
+    Ok(())
+}
+
+/// Migration 23: Create conversation_sessions table for linking conversations to focus sessions
+async fn create_conversation_sessions_table(pool: &SqlitePool) -> Result<()> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS conversation_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL,
+            session_id TEXT NOT NULL,
+            linked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+            FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
+            UNIQUE(conversation_id, session_id)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Create indices for efficient lookups
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_conversation_sessions_conversation
+        ON conversation_sessions(conversation_id)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_conversation_sessions_session
+        ON conversation_sessions(session_id)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Migration 24: Encrypt existing sensitive data (OAuth tokens and team API keys)
+///
+/// This migration encrypts any existing plaintext tokens stored in the database.
+/// The encryption is backward-compatible: already encrypted values are skipped.
+async fn encrypt_sensitive_data(pool: &SqlitePool) -> Result<()> {
+    tracing::info!("Encrypting existing sensitive data in database...");
+
+    // Encrypt OAuth tokens
+    let oauth_tokens: Vec<(String, String, Option<String>)> = sqlx::query_as(
+        "SELECT id, access_token, refresh_token FROM oauth_tokens",
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let mut encrypted_count = 0;
+    for (id, access_token, refresh_token) in oauth_tokens {
+        // Skip if already encrypted
+        if is_encrypted(&access_token) {
+            continue;
+        }
+
+        let encrypted_access = encrypt_if_needed(&access_token)?;
+        let encrypted_refresh = refresh_token
+            .map(|t| encrypt_if_needed(&t))
+            .transpose()?;
+
+        sqlx::query(
+            "UPDATE oauth_tokens SET access_token = ?, refresh_token = ? WHERE id = ?",
+        )
+        .bind(&encrypted_access)
+        .bind(&encrypted_refresh)
+        .bind(&id)
+        .execute(pool)
+        .await?;
+
+        encrypted_count += 1;
+    }
+
+    if encrypted_count > 0 {
+        tracing::info!("Encrypted {} OAuth token(s)", encrypted_count);
+    }
+
+    // Encrypt team connection API keys
+    let team_connections: Vec<(String, Option<String>)> = sqlx::query_as(
+        "SELECT id, api_key FROM team_connection",
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let mut team_encrypted_count = 0;
+    for (id, api_key) in team_connections {
+        if let Some(key) = api_key {
+            // Skip if already encrypted
+            if is_encrypted(&key) {
+                continue;
+            }
+
+            let encrypted_key = encrypt_if_needed(&key)?;
+
+            sqlx::query("UPDATE team_connection SET api_key = ? WHERE id = ?")
+                .bind(&encrypted_key)
+                .bind(&id)
+                .execute(pool)
+                .await?;
+
+            team_encrypted_count += 1;
+        }
+    }
+
+    if team_encrypted_count > 0 {
+        tracing::info!("Encrypted {} team API key(s)", team_encrypted_count);
+    }
+
+    tracing::info!("Sensitive data encryption migration completed");
 
     Ok(())
 }

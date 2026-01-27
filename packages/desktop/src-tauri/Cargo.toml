@@ -79,6 +79,16 @@ rand = "0.8"
 # SHA256 hashing for PKCE code challenge
 sha2 = "0.10"
 
+# AES-GCM encryption for sensitive data at rest
+aes-gcm = "0.10"
+
+# Hex encoding for encrypted data storage
+hex = "0.4"
+
+# System information utilities
+hostname = "0.4"
+dirs = "5"
+
 # Local LLM inference (optional - disable by default due to platform constraints)
 llama-cpp-2 = { version = "0.1", optional = true }
 futures-util = "0.3"

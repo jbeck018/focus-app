@@ -87,6 +87,23 @@ export interface DownloadStatus {
   error?: string;
 }
 
+/**
+ * Local AI availability status
+ *
+ * Provides detailed information about whether local AI is available
+ * in this build and why it may not be available.
+ */
+export interface LocalAIStatus {
+  /** Whether local AI is available in this build */
+  available: boolean;
+  /** Whether the local-ai feature flag was enabled at compile time */
+  featureEnabled: boolean;
+  /** Human-readable reason if unavailable */
+  reason?: string;
+  /** Available local models (empty if feature is disabled) */
+  availableModels: string[];
+}
+
 // Query keys for React Query
 export const aiProviderQueryKeys = {
   providers: ["ai", "providers"] as const,
@@ -94,7 +111,49 @@ export const aiProviderQueryKeys = {
   availableModels: (provider: ProviderType) => ["ai", "models", provider] as const,
   downloadStatus: ["ai", "downloadStatus"] as const,
   apiKey: (provider: ProviderType) => ["ai", "apiKey", provider] as const,
+  localAIStatus: ["ai", "localAIStatus"] as const,
 };
+
+/**
+ * Hook to check if local AI is available in this build.
+ *
+ * This queries the backend to determine if the application was compiled
+ * with local AI support (the `local-ai` feature flag).
+ *
+ * @returns Query object with local AI status
+ *
+ * @example
+ * ```tsx
+ * const { data: localAI, isLoading } = useLocalAIStatus();
+ *
+ * if (!localAI?.available) {
+ *   return <Alert>Local AI is not available: {localAI?.reason}</Alert>;
+ * }
+ * ```
+ */
+export function useLocalAIStatus() {
+  return useQuery({
+    queryKey: aiProviderQueryKeys.localAIStatus,
+    queryFn: async () => {
+      const result = await invoke<{
+        available: boolean;
+        feature_enabled: boolean;
+        reason: string | null;
+        available_models: string[];
+      }>("is_local_ai_available");
+
+      // Convert snake_case to camelCase for frontend consistency
+      return {
+        available: result.available,
+        featureEnabled: result.feature_enabled,
+        reason: result.reason ?? undefined,
+        availableModels: result.available_models,
+      } as LocalAIStatus;
+    },
+    staleTime: Infinity, // This doesn't change during app runtime
+    gcTime: Infinity,
+  });
+}
 
 /**
  * Hook to get list of available providers

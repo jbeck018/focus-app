@@ -95,10 +95,8 @@ impl AppState {
             None
         };
 
-        // Initialize OAuth providers
-        // TODO: These client IDs should come from environment variables or config
-        // For development, you can set them via environment variables:
-        // GOOGLE_CLIENT_ID and MICROSOFT_CLIENT_ID
+        // Initialize OAuth providers from environment variables
+        // Set GOOGLE_CLIENT_ID and MICROSOFT_CLIENT_ID env vars for OAuth to work
         let google_client_id = std::env::var("GOOGLE_CLIENT_ID").unwrap_or_else(|_| {
             warn!("GOOGLE_CLIENT_ID environment variable not set. Google OAuth will not work.");
             "MISSING_GOOGLE_CLIENT_ID".to_string()

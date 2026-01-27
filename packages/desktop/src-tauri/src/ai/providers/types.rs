@@ -236,6 +236,17 @@ pub struct ProviderInfo {
     pub description: String,
     pub requires_api_key: bool,
     pub default_models: Vec<String>,
+    /// Whether this provider is available in the current build
+    /// For local provider, this depends on the `local-ai` feature flag
+    #[serde(default = "default_true")]
+    pub available: bool,
+    /// Reason why the provider is unavailable (if applicable)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unavailable_reason: Option<String>,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl ProviderInfo {
@@ -251,6 +262,8 @@ impl ProviderInfo {
                 "gpt-4-turbo".to_string(),
                 "gpt-3.5-turbo".to_string(),
             ],
+            available: true,
+            unavailable_reason: None,
         }
     }
 
@@ -265,6 +278,8 @@ impl ProviderInfo {
                 "claude-3-5-haiku-20241022".to_string(),
                 "claude-3-opus-20240229".to_string(),
             ],
+            available: true,
+            unavailable_reason: None,
         }
     }
 
@@ -279,6 +294,8 @@ impl ProviderInfo {
                 "gemini-1.5-pro".to_string(),
                 "gemini-1.5-flash".to_string(),
             ],
+            available: true,
+            unavailable_reason: None,
         }
     }
 
@@ -293,16 +310,47 @@ impl ProviderInfo {
                 "openai/gpt-4o".to_string(),
                 "google/gemini-pro".to_string(),
             ],
+            available: true,
+            unavailable_reason: None,
         }
     }
 
+    /// Create local provider info with availability based on feature flag.
+    ///
+    /// The local AI provider uses llama.cpp for privacy-first on-device inference.
+    /// This requires the `local-ai` feature flag to be enabled at compile time.
+    ///
+    /// When available, users can download and run models like Phi-3.5-mini or TinyLlama
+    /// entirely on their device without any data leaving their machine.
     pub fn local() -> Self {
-        Self {
-            id: "local".to_string(),
-            name: "Local (llama.cpp)".to_string(),
-            description: "Privacy-first local LLM inference".to_string(),
-            requires_api_key: false,
-            default_models: vec![],
+        #[cfg(feature = "local-ai")]
+        {
+            Self {
+                id: "local".to_string(),
+                name: "Local (llama.cpp)".to_string(),
+                description: "Privacy-first local LLM inference - runs entirely on your device".to_string(),
+                requires_api_key: false,
+                default_models: vec![
+                    "phi-3.5-mini".to_string(),
+                    "tinyllama".to_string(),
+                ],
+                available: true,
+                unavailable_reason: None,
+            }
+        }
+        #[cfg(not(feature = "local-ai"))]
+        {
+            Self {
+                id: "local".to_string(),
+                name: "Local (llama.cpp)".to_string(),
+                description: "Privacy-first local LLM inference - not available in this build".to_string(),
+                requires_api_key: false,
+                default_models: vec![],
+                available: false,
+                unavailable_reason: Some(
+                    "Local AI is not enabled in this build. The application was compiled without the 'local-ai' feature flag. Please use a cloud provider or contact the developer for a build with local AI support.".to_string()
+                ),
+            }
         }
     }
 
@@ -314,5 +362,24 @@ impl ProviderInfo {
             Self::openrouter(),
             Self::local(),
         ]
+    }
+}
+
+/// Check if the local AI feature is enabled at compile time.
+///
+/// This function allows runtime code to check whether local AI capabilities
+/// are available without causing compilation errors.
+///
+/// # Returns
+/// - `true` if the `local-ai` feature flag was enabled during compilation
+/// - `false` otherwise
+pub fn is_local_ai_enabled() -> bool {
+    #[cfg(feature = "local-ai")]
+    {
+        true
+    }
+    #[cfg(not(feature = "local-ai"))]
+    {
+        false
     }
 }

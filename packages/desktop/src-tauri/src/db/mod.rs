@@ -1,5 +1,6 @@
 // db/mod.rs - Database module with SQLx integration
 
+pub mod crypto;
 pub mod migrations;
 pub mod queries;
 pub mod chat_queries;

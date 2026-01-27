@@ -325,6 +325,18 @@ pub async fn dev_set_subscription_tier(
     Ok(())
 }
 
+/// Release stub - returns error since dev features are disabled
+#[cfg(not(debug_assertions))]
+#[tauri::command]
+pub async fn dev_set_subscription_tier(
+    _state: State<'_, AppState>,
+    _tier: String,
+) -> Result<()> {
+    Err(crate::Error::NotFound(
+        "Dev features are disabled in release builds".to_string(),
+    ))
+}
+
 // Helper functions
 
 async fn store_auth_tokens(state: &State<'_, AppState>, auth: &AuthResponse) -> Result<()> {
