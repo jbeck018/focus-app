@@ -352,92 +352,96 @@ function ConnectionsView() {
         </Card>
       )}
 
+      {/* Filter to only show Google Calendar for now - Microsoft/Azure OAuth is not configured.
+          To re-enable Microsoft, remove the .filter() call below */}
       <div className="grid gap-4 md:grid-cols-2">
-        {connections?.map((connection) => {
-          const info = PROVIDER_INFO[connection.provider];
-          const isConnecting = connecting === connection.provider;
-          const isDisconnecting = disconnect.isPending;
-          const isConfigured = isProviderConfigured(connection.provider);
+        {connections
+          ?.filter((c) => c.provider !== "microsoft")
+          .map((connection) => {
+            const info = PROVIDER_INFO[connection.provider];
+            const isConnecting = connecting === connection.provider;
+            const isDisconnecting = disconnect.isPending;
+            const isConfigured = isProviderConfigured(connection.provider);
 
-          return (
-            <Card key={connection.provider} className={!isConfigured ? "opacity-75" : ""}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{info.icon}</span>
-                    <div>
-                      <p className="font-medium">{info.label}</p>
-                      {connection.connected && connection.email && (
-                        <p className="text-xs text-muted-foreground">{connection.email}</p>
-                      )}
-                      {!isConfigured && !connection.connected && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                          <Info className="h-3 w-3" />
-                          Setup required
-                        </p>
-                      )}
+            return (
+              <Card key={connection.provider} className={!isConfigured ? "opacity-75" : ""}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{info.icon}</span>
+                      <div>
+                        <p className="font-medium">{info.label}</p>
+                        {connection.connected && connection.email && (
+                          <p className="text-xs text-muted-foreground">{connection.email}</p>
+                        )}
+                        {!isConfigured && !connection.connected && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <Info className="h-3 w-3" />
+                            Setup required
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {connection.connected ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDisconnect(connection.provider)}
-                      disabled={isDisconnecting}
-                    >
-                      {isDisconnecting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Link2Off className="h-4 w-4 mr-1" />
-                          Disconnect
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => handleConnect(connection.provider)}
-                      disabled={isConnecting}
-                      variant={isConfigured ? "default" : "outline"}
-                    >
-                      {isConnecting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Link2 className="h-4 w-4 mr-1" />
-                          Connect
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-
-                {connection.connected && connection.last_sync && (
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Last synced: {formatRelativeTime(connection.last_sync)}
-                  </p>
-                )}
-
-                {/* Setup instructions for unconfigured providers */}
-                {!isConfigured && !connection.connected && (
-                  <div className="mt-3 pt-3 border-t border-border/50">
-                    <p className="text-xs text-muted-foreground">
-                      OAuth credentials need to be configured.{" "}
-                      <button
-                        className="text-primary hover:underline"
-                        onClick={() => open(getSetupUrl(connection.provider))}
+                    {connection.connected ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDisconnect(connection.provider)}
+                        disabled={isDisconnecting}
                       >
-                        View setup guide
-                      </button>
-                    </p>
+                        {isDisconnecting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Link2Off className="h-4 w-4 mr-1" />
+                            Disconnect
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleConnect(connection.provider)}
+                        disabled={isConnecting}
+                        variant={isConfigured ? "default" : "outline"}
+                      >
+                        {isConnecting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Link2 className="h-4 w-4 mr-1" />
+                            Connect
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+
+                  {connection.connected && connection.last_sync && (
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Last synced: {formatRelativeTime(connection.last_sync)}
+                    </p>
+                  )}
+
+                  {/* Setup instructions for unconfigured providers */}
+                  {!isConfigured && !connection.connected && (
+                    <div className="mt-3 pt-3 border-t border-border/50">
+                      <p className="text-xs text-muted-foreground">
+                        OAuth credentials need to be configured.{" "}
+                        <button
+                          className="text-primary hover:underline"
+                          onClick={() => open(getSetupUrl(connection.provider))}
+                        >
+                          View setup guide
+                        </button>
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
       </div>
 
       <Card className="bg-muted/50">

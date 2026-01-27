@@ -286,7 +286,7 @@ function TutorialContent({ topicId }: TutorialContentProps) {
           Sync your calendar for smart focus scheduling (Pro feature):
         </p>
         <ul className="space-y-1 ml-4 text-muted-foreground">
-          <li>• Connect Google Calendar, Outlook, or iCal</li>
+          <li>• Connect Google Calendar</li>
           <li>• Get suggested focus time slots</li>
           <li>• See meeting load and free time</li>
           <li>• Schedule focus sessions automatically</li>
