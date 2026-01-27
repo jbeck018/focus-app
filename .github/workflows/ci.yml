@@ -222,6 +222,8 @@ jobs:
         run: pnpm turbo build --filter=@focusflow/types --filter=@focusflow/shared
 
       - name: Build Tauri (check only)
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: pnpm --filter @focusflow/desktop tauri build --debug --ci
 
       - name: Upload build artifacts (on failure diagnosis)
