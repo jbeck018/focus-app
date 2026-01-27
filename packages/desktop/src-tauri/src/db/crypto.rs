@@ -26,7 +26,7 @@ static ENCRYPTION_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 ///
 /// This should be called once at application startup.
 pub fn init_encryption() -> Result<()> {
-    ENCRYPTION_KEY.get_or_init(|| derive_encryption_key());
+    ENCRYPTION_KEY.get_or_init(derive_encryption_key);
     Ok(())
 }
 
@@ -77,7 +77,7 @@ fn derive_encryption_key() -> [u8; 32] {
 
 /// Get the encryption key, initializing if needed
 fn get_key() -> &'static [u8; 32] {
-    ENCRYPTION_KEY.get_or_init(|| derive_encryption_key())
+    ENCRYPTION_KEY.get_or_init(derive_encryption_key)
 }
 
 /// Encrypt a plaintext string

@@ -110,6 +110,7 @@ pub fn handle_menu_event<R: Runtime>(app: &tauri::AppHandle<R>, event: MenuEvent
 ///
 /// Call this when session starts/stops to enable/disable menu items.
 /// Prefer using `update_tray_icon()` with `TrayIconState` for full state management.
+#[allow(dead_code)]
 pub fn update_tray_menu<R: Runtime>(app: &tauri::AppHandle<R>, session_active: bool) {
     let state = if session_active {
         TrayIconState::Focus
@@ -232,7 +233,7 @@ fn create_tray_icon_with_badge(
                     // Anti-aliasing at the edge
                     let alpha = if distance > (badge_radius as f32 - 1.0) {
                         let edge_factor = badge_radius as f32 - distance;
-                        (edge_factor * 255.0).min(255.0).max(0.0) as u8
+                        (edge_factor * 255.0).clamp(0.0, 255.0) as u8
                     } else {
                         255
                     };
