@@ -263,13 +263,6 @@ pub enum UserIntent {
 }
 
 impl UserIntent {
-    /// Get the guideline content for this intent (deprecated - use GuidelineRegistry)
-    #[deprecated(note = "Use GuidelineRegistry with orchestrator instead")]
-    #[allow(dead_code)] // Used by deprecated prompt building system
-    pub fn guideline(&self) -> &'static str {
-        "" // All guidelines now come from GuidelineRegistry
-    }
-
     /// Detect intent from user message (keyword-based, can be upgraded to NLU)
     pub fn detect(message: &str) -> Self {
         let msg_lower = message.to_lowercase();
@@ -633,15 +626,4 @@ mod tests {
         assert!(prompt.contains("Duration: 30 minutes"));
     }
 
-    #[test]
-    fn test_guideline_method_deprecated() {
-        // The guideline() method is deprecated - guidelines now come from GuidelineRegistry
-        // This test verifies the method returns empty as expected after migration
-        #[allow(deprecated)]
-        {
-            assert!(UserIntent::FocusInquiry.guideline().is_empty());
-            assert!(UserIntent::DistractionConcern.guideline().is_empty());
-            assert!(UserIntent::GeneralChat.guideline().is_empty());
-        }
-    }
 }

@@ -45,6 +45,14 @@ export interface AuthorizationUrl {
   state: string;
 }
 
+/** OAuth configuration status */
+export interface OAuthConfigStatus {
+  google_configured: boolean;
+  microsoft_configured: boolean;
+  google_setup_url: string;
+  microsoft_setup_url: string;
+}
+
 /** Provider info for UI display */
 export const PROVIDER_INFO: Record<CalendarProvider, { label: string; icon: string; color: string }> = {
   google: {

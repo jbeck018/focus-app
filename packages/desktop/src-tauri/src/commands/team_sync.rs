@@ -254,15 +254,37 @@ pub async fn get_team_activity(state: State<'_, AppState>) -> Result<TeamActivit
         .collect::<std::collections::HashSet<_>>()
         .len() as i32;
 
+    // Build a map of user_id -> display_name from team_members table
+    let member_names: Vec<(String, Option<String>, String)> = sqlx::query_as(
+        "SELECT user_id, display_name, email FROM team_members"
+    )
+    .fetch_all(state.pool())
+    .await
+    .unwrap_or_default();
+
+    let name_lookup: std::collections::HashMap<String, Option<String>> = member_names
+        .into_iter()
+        .map(|(user_id, display_name, email)| {
+            // Use display_name if available, otherwise fall back to email prefix
+            let name = display_name.or_else(|| {
+                email.split('@').next().map(|s| s.to_string())
+            });
+            (user_id, name)
+        })
+        .collect();
+
     let recent_sessions = shared_sessions
         .into_iter()
         .take(10)
-        .map(|s| RecentSessionInfo {
-            user_id: s.user_id.clone(),
-            display_name: None, // Would need to join with members table
-            start_time: s.start_time.to_rfc3339(),
-            duration_minutes: s.planned_duration_minutes,
-            completed: s.completed,
+        .map(|s| {
+            let display_name = name_lookup.get(&s.user_id).cloned().flatten();
+            RecentSessionInfo {
+                user_id: s.user_id.clone(),
+                display_name,
+                start_time: s.start_time.to_rfc3339(),
+                duration_minutes: s.planned_duration_minutes,
+                completed: s.completed,
+            }
         })
         .collect();
 
@@ -286,8 +308,8 @@ pub async fn sync_with_team(state: State<'_, AppState>) -> Result<SyncStats> {
 
     let sync_queue = SyncQueue::new(state.pool().clone());
 
-    // Get pending operations
-    let pending_ops = sync_queue.get_pending(50).await?;
+    // Get pending operations (increased from 50 to 500 to handle larger sync backlogs)
+    let pending_ops = sync_queue.get_pending(500).await?;
 
     let mut success_count = 0;
     let mut failed_count = 0;

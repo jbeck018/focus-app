@@ -5,6 +5,7 @@
 
 use crate::{
     state::AppState,
+    system::tray::{update_tray_icon, TrayIconState},
     Error, Result,
 };
 use serde::Serialize;
@@ -172,21 +173,37 @@ pub async fn stop_timer_loop(state: &AppState) {
 /// Toggle pause/resume for the current session
 #[tauri::command]
 pub async fn toggle_timer_pause(state: State<'_, AppState>) -> Result<bool> {
-    // Verify there's an active session
-    {
+    // Verify there's an active session and get its type
+    let session_type = {
         let active = state.active_session.read().await;
-        if active.is_none() {
-            return Err(Error::InvalidSession(
-                "No active session to toggle".to_string(),
-            ));
+        match active.as_ref() {
+            Some(session) => session.session_type.clone(),
+            None => {
+                return Err(Error::InvalidSession(
+                    "No active session to toggle".to_string(),
+                ));
+            }
         }
-    }
+    };
 
     let is_paused = {
         let mut timer_state = state.timer_state.write().await;
         timer_state.toggle();
         timer_state.is_paused
     };
+
+    // Update tray icon based on pause state
+    let tray_state = if is_paused {
+        TrayIconState::Paused
+    } else {
+        // Resume - restore to session type
+        match session_type {
+            crate::state::SessionType::Focus => TrayIconState::Focus,
+            crate::state::SessionType::Break => TrayIconState::Break,
+            crate::state::SessionType::Custom => TrayIconState::Focus,
+        }
+    };
+    update_tray_icon(&state.app_handle, tray_state);
 
     debug!("Timer pause toggled: is_paused={}", is_paused);
     Ok(is_paused)

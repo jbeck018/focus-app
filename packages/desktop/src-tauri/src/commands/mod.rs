@@ -23,6 +23,7 @@ pub mod sync;
 pub mod team;
 pub mod team_sync;
 pub mod timer;
+pub mod tray;
 pub mod window;
 
 // Rename blocking-advanced.rs to blocking_advanced for module import

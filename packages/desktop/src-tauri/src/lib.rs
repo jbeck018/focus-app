@@ -171,6 +171,7 @@ pub fn run() {
 
             // Calendar commands
             commands::calendar::get_calendar_connections,
+            commands::calendar::get_oauth_config_status,
             commands::calendar::start_calendar_oauth,
             commands::calendar::complete_calendar_oauth,
             commands::calendar::disconnect_calendar,
@@ -304,6 +305,10 @@ pub fn run() {
             commands::notification_control::resume_system_notifications,
             commands::notification_control::get_notification_control_state,
             commands::notification_control::check_notification_permission,
+
+            // Tray icon state commands
+            commands::tray::set_tray_state,
+            commands::tray::get_tray_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

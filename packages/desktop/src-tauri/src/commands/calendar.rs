@@ -119,12 +119,78 @@ pub async fn get_calendar_connections(
     Ok(connections)
 }
 
+/// Check if a provider's OAuth is properly configured
+fn is_oauth_configured(client_id: &str) -> bool {
+    !client_id.is_empty()
+        && !client_id.starts_with("MISSING_")
+        && client_id != "YOUR_GOOGLE_CLIENT_ID"
+        && client_id != "YOUR_MICROSOFT_CLIENT_ID"
+}
+
+/// Get OAuth configuration status for all providers
+#[tauri::command]
+pub async fn get_oauth_config_status(
+    _state: State<'_, AppState>,
+) -> Result<OAuthConfigStatus> {
+    // Check Google OAuth config by examining the client_id used in the provider
+    let google_client_id = std::env::var("GOOGLE_CLIENT_ID").unwrap_or_default();
+    let microsoft_client_id = std::env::var("MICROSOFT_CLIENT_ID").unwrap_or_default();
+
+    Ok(OAuthConfigStatus {
+        google_configured: is_oauth_configured(&google_client_id),
+        microsoft_configured: is_oauth_configured(&microsoft_client_id),
+        google_setup_url: "https://console.cloud.google.com/apis/credentials".to_string(),
+        microsoft_setup_url: "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps".to_string(),
+    })
+}
+
+/// OAuth configuration status response
+#[derive(Debug, Serialize)]
+pub struct OAuthConfigStatus {
+    pub google_configured: bool,
+    pub microsoft_configured: bool,
+    pub google_setup_url: String,
+    pub microsoft_setup_url: String,
+}
+
 /// Start OAuth flow for a calendar provider
+/// Returns an error with setup instructions if OAuth is not configured.
 #[tauri::command]
 pub async fn start_calendar_oauth(
     state: State<'_, AppState>,
     provider: CalendarProvider,
 ) -> Result<AuthorizationUrl> {
+    // Validate OAuth configuration before starting the flow
+    let client_id_env = match provider {
+        CalendarProvider::Google => std::env::var("GOOGLE_CLIENT_ID").unwrap_or_default(),
+        CalendarProvider::Microsoft => std::env::var("MICROSOFT_CLIENT_ID").unwrap_or_default(),
+    };
+
+    if !is_oauth_configured(&client_id_env) {
+        let (provider_name, setup_url, env_var) = match provider {
+            CalendarProvider::Google => (
+                "Google Calendar",
+                "https://console.cloud.google.com/apis/credentials",
+                "GOOGLE_CLIENT_ID",
+            ),
+            CalendarProvider::Microsoft => (
+                "Microsoft Outlook",
+                "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps",
+                "MICROSOFT_CLIENT_ID",
+            ),
+        };
+
+        return Err(Error::OAuthNotConfigured(format!(
+            "{} integration is not configured.\n\n\
+            To enable {} calendar sync:\n\
+            1. Visit {} to create OAuth credentials\n\
+            2. Configure the redirect URI as: focusflow://oauth/callback\n\
+            3. Set the {} environment variable with your client ID\n\n\
+            See the OAuth setup documentation for detailed instructions.",
+            provider_name, provider_name, setup_url, env_var
+        )));
+    }
+
     // Generate PKCE code verifier and challenge
     let pkce = Pkce::generate()?;
     let csrf_state = generate_state();

@@ -9,6 +9,7 @@ import type {
   FocusBlockSuggestion,
   MeetingLoad,
   AuthorizationUrl,
+  OAuthConfigStatus,
 } from "@focusflow/types";
 
 // Query keys
@@ -17,6 +18,7 @@ export const calendarQueryKeys = {
   events: (startDate: string, endDate: string) => ["calendarEvents", startDate, endDate] as const,
   suggestions: ["focusSuggestions"] as const,
   meetingLoad: ["meetingLoad"] as const,
+  oauthConfigStatus: ["oauthConfigStatus"] as const,
 };
 
 // Get all calendar connections
@@ -26,6 +28,17 @@ export function useCalendarConnections() {
     queryFn: async () => {
       return invoke<CalendarConnection[]>("get_calendar_connections");
     },
+  });
+}
+
+// Get OAuth configuration status
+export function useOAuthConfigStatus() {
+  return useQuery({
+    queryKey: calendarQueryKeys.oauthConfigStatus,
+    queryFn: async () => {
+      return invoke<OAuthConfigStatus>("get_oauth_config_status");
+    },
+    staleTime: 1000 * 60 * 30, // 30 minutes - config rarely changes
   });
 }
 

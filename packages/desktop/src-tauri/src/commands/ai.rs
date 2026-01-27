@@ -21,14 +21,6 @@ pub struct ModelInfo {
     pub is_active: bool,
 }
 
-/// LLM engine status
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LlmStatus {
-    pub enabled: bool,
-    pub model_loaded: bool,
-    pub current_model: Option<String>,
-}
-
 /// Download progress update
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
@@ -82,50 +74,6 @@ pub async fn get_available_models(state: State<'_, AppState>) -> Result<Vec<Mode
         })
         .await
         .map_err(|e| Error::System(format!("Task join error: {}", e)))?
-    }
-}
-
-/// Get current LLM engine status (internal use only - tauri command is in llm.rs)
-///
-/// NOTE: This is a duplicate of llm::get_llm_status. The version in llm.rs is the
-/// registered Tauri command with caching. This version is kept for backwards compatibility
-/// but should be removed in favor of using llm::get_llm_status directly.
-#[allow(dead_code)]
-pub async fn get_llm_status(state: State<'_, AppState>) -> Result<LlmStatus> {
-    let engine_lock = state.llm_engine.read().await;
-
-    #[cfg(not(feature = "local-ai"))]
-    {
-        Ok(LlmStatus {
-            enabled: false,
-            model_loaded: false,
-            current_model: None,
-        })
-    }
-
-    #[cfg(feature = "local-ai")]
-    {
-        match engine_lock.as_ref() {
-            Some(engine) => {
-                let is_loaded = engine.is_loaded().await;
-                let current_model = if is_loaded {
-                    Some(engine.model_info().name.clone())
-                } else {
-                    None
-                };
-
-                Ok(LlmStatus {
-                    enabled: true,
-                    model_loaded: is_loaded,
-                    current_model,
-                })
-            }
-            None => Ok(LlmStatus {
-                enabled: false,
-                model_loaded: false,
-                current_model: None,
-            }),
-        }
     }
 }
 

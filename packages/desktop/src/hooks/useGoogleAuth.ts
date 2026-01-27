@@ -107,7 +107,22 @@ export function useGoogleAuth() {
       // User will be redirected back to focusflow://oauth/auth-callback
       // which will trigger the deep-link listener above
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : "Failed to start Google sign-in";
+      // Parse the error message - Tauri wraps errors in an object
+      let errorMessage = "Failed to start Google sign-in";
+      if (e && typeof e === "object") {
+        const errorObj = e as { message?: string; type?: string };
+        if (
+          errorObj.type === "OAuthNotConfigured" ||
+          errorObj.message?.includes("not configured")
+        ) {
+          errorMessage =
+            "Google sign-in is not available. OAuth credentials have not been configured for this application.";
+        } else if (errorObj.message) {
+          errorMessage = errorObj.message;
+        }
+      } else if (e instanceof Error) {
+        errorMessage = e.message;
+      }
       setError(errorMessage);
       setError_(errorMessage);
       setIsLoading(false);

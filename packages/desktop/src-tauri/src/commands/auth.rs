@@ -419,10 +419,6 @@ const GOOGLE_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL: &str = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GOOGLE_REDIRECT_URI: &str = "focusflow://oauth/auth-callback";
 
-// Note: Client ID should come from environment or config in production
-// For development, set GOOGLE_CLIENT_ID environment variable or use credentials store
-const GOOGLE_CLIENT_ID_DEFAULT: &str = "MISSING_GOOGLE_CLIENT_ID";
-
 /// Pending OAuth state for PKCE verification
 #[derive(Debug, Clone)]
 pub struct PendingOAuthState {
@@ -474,17 +470,19 @@ fn generate_state() -> String {
 /// Start Google OAuth flow - returns auth URL to open in browser
 ///
 /// Uses PKCE (Proof Key for Code Exchange) for security in desktop apps.
+/// Returns an error if OAuth is not properly configured.
 #[tauri::command]
 pub async fn start_google_oauth(
     state: State<'_, AppState>,
 ) -> Result<GoogleOAuthResponse> {
+    // Get and validate client ID from credentials store
+    let client_id_opt = get_google_client_id(&state).await;
+    let client_id = validate_google_client_id(&client_id_opt)?;
+
     // Generate PKCE values
     let code_verifier = generate_code_verifier();
     let code_challenge = generate_code_challenge(&code_verifier);
     let oauth_state = generate_state();
-
-    // Get client ID from credentials store or use default
-    let client_id = get_google_client_id(&state).await;
 
     // Build auth URL
     let auth_url = format!(
@@ -560,8 +558,9 @@ pub async fn complete_google_oauth(
         *pending = None;
     }
 
-    // Exchange code for Google tokens
-    let client_id = get_google_client_id(&state).await;
+    // Exchange code for Google tokens - validate client ID is configured
+    let client_id_opt = get_google_client_id(&state).await;
+    let client_id = validate_google_client_id(&client_id_opt)?;
     let client = reqwest::Client::new();
 
     #[derive(Serialize)]
@@ -687,11 +686,11 @@ pub async fn complete_google_oauth(
 }
 
 /// Get Google client ID from credentials or fallback
-async fn get_google_client_id(_state: &State<'_, AppState>) -> String {
+async fn get_google_client_id(_state: &State<'_, AppState>) -> Option<String> {
     // Try environment variable first
     if let Ok(client_id) = std::env::var("GOOGLE_CLIENT_ID") {
         if !client_id.is_empty() && client_id != "YOUR_GOOGLE_CLIENT_ID" {
-            return client_id;
+            return Some(client_id);
         }
     }
 
@@ -700,15 +699,26 @@ async fn get_google_client_id(_state: &State<'_, AppState>) -> String {
         "google_oauth_client_id",
     ).await {
         if !client_id.is_empty() {
-            return client_id;
+            return Some(client_id);
         }
     }
 
-    // Fall back to default placeholder (will fail auth but provides guidance)
-    tracing::warn!(
-        "Google OAuth client ID not configured. Set GOOGLE_CLIENT_ID environment variable or store in credentials."
-    );
-    GOOGLE_CLIENT_ID_DEFAULT.to_string()
+    // Return None to indicate OAuth is not configured
+    None
+}
+
+/// Validate that Google OAuth client ID is configured
+fn validate_google_client_id(client_id: &Option<String>) -> Result<String> {
+    match client_id {
+        Some(id) if !id.is_empty() && !id.starts_with("MISSING_") => Ok(id.clone()),
+        _ => Err(Error::OAuthNotConfigured(
+            "Google OAuth is not configured. To enable Google sign-in:\n\
+            1. Create a Google Cloud project at https://console.cloud.google.com\n\
+            2. Enable the Google+ API and create OAuth 2.0 credentials\n\
+            3. Set the GOOGLE_CLIENT_ID environment variable, or\n\
+            4. Store the client ID in the app's credential store".to_string()
+        ))
+    }
 }
 
 // Internal helpers that don't require State wrapper

@@ -6,6 +6,7 @@ use crate::{
     db::queries::{self, Session},
     state::{ActiveSession, AppState, SessionType, TimerState},
     system::notifications::NotificationManager,
+    system::tray::{update_tray_icon, TrayIconState},
     Error, Result,
 };
 use serde::{Deserialize, Serialize};
@@ -211,12 +212,38 @@ pub async fn start_focus_session(
         let notification_handle = app_handle.clone();
         let session_id = response.id.clone();
         tauri::async_runtime::spawn(async move {
-            if let Err(e) = super::notification_control::pause_notifications_internal(
+            match super::notification_control::pause_notifications_internal(
                 &notification_state,
                 &notification_handle,
                 Some(session_id),
             ).await {
-                tracing::warn!("Failed to pause notifications: {}", e);
+                Ok(result) => {
+                    if !result.success {
+                        // DND failed but we don't want to interrupt the session
+                        // Emit an event so the frontend can show a non-intrusive warning
+                        if let Err(e) = notification_handle.emit("dnd-warning", serde_json::json!({
+                            "success": false,
+                            "message": result.message,
+                            "userAction": result.user_action,
+                        })) {
+                            tracing::warn!("Failed to emit DND warning event: {}", e);
+                        }
+                        tracing::info!(
+                            message = %result.message,
+                            user_action = ?result.user_action,
+                            "DND could not be enabled - user notified"
+                        );
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to pause notifications: {}", e);
+                    // Emit warning event for unexpected errors too
+                    let _ = notification_handle.emit("dnd-warning", serde_json::json!({
+                        "success": false,
+                        "message": format!("Unexpected error: {}", e),
+                        "userAction": "Try enabling Do Not Disturb manually from your system settings",
+                    }));
+                }
             }
         });
     }
@@ -238,6 +265,14 @@ pub async fn start_focus_session(
     ) {
         tracing::warn!("Failed to emit session-count-changed: {}", e);
     }
+
+    // Update tray icon to show active session state
+    let tray_state = match request.session_type {
+        SessionType::Focus => TrayIconState::Focus,
+        SessionType::Break => TrayIconState::Break,
+        SessionType::Custom => TrayIconState::Focus, // Treat custom as focus
+    };
+    update_tray_icon(&app_handle, tray_state);
 
     // Send session started notification via NotificationManager
     let notification_manager = NotificationManager::new(app_handle.clone());
@@ -322,9 +357,30 @@ pub async fn end_focus_session(
     {
         let notification_state = state.notification_control_state.read().await;
         if notification_state.paused {
+            let was_system_dnd_active = notification_state.system_dnd_enabled;
             drop(notification_state);
-            if let Err(e) = super::notification_control::force_resume_notifications(&state, &state.app_handle).await {
-                tracing::warn!("Failed to resume notifications: {}", e);
+            match super::notification_control::force_resume_notifications(&state, &state.app_handle).await {
+                Ok(Some(result)) if !result.success && was_system_dnd_active => {
+                    // Only warn if we had actually enabled DND and failed to disable it
+                    tracing::warn!(
+                        message = %result.message,
+                        user_action = ?result.user_action,
+                        "Failed to disable DND on session end - user may need to disable manually"
+                    );
+                    // Emit event so frontend can inform user
+                    let _ = state.app_handle.emit("dnd-warning", serde_json::json!({
+                        "success": false,
+                        "message": result.message,
+                        "userAction": result.user_action,
+                        "isResume": true,
+                    }));
+                }
+                Ok(_) => {
+                    tracing::debug!("Notifications resumed successfully or no action needed");
+                }
+                Err(e) => {
+                    tracing::warn!("Unexpected error resuming notifications: {}", e);
+                }
             }
         }
     }
@@ -356,6 +412,9 @@ pub async fn end_focus_session(
             tracing::warn!("Failed to check achievements: {}", e);
         }
     }
+
+    // Update tray icon back to idle state
+    update_tray_icon(&state.app_handle, TrayIconState::Idle);
 
     // Send completion notification via NotificationManager
     let notification_manager = NotificationManager::new(state.app_handle.clone());

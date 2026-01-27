@@ -72,6 +72,9 @@ pub enum Error {
 
     #[error("Validation error: {0}")]
     Validation(String),
+
+    #[error("OAuth not configured: {0}")]
+    OAuthNotConfigured(String),
 }
 
 // Implement conversions from common error types

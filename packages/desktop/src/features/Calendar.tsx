@@ -13,6 +13,7 @@ import {
   useMeetingLoad,
   useStartCalendarOAuth,
   useDisconnectCalendar,
+  useOAuthConfigStatus,
 } from "@/hooks/useCalendar";
 import type { CalendarProvider, CalendarEvent } from "@focusflow/types";
 import { PROVIDER_INFO } from "@focusflow/types";
@@ -25,6 +26,8 @@ import {
   Lightbulb,
   BarChart3,
   ExternalLink,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 
 export function Calendar() {
@@ -264,20 +267,41 @@ function InsightsView() {
 
 function ConnectionsView() {
   const { data: connections, isLoading } = useCalendarConnections();
+  const { data: oauthConfig } = useOAuthConfigStatus();
   const startOAuth = useStartCalendarOAuth();
   const disconnect = useDisconnectCalendar();
   const [connecting, setConnecting] = useState<CalendarProvider | null>(null);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+  // Check if a provider's OAuth is configured
+  const isProviderConfigured = (provider: CalendarProvider): boolean => {
+    if (!oauthConfig) return true; // Assume configured if status not loaded
+    return provider === "google" ? oauthConfig.google_configured : oauthConfig.microsoft_configured;
+  };
+
+  // Get setup URL for a provider
+  const getSetupUrl = (provider: CalendarProvider): string => {
+    if (!oauthConfig) return "";
+    return provider === "google" ? oauthConfig.google_setup_url : oauthConfig.microsoft_setup_url;
+  };
 
   const handleConnect = async (provider: CalendarProvider) => {
     setConnecting(provider);
+    setOauthError(null);
     try {
       const result = await startOAuth.mutateAsync(provider);
       // Open the OAuth URL in the default browser
       await open(result.url);
       // Note: The actual OAuth callback handling would be done via deep linking
-      // For now, this demonstrates the flow
     } catch (error) {
-      console.error("Failed to start OAuth:", error);
+      // Check if it's an OAuth not configured error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("not configured") || errorMessage.includes("OAuthNotConfigured")) {
+        setOauthError(errorMessage);
+      } else {
+        console.error("Failed to start OAuth:", error);
+        setOauthError(`Failed to connect: ${errorMessage}`);
+      }
     } finally {
       setConnecting(null);
     }
@@ -301,14 +325,42 @@ function ConnectionsView() {
         Connect your calendars to see your schedule and find optimal focus times.
       </p>
 
+      {/* OAuth Error Alert */}
+      {oauthError && (
+        <Card className="border-amber-500/50 bg-amber-500/10">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  Calendar Integration Not Available
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">
+                  {oauthError}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 h-7 px-2 text-xs"
+                  onClick={() => setOauthError(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         {connections?.map((connection) => {
           const info = PROVIDER_INFO[connection.provider];
           const isConnecting = connecting === connection.provider;
           const isDisconnecting = disconnect.isPending;
+          const isConfigured = isProviderConfigured(connection.provider);
 
           return (
-            <Card key={connection.provider}>
+            <Card key={connection.provider} className={!isConfigured ? "opacity-75" : ""}>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -317,6 +369,12 @@ function ConnectionsView() {
                       <p className="font-medium">{info.label}</p>
                       {connection.connected && connection.email && (
                         <p className="text-xs text-muted-foreground">{connection.email}</p>
+                      )}
+                      {!isConfigured && !connection.connected && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <Info className="h-3 w-3" />
+                          Setup required
+                        </p>
                       )}
                     </div>
                   </div>
@@ -342,6 +400,7 @@ function ConnectionsView() {
                       size="sm"
                       onClick={() => handleConnect(connection.provider)}
                       disabled={isConnecting}
+                      variant={isConfigured ? "default" : "outline"}
                     >
                       {isConnecting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -359,6 +418,21 @@ function ConnectionsView() {
                   <p className="text-xs text-muted-foreground mt-3">
                     Last synced: {formatRelativeTime(connection.last_sync)}
                   </p>
+                )}
+
+                {/* Setup instructions for unconfigured providers */}
+                {!isConfigured && !connection.connected && (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground">
+                      OAuth credentials need to be configured.{" "}
+                      <button
+                        className="text-primary hover:underline"
+                        onClick={() => open(getSetupUrl(connection.provider))}
+                      >
+                        View setup guide
+                      </button>
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
