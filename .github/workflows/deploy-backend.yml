@@ -75,7 +75,7 @@ jobs:
     needs: build-and-push
     environment:
       name: production
-      url: https://${{ secrets.FLY_APP_NAME }}.fly.dev
+      url: https://focusflow-backend.fly.dev
     steps:
       - uses: actions/checkout@v4
 
