@@ -29,9 +29,11 @@ import {
   AlertTriangle,
   Info,
   Target,
+  HelpCircle,
 } from "lucide-react";
 import { useFocusTimeEvents } from "@/hooks/useFocusTime";
 import { FOCUS_TIME_INSTRUCTIONS } from "@focusflow/types";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 export function Calendar() {
   return (
@@ -47,9 +49,12 @@ export function Calendar() {
       </div>
 
       <Tabs defaultValue="schedule">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
-          <TabsTrigger value="focus-time">Focus Time</TabsTrigger>
+          <TabsTrigger value="focus-time" className="flex items-center gap-1">
+            <Target className="h-3 w-3" />
+            Focus Time
+          </TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
         </TabsList>
@@ -127,23 +132,37 @@ function ScheduleView() {
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-primary" />
               Suggested Focus Blocks
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  These are free time blocks in your calendar where you could schedule Focus Time
+                  for deep work
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {suggestions.map((suggestion, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 bg-background rounded-lg"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {formatTime(suggestion.start_time)} - {formatTime(suggestion.end_time)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{suggestion.reason}</p>
-                  </div>
-                  <Badge variant="secondary">{suggestion.duration_minutes} min</Badge>
-                </div>
+                <Tooltip key={idx}>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-between p-3 bg-background rounded-lg cursor-help">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {formatTime(suggestion.start_time)} - {formatTime(suggestion.end_time)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{suggestion.reason}</p>
+                      </div>
+                      <Badge variant="secondary">{suggestion.duration_minutes} min</Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    Create a Focus Time event in your calendar for this time slot to block
+                    distractions automatically
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
           </CardContent>
@@ -153,7 +172,18 @@ function ScheduleView() {
       {/* Today's Events */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Today's Schedule</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            Today&apos;s Schedule
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Events with the 🎯 icon are Focus Time events. Create Focus Time events in the Focus
+                Time tab.
+              </TooltipContent>
+            </Tooltip>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {events && events.length > 0 ? (
@@ -175,15 +205,30 @@ function ScheduleView() {
 
 function EventCard({ event }: { event: CalendarEvent }) {
   const providerInfo = PROVIDER_INFO[event.provider];
+  const isFocusTimeEvent =
+    event.title.toLowerCase().includes("focus") || event.title.includes("🎯");
 
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30">
+    <div
+      className={`flex items-start gap-3 p-3 rounded-lg ${isFocusTimeEvent ? "bg-green-500/10 border border-green-500/30" : "bg-secondary/30"}`}
+    >
       <div className="flex-shrink-0 w-16 text-center">
         <p className="text-sm font-medium">{formatTime(event.start_time)}</p>
         <p className="text-xs text-muted-foreground">{formatTime(event.end_time)}</p>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
+          {isFocusTimeEvent && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Target className="h-4 w-4 text-green-500 flex-shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                This is a Focus Time event. Distractions will be blocked automatically during this
+                time.
+              </TooltipContent>
+            </Tooltip>
+          )}
           <p className="font-medium truncate">{event.title}</p>
           {event.is_busy && (
             <Badge variant="secondary" className="text-xs">
@@ -509,6 +554,14 @@ function FocusTimeTabView() {
           <p className="text-sm text-muted-foreground mt-1">
             Automatically block distractions during scheduled Focus Time events
           </p>
+          <Button
+            variant="default"
+            className="mt-4"
+            onClick={() => (window.location.hash = "#connections")}
+          >
+            <CalendarIcon className="h-4 w-4 mr-2" />
+            Connect Calendar
+          </Button>
         </CardContent>
       </Card>
     );
@@ -524,6 +577,35 @@ function FocusTimeTabView() {
 
   return (
     <div className="space-y-4">
+      {/* Quick Start Banner */}
+      <Card className="bg-green-500/10 border-green-500/20">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <Target className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Focus Time Quick Start</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Create a calendar event starting with "🎯 Focus Time" to automatically block
+                  distractions
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                // Navigate to dedicated Focus Time page
+                window.location.href = "#focus-time";
+              }}
+            >
+              <Target className="h-4 w-4 mr-1" />
+              Go to Focus Time
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Setup Instructions */}
       {connectedProvider && (
         <Card className="bg-primary/5 border-primary/20">
@@ -531,6 +613,15 @@ function FocusTimeTabView() {
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Info className="h-4 w-4 text-primary" />
               {FOCUS_TIME_INSTRUCTIONS[connectedProvider].title}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help ml-auto" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  Follow these steps to create Focus Time events in your calendar. They will
+                  automatically sync with FocusFlow.
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -552,7 +643,19 @@ function FocusTimeTabView() {
       {/* Focus Time Events */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Focus Time Events</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            Focus Time Events
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                These calendar events will automatically block distractions at their scheduled time.
+                Create new ones by adding events starting with &quot;🎯 Focus Time&quot; to your
+                calendar.
+              </TooltipContent>
+            </Tooltip>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {focusTimeEvents && focusTimeEvents.length > 0 ? (
@@ -583,9 +686,19 @@ function FocusTimeTabView() {
                           </Badge>
                         ))}
                         {event.allowed_apps.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{event.allowed_apps.length - 3} more
-                          </Badge>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="text-xs cursor-help">
+                                +{event.allowed_apps.length - 3} more
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <div className="space-y-1">
+                                <p className="font-medium">All allowed apps:</p>
+                                <p className="text-xs">{event.allowed_apps.join(", ")}</p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     )}
@@ -594,10 +707,17 @@ function FocusTimeTabView() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No Focus Time events found. Create a calendar event with title starting with "🎯 Focus
-              Time"
-            </p>
+            <div className="text-center py-8">
+              <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground">
+                No Focus Time events found. Create a calendar event with title starting with
+                &quot;🎯 Focus Time&quot;
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Tip: Add allowed apps in the event description, one per line, or use categories like
+                @coding
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>

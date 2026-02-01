@@ -197,3 +197,69 @@ export function useRefreshFocusTimeEvents() {
     },
   });
 }
+
+// Types for backend category and app responses
+export interface CategoryInfo {
+  id: string;
+  name: string;
+  description: string;
+  exampleApps: string[];
+}
+
+export interface AppEntry {
+  name: string;
+  icon: string | null;
+  category: string | null;
+  processes: string[];
+}
+
+/**
+ * Get available app categories from backend
+ * These are used in the AppSelector for quick category-based selection
+ */
+export function useFocusTimeCategories() {
+  return useQuery({
+    queryKey: ["focusTimeCategories"] as const,
+    queryFn: async () => {
+      return invoke<CategoryInfo[]>("get_focus_time_categories");
+    },
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour - categories rarely change
+  });
+}
+
+/**
+ * Get common apps for Focus Time UI
+ * These are popular apps with their process mappings
+ */
+export function useFocusTimeCommonApps() {
+  return useQuery({
+    queryKey: ["focusTimeCommonApps"] as const,
+    queryFn: async () => {
+      return invoke<AppEntry[]>("get_focus_time_common_apps");
+    },
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
+}
+
+/**
+ * Expand categories to individual app/process names
+ * Used when the user selects a category to get all associated apps
+ */
+export function useExpandCategories() {
+  return useMutation({
+    mutationFn: async (items: string[]) => {
+      return invoke<string[]>("expand_focus_time_categories", { items });
+    },
+  });
+}
+
+/**
+ * Check if an app is allowed during current Focus Time
+ */
+export function useIsAppAllowed() {
+  return useMutation({
+    mutationFn: async (appName: string) => {
+      return invoke<boolean>("is_app_allowed_during_focus_time", { appName });
+    },
+  });
+}

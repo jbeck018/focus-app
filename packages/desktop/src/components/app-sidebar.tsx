@@ -2,6 +2,7 @@ import {
   Timer,
   LayoutDashboard,
   Calendar as CalendarIcon,
+  Target,
   Flame,
   BarChart3,
   Trophy,
@@ -29,6 +30,8 @@ export type ViewType =
   | "timer"
   | "dashboard"
   | "calendar"
+  | "focus-time"
+  | "focus-time-help"
   | "streaks"
   | "analytics"
   | "achievements"
@@ -51,6 +54,7 @@ const navigationItems: Array<{
   { id: "timer", label: "Focus Timer", icon: Timer, group: "focus" },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, group: "focus" },
   { id: "calendar", label: "Calendar", icon: CalendarIcon, group: "focus" },
+  { id: "focus-time", label: "Focus Time", icon: Target, group: "focus" },
   { id: "streaks", label: "Streaks", icon: Flame, group: "progress" },
   { id: "analytics", label: "Analytics", icon: BarChart3, group: "progress" },
   { id: "achievements", label: "Achievements", icon: Trophy, group: "progress" },

@@ -145,7 +145,9 @@ function FocusTimeDisplay({
         <p data-testid="event-title">{state.eventTitle}</p>
         <div data-testid="remaining-time" aria-live="polite">
           Time remaining:{" "}
-          {Math.max(0, Math.floor((new Date(state.endsAt!).getTime() - Date.now()) / 60000))}{" "}
+          {state.endsAt
+            ? Math.max(0, Math.floor((new Date(state.endsAt).getTime() - Date.now()) / 60000))
+            : 0}{" "}
           minutes
         </div>
 

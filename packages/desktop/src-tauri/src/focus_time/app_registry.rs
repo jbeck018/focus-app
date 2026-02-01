@@ -169,24 +169,103 @@ impl AppRegistry {
     #[cfg(target_os = "macos")]
     fn init_bundle_mappings(&mut self) {
         let bundles = [
+            // Code Editors & IDEs
             ("com.microsoft.VSCode", "code"),
+            ("com.microsoft.VSCodeInsiders", "code"),
+            ("com.todesktop.230313mzl4w4u92", "Cursor"),
+            ("com.sublimetext.4", "Sublime Text"),
+            ("com.sublimetext.3", "Sublime Text"),
+            ("io.atom.Atom", "Atom"),
+            ("dev.zed.Zed", "Zed"),
+            ("org.vim.MacVim", "MacVim"),
+            // JetBrains IDEs
+            ("com.jetbrains.intellij", "IntelliJ IDEA"),
+            ("com.jetbrains.intellij.ce", "IntelliJ IDEA CE"),
+            ("com.jetbrains.WebStorm", "WebStorm"),
+            ("com.jetbrains.pycharm", "PyCharm"),
+            ("com.jetbrains.pycharm.ce", "PyCharm CE"),
+            ("com.jetbrains.CLion", "CLion"),
+            ("com.jetbrains.goland", "GoLand"),
+            ("com.jetbrains.rustrover", "RustRover"),
+            ("com.jetbrains.DataGrip", "DataGrip"),
+            ("com.jetbrains.rider", "Rider"),
+            // Apple Development
+            ("com.apple.dt.Xcode", "Xcode"),
+            ("com.google.android.studio", "Android Studio"),
+            // Terminals
             ("com.apple.Terminal", "Terminal"),
             ("com.googlecode.iterm2", "iTerm2"),
+            ("dev.warp.Warp-Stable", "Warp"),
+            ("io.alacritty", "Alacritty"),
+            ("net.kovidgoyal.kitty", "kitty"),
+            ("co.zeit.hyper", "Hyper"),
+            // Browsers
             ("com.google.Chrome", "Google Chrome"),
+            ("com.google.Chrome.canary", "Google Chrome Canary"),
             ("com.apple.Safari", "Safari"),
             ("org.mozilla.firefox", "firefox"),
+            ("org.mozilla.firefoxdeveloperedition", "Firefox Developer Edition"),
+            ("com.microsoft.edgemac", "Microsoft Edge"),
+            ("com.brave.Browser", "Brave Browser"),
+            ("company.thebrowser.Browser", "Arc"),
+            ("com.operasoftware.Opera", "Opera"),
+            ("com.vivaldi.Vivaldi", "Vivaldi"),
+            // Communication
             ("com.tinyspeck.slackmacgap", "Slack"),
             ("com.hnc.Discord", "Discord"),
+            ("com.microsoft.teams", "Microsoft Teams"),
+            ("com.microsoft.teams2", "Microsoft Teams"),
             ("us.zoom.xos", "zoom.us"),
+            ("org.telegram.desktop", "Telegram"),
+            ("net.whatsapp.WhatsApp", "WhatsApp"),
+            ("com.apple.MobileSMS", "Messages"),
+            ("com.apple.mail", "Mail"),
+            ("com.microsoft.Outlook", "Microsoft Outlook"),
+            // Productivity & Notes
             ("notion.id", "Notion"),
             ("md.obsidian", "Obsidian"),
-            ("com.apple.finder", "Finder"),
-            ("com.apple.mail", "Mail"),
+            ("com.todoist.mac.Todoist", "Todoist"),
+            ("com.culturedcode.ThingsMac", "Things3"),
+            ("com.linear", "Linear"),
             ("com.apple.Notes", "Notes"),
-            ("com.spotify.client", "Spotify"),
-            ("com.apple.Music", "Music"),
+            ("com.apple.reminders", "Reminders"),
+            ("net.shinyfrog.bear", "Bear"),
+            ("com.ulyssesapp.mac", "Ulysses"),
+            ("com.ragingmenace.SoulverMac", "Soulver"),
+            ("com.flexibits.fantastical2.mac", "Fantastical"),
+            // Writing
+            ("com.microsoft.Word", "Microsoft Word"),
+            ("com.apple.iWork.Pages", "Pages"),
+            ("abnerworks.Typora", "Typora"),
+            ("pro.writer.mac", "iA Writer"),
+            // Design
             ("com.figma.Desktop", "Figma"),
             ("com.bohemiancoding.sketch3", "Sketch"),
+            ("com.adobe.Photoshop", "Adobe Photoshop"),
+            ("com.adobe.Illustrator", "Adobe Illustrator"),
+            ("com.adobe.xd", "Adobe XD"),
+            ("com.adobe.InDesign", "Adobe InDesign"),
+            ("com.serif.affinity-designer", "Affinity Designer"),
+            ("com.serif.affinity-photo", "Affinity Photo"),
+            // Music & Media
+            ("com.spotify.client", "Spotify"),
+            ("com.apple.Music", "Music"),
+            ("com.apple.podcasts", "Podcasts"),
+            // System & Utilities
+            ("com.apple.finder", "Finder"),
+            ("com.apple.systempreferences", "System Preferences"),
+            ("com.apple.systemsettings", "System Settings"),
+            ("com.apple.ActivityMonitor", "Activity Monitor"),
+            ("com.apple.Console", "Console"),
+            ("com.apple.Preview", "Preview"),
+            ("com.apple.TextEdit", "TextEdit"),
+            // Development Tools
+            ("com.postmanlabs.mac", "Postman"),
+            ("com.insomnia.app", "Insomnia"),
+            ("com.docker.docker", "Docker Desktop"),
+            ("com.github.GitHubClient", "GitHub Desktop"),
+            ("com.sublimemerge", "Sublime Merge"),
+            ("com.todesktop.ForkApp", "Fork"),
         ];
 
         for (bundle_id, process_name) in bundles {
@@ -384,6 +463,7 @@ fn normalize_process_name(name: &str) -> String {
 /// Platform-specific protection lists to prevent accidental system damage
 #[cfg(target_os = "windows")]
 const PROTECTED_PROCESSES: &[&str] = &[
+    // Core Windows system processes
     "system",
     "smss.exe",
     "csrss.exe",
@@ -404,40 +484,109 @@ const PROTECTED_PROCESSES: &[&str] = &[
     "taskhostw.exe",
     "registry",
     "memory compression",
+    // Windows security
+    "securityhealthservice.exe",
+    "msmpeng.exe",
+    "nissrv.exe",
+    "smartscreen.exe",
+    // Windows shell
+    "shellexperiencehost.exe",
+    "searchui.exe",
+    "searchhost.exe",
+    "startmenuexperiencehost.exe",
+    // Windows services
+    "ctfmon.exe",
+    "dllhost.exe",
+    "wmiprvse.exe",
+    "wudfhost.exe",
+    "dashost.exe",
+    "searchindexer.exe",
+    // Input/display
+    "textinputhost.exe",
+    "inputapp.exe",
+    "microsoft.photos.exe",
+    // System idle
+    "system idle process",
+    // Critical driver hosts
+    "wudfhost.exe",
+    "sppsvc.exe",
 ];
 
 #[cfg(target_os = "macos")]
 const PROTECTED_PROCESSES: &[&str] = &[
+    // Kernel and core system
     "kernel_task",
     "launchd",
+    "launchd_sim",
     "WindowServer",
     "loginwindow",
     "SystemUIServer",
     "Dock",
     "Finder",
-    "Activity Monitor",
-    "Console",
-    "Terminal",
-    "iTerm2",
+    // User session
+    "cfprefsd",
+    "pboard",
+    "sharedfilelistd",
+    "usernoted",
+    "useractivityd",
+    "contextstored",
+    // System daemons
     "sysmond",
     "diskarbitrationd",
     "configd",
     "notifyd",
     "opendirectoryd",
     "powerd",
+    "fseventsd",
+    "blued",
+    "locationd",
+    "identityservicesd",
+    "imagent",
+    "securityd",
+    "trustd",
+    "coreduetd",
+    "symptomsd",
+    // Spotlight
     "mds",
     "mds_stores",
     "mdworker",
+    "mdworker_shared",
+    "corespotlightd",
+    // Audio/Video
     "coreaudiod",
+    "audioclocksyncd",
+    "coreanimationd",
+    // Input
     "hidd",
+    "touchbard",
+    // Core services
     "coreservicesd",
     "UserEventAgent",
+    "lsd",
+    "servicemanagementd",
+    // Security
+    "nesessionmanager",
+    "tccd",
+    "authd",
+    "keybagd",
+    // Terminals (allow these for usability)
+    "Activity Monitor",
+    "Console",
+    "Terminal",
+    "iTerm2",
+    "Warp",
+    // Window management
+    "Accessibility",
+    "universalaccessd",
 ];
 
 #[cfg(target_os = "linux")]
 const PROTECTED_PROCESSES: &[&str] = &[
+    // Init systems
     "systemd",
     "init",
+    "upstart",
+    // Kernel threads
     "kthreadd",
     "ksoftirqd",
     "kworker",
@@ -445,22 +594,61 @@ const PROTECTED_PROCESSES: &[&str] = &[
     "rcu_bh",
     "migration",
     "watchdog",
+    "kdevtmpfs",
+    "kauditd",
+    "khungtaskd",
+    // D-Bus
     "dbus-daemon",
+    "dbus-broker",
+    // Display servers
     "X",
     "Xorg",
+    "Xwayland",
+    "gnome-shell",
+    "kwin_x11",
+    "kwin_wayland",
+    "mutter",
+    "sway",
+    // Session managers
     "xfce4-session",
     "gnome-session",
+    "gnome-session-binary",
     "kde-session",
+    "plasmashell",
+    "lxsession",
+    // Display managers
     "lightdm",
     "gdm",
+    "gdm3",
     "sddm",
+    "xdm",
+    // Systemd components
     "systemd-logind",
     "systemd-journald",
     "systemd-udevd",
+    "systemd-resolved",
+    "systemd-timesyncd",
+    // Audio
     "pulseaudio",
     "pipewire",
+    "pipewire-pulse",
+    "wireplumber",
+    // Networking
     "NetworkManager",
     "wpa_supplicant",
+    "dhclient",
+    "avahi-daemon",
+    // Security
+    "polkitd",
+    "accounts-daemon",
+    // Core desktop
+    "gsd-keyboard",
+    "gsd-media-keys",
+    "gsd-power",
+    "gsd-wacom",
+    "nautilus",
+    "dolphin",
+    "thunar",
 ];
 
 /// Default fallback for unsupported platforms
@@ -497,18 +685,81 @@ pub struct AppEntry {
 /// Get a list of common apps for the UI
 pub fn get_common_apps() -> Vec<AppEntry> {
     vec![
+        // Code Editors & IDEs
         AppEntry {
             name: "VS Code".to_string(),
             icon: Some("vscode".to_string()),
             category: Some("coding".to_string()),
-            processes: vec!["code".to_string(), "Code".to_string()],
+            processes: vec!["code".to_string(), "Code".to_string(), "Visual Studio Code".to_string()],
         },
+        AppEntry {
+            name: "Cursor".to_string(),
+            icon: Some("cursor".to_string()),
+            category: Some("coding".to_string()),
+            processes: vec!["Cursor".to_string(), "cursor".to_string()],
+        },
+        AppEntry {
+            name: "Xcode".to_string(),
+            icon: Some("xcode".to_string()),
+            category: Some("coding".to_string()),
+            processes: vec!["Xcode".to_string()],
+        },
+        AppEntry {
+            name: "IntelliJ IDEA".to_string(),
+            icon: Some("intellij".to_string()),
+            category: Some("coding".to_string()),
+            processes: vec!["IntelliJ IDEA".to_string(), "idea".to_string()],
+        },
+        AppEntry {
+            name: "PyCharm".to_string(),
+            icon: Some("pycharm".to_string()),
+            category: Some("coding".to_string()),
+            processes: vec!["PyCharm".to_string(), "pycharm".to_string()],
+        },
+        AppEntry {
+            name: "WebStorm".to_string(),
+            icon: Some("webstorm".to_string()),
+            category: Some("coding".to_string()),
+            processes: vec!["WebStorm".to_string(), "webstorm".to_string()],
+        },
+        AppEntry {
+            name: "Sublime Text".to_string(),
+            icon: Some("sublime".to_string()),
+            category: Some("coding".to_string()),
+            processes: vec!["Sublime Text".to_string(), "sublime_text".to_string()],
+        },
+        AppEntry {
+            name: "Zed".to_string(),
+            icon: Some("zed".to_string()),
+            category: Some("coding".to_string()),
+            processes: vec!["Zed".to_string(), "zed".to_string()],
+        },
+        // Terminals
         AppEntry {
             name: "Terminal".to_string(),
             icon: Some("terminal".to_string()),
             category: Some("terminal".to_string()),
-            processes: vec!["Terminal".to_string(), "iTerm2".to_string()],
+            processes: vec!["Terminal".to_string()],
         },
+        AppEntry {
+            name: "iTerm2".to_string(),
+            icon: Some("iterm".to_string()),
+            category: Some("terminal".to_string()),
+            processes: vec!["iTerm2".to_string(), "iTerm".to_string()],
+        },
+        AppEntry {
+            name: "Warp".to_string(),
+            icon: Some("warp".to_string()),
+            category: Some("terminal".to_string()),
+            processes: vec!["Warp".to_string()],
+        },
+        AppEntry {
+            name: "Alacritty".to_string(),
+            icon: Some("alacritty".to_string()),
+            category: Some("terminal".to_string()),
+            processes: vec!["Alacritty".to_string(), "alacritty".to_string()],
+        },
+        // Browsers
         AppEntry {
             name: "Chrome".to_string(),
             icon: Some("chrome".to_string()),
@@ -516,11 +767,67 @@ pub fn get_common_apps() -> Vec<AppEntry> {
             processes: vec!["Google Chrome".to_string(), "chrome".to_string()],
         },
         AppEntry {
+            name: "Safari".to_string(),
+            icon: Some("safari".to_string()),
+            category: Some("browser".to_string()),
+            processes: vec!["Safari".to_string()],
+        },
+        AppEntry {
+            name: "Firefox".to_string(),
+            icon: Some("firefox".to_string()),
+            category: Some("browser".to_string()),
+            processes: vec!["Firefox".to_string(), "firefox".to_string()],
+        },
+        AppEntry {
+            name: "Arc".to_string(),
+            icon: Some("arc".to_string()),
+            category: Some("browser".to_string()),
+            processes: vec!["Arc".to_string()],
+        },
+        AppEntry {
+            name: "Edge".to_string(),
+            icon: Some("edge".to_string()),
+            category: Some("browser".to_string()),
+            processes: vec!["Microsoft Edge".to_string(), "msedge".to_string()],
+        },
+        AppEntry {
+            name: "Brave".to_string(),
+            icon: Some("brave".to_string()),
+            category: Some("browser".to_string()),
+            processes: vec!["Brave Browser".to_string(), "brave".to_string()],
+        },
+        // Communication
+        AppEntry {
             name: "Slack".to_string(),
             icon: Some("slack".to_string()),
             category: Some("communication".to_string()),
             processes: vec!["Slack".to_string()],
         },
+        AppEntry {
+            name: "Discord".to_string(),
+            icon: Some("discord".to_string()),
+            category: Some("communication".to_string()),
+            processes: vec!["Discord".to_string()],
+        },
+        AppEntry {
+            name: "Zoom".to_string(),
+            icon: Some("zoom".to_string()),
+            category: Some("communication".to_string()),
+            processes: vec!["zoom.us".to_string(), "Zoom".to_string()],
+        },
+        AppEntry {
+            name: "Microsoft Teams".to_string(),
+            icon: Some("teams".to_string()),
+            category: Some("communication".to_string()),
+            processes: vec!["Microsoft Teams".to_string(), "Teams".to_string()],
+        },
+        AppEntry {
+            name: "Telegram".to_string(),
+            icon: Some("telegram".to_string()),
+            category: Some("communication".to_string()),
+            processes: vec!["Telegram".to_string(), "telegram-desktop".to_string()],
+        },
+        // Productivity
         AppEntry {
             name: "Notion".to_string(),
             icon: Some("notion".to_string()),
@@ -528,16 +835,103 @@ pub fn get_common_apps() -> Vec<AppEntry> {
             processes: vec!["Notion".to_string()],
         },
         AppEntry {
+            name: "Obsidian".to_string(),
+            icon: Some("obsidian".to_string()),
+            category: Some("productivity".to_string()),
+            processes: vec!["Obsidian".to_string()],
+        },
+        AppEntry {
+            name: "Todoist".to_string(),
+            icon: Some("todoist".to_string()),
+            category: Some("productivity".to_string()),
+            processes: vec!["Todoist".to_string()],
+        },
+        AppEntry {
+            name: "Linear".to_string(),
+            icon: Some("linear".to_string()),
+            category: Some("productivity".to_string()),
+            processes: vec!["Linear".to_string()],
+        },
+        AppEntry {
+            name: "Things".to_string(),
+            icon: Some("things".to_string()),
+            category: Some("productivity".to_string()),
+            processes: vec!["Things3".to_string(), "Things".to_string()],
+        },
+        AppEntry {
+            name: "Notes".to_string(),
+            icon: Some("notes".to_string()),
+            category: Some("productivity".to_string()),
+            processes: vec!["Notes".to_string()],
+        },
+        // Writing
+        AppEntry {
+            name: "Word".to_string(),
+            icon: Some("word".to_string()),
+            category: Some("writing".to_string()),
+            processes: vec!["Microsoft Word".to_string(), "Word".to_string()],
+        },
+        AppEntry {
+            name: "Pages".to_string(),
+            icon: Some("pages".to_string()),
+            category: Some("writing".to_string()),
+            processes: vec!["Pages".to_string()],
+        },
+        AppEntry {
+            name: "Bear".to_string(),
+            icon: Some("bear".to_string()),
+            category: Some("writing".to_string()),
+            processes: vec!["Bear".to_string()],
+        },
+        AppEntry {
+            name: "Ulysses".to_string(),
+            icon: Some("ulysses".to_string()),
+            category: Some("writing".to_string()),
+            processes: vec!["Ulysses".to_string()],
+        },
+        // Design
+        AppEntry {
             name: "Figma".to_string(),
             icon: Some("figma".to_string()),
             category: Some("design".to_string()),
             processes: vec!["Figma".to_string()],
         },
         AppEntry {
+            name: "Sketch".to_string(),
+            icon: Some("sketch".to_string()),
+            category: Some("design".to_string()),
+            processes: vec!["Sketch".to_string()],
+        },
+        AppEntry {
+            name: "Photoshop".to_string(),
+            icon: Some("photoshop".to_string()),
+            category: Some("design".to_string()),
+            processes: vec!["Adobe Photoshop".to_string(), "Photoshop".to_string()],
+        },
+        AppEntry {
+            name: "Illustrator".to_string(),
+            icon: Some("illustrator".to_string()),
+            category: Some("design".to_string()),
+            processes: vec!["Adobe Illustrator".to_string(), "Illustrator".to_string()],
+        },
+        AppEntry {
+            name: "Canva".to_string(),
+            icon: Some("canva".to_string()),
+            category: Some("design".to_string()),
+            processes: vec!["Canva".to_string()],
+        },
+        // Music
+        AppEntry {
             name: "Spotify".to_string(),
             icon: Some("spotify".to_string()),
             category: Some("music".to_string()),
             processes: vec!["Spotify".to_string()],
+        },
+        AppEntry {
+            name: "Apple Music".to_string(),
+            icon: Some("music".to_string()),
+            category: Some("music".to_string()),
+            processes: vec!["Music".to_string()],
         },
     ]
 }

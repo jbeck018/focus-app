@@ -10,6 +10,8 @@ import { Dashboard } from "@/features/Dashboard";
 import { BlockingSettings } from "@/features/BlockingSettings";
 import { Journal } from "@/features/Journal";
 import { Calendar } from "@/features/Calendar";
+import { FocusTime } from "@/features/FocusTime";
+import { FocusTimeHelp } from "@/features/FocusTimeHelp";
 import { AICoach } from "@/features/AICoach";
 import { TeamDashboard } from "@/features/TeamDashboard";
 import { AchievementGallery } from "@/features/achievements";
@@ -19,6 +21,7 @@ import { AnalyticsDashboard } from "@/features/analytics";
 import { OnboardingWizard } from "@/features/onboarding/onboarding-wizard";
 import { useMiniTimerShortcut } from "@/hooks/useKeyboardShortcuts";
 import { useNeedsOnboarding } from "@/hooks/use-onboarding";
+import { useNavigationListener } from "@/hooks/useNavigation";
 import {
   PermissionStatusProvider,
   PermissionModal,
@@ -32,6 +35,11 @@ function App() {
 
   // Register global keyboard shortcuts
   useMiniTimerShortcut();
+
+  // Listen for navigation events from child components
+  useNavigationListener((view) => {
+    setActiveView(view);
+  });
 
   // Show onboarding wizard if needed
   if (showOnboarding) {
@@ -47,6 +55,10 @@ function App() {
         return <Dashboard />;
       case "calendar":
         return <Calendar />;
+      case "focus-time":
+        return <FocusTime />;
+      case "focus-time-help":
+        return <FocusTimeHelp />;
       case "streaks":
         return <StreakDashboard />;
       case "analytics":

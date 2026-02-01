@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
   AccordionContent,
@@ -15,10 +16,11 @@ import {
   useFocusTimeState,
   useFocusTimeActions,
   useRefreshFocusTimeEvents,
+  useFocusTimeCategories,
 } from "@/hooks/useFocusTime";
 import { useCalendarConnections } from "@/hooks/useCalendar";
 import { formatTime } from "@/hooks/useTimer";
-import { FOCUS_TIME_INSTRUCTIONS, FOCUS_TIME_CATEGORIES } from "@focusflow/types";
+import { FOCUS_TIME_INSTRUCTIONS } from "@focusflow/types";
 import {
   Target,
   Calendar as CalendarIcon,
@@ -29,8 +31,11 @@ import {
   Info,
   RefreshCw,
   CheckCircle,
+  HelpCircle,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { navigateTo } from "@/hooks/useNavigation";
 
 export function FocusTime() {
   const { data: connections } = useCalendarConnections();
@@ -38,6 +43,7 @@ export function FocusTime() {
   const { data: state } = useFocusTimeState();
   const { startNow } = useFocusTimeActions();
   const refresh = useRefreshFocusTimeEvents();
+  const { data: categories, isLoading: categoriesLoading } = useFocusTimeCategories();
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
 
   const hasConnection = connections?.some((c) => c.connected);
@@ -83,24 +89,49 @@ export function FocusTime() {
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Target className="h-5 w-5 text-green-500" />
             Focus Time
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Focus Time automatically blocks distracting apps during calendar events that start
+                with "🎯 Focus Time" or "[Focus]"
+              </TooltipContent>
+            </Tooltip>
           </h2>
           <p className="text-sm text-muted-foreground">
             Automatic blocking based on your calendar events
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refresh.mutate()}
-          disabled={refresh.isPending}
-        >
-          {refresh.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          <span className="ml-2">Refresh</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigateTo("focus-time-help")}
+            title="View detailed help and getting started guide"
+          >
+            <HelpCircle className="h-4 w-4" />
+            <span className="ml-2">Help</span>
+          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refresh.mutate()}
+                disabled={refresh.isPending}
+              >
+                {refresh.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span className="ml-2">Refresh</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Manually refresh Focus Time events from your calendar</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
       {/* Setup Instructions */}
@@ -154,7 +185,17 @@ export function FocusTime() {
               </Badge>
             </div>
             <div className="mt-3 pt-3 border-t border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Allowed apps:</p>
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                Allowed apps:
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    These apps remain accessible during Focus Time. All other apps are blocked.
+                  </TooltipContent>
+                </Tooltip>
+              </p>
               <div className="flex flex-wrap gap-1">
                 {state.allowed_apps.map((app) => (
                   <Badge key={app} variant="outline" className="text-xs">
@@ -181,7 +222,7 @@ export function FocusTime() {
             <Accordion
               type="single"
               collapsible
-              value={expandedEvent || ""}
+              value={expandedEvent ?? ""}
               onValueChange={setExpandedEvent}
             >
               {events.map((event) => (
@@ -245,15 +286,23 @@ export function FocusTime() {
 
                       {/* Actions */}
                       {!event.is_active && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => startNow.mutate(event.id)}
-                          disabled={startNow.isPending}
-                        >
-                          <Play className="h-3 w-3 mr-1" />
-                          Start Now
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startNow.mutate(event.id)}
+                              disabled={startNow.isPending}
+                            >
+                              <Play className="h-3 w-3 mr-1" />
+                              Start Now
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Start this Focus Time session immediately, even if it&apos;s scheduled
+                            for later
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   </AccordionContent>
@@ -272,24 +321,48 @@ export function FocusTime() {
         </CardContent>
       </Card>
 
-      {/* Available Categories Reference */}
+      {/* Available Categories Reference - fetched from backend */}
       <Card className="bg-muted/50">
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Available Categories</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            Available Categories
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Use these categories in your calendar event descriptions to allow groups of related
+                apps. Example: "@coding @terminal"
+              </TooltipContent>
+            </Tooltip>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-2 md:grid-cols-2">
-            {(Object.entries(FOCUS_TIME_CATEGORIES) as [string, readonly string[]][]).map(
-              ([category, apps]) => (
-                <div key={category} className="text-xs">
-                  <Badge variant="outline" className="mb-1">
-                    {category}
-                  </Badge>
-                  <p className="text-muted-foreground ml-2">{apps.join(", ")}</p>
+          {categoriesLoading ? (
+            <div className="grid gap-2 md:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-1">
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-4 w-full" />
                 </div>
-              )
-            )}
-          </div>
+              ))}
+            </div>
+          ) : categories && categories.length > 0 ? (
+            <div className="grid gap-2 md:grid-cols-2">
+              {categories.map((category) => (
+                <div key={category.id} className="text-xs">
+                  <Badge variant="outline" className="mb-1">
+                    {category.id}
+                  </Badge>
+                  <p className="text-muted-foreground ml-2">
+                    {category.description} ({category.exampleApps.join(", ")})
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No categories available</p>
+          )}
         </CardContent>
       </Card>
     </div>

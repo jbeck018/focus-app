@@ -1,6 +1,7 @@
 // components/FocusTimeOverlay.tsx - Floating overlay for active Focus Time
 
 import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,7 @@ import {
 import { useFocusTimeState, useFocusTimeActions } from "@/hooks/useFocusTime";
 import { AppSelector } from "./AppSelector";
 import { formatTime } from "@/hooks/useTimer";
-import { FOCUS_TIME_CATEGORIES, type FocusTimeCategory } from "@focusflow/types";
-import { Target, Settings, Clock } from "lucide-react";
+import { Target, Settings, Clock, HelpCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 export function FocusTimeOverlay() {
   const { data: state, isLoading } = useFocusTimeState();
@@ -47,20 +48,32 @@ export function FocusTimeOverlay() {
     }
   };
 
-  const handleToggleCategory = (category: FocusTimeCategory) => {
-    const categoryApps = FOCUS_TIME_CATEGORIES[category];
-    const allSelected = categoryApps.every((app) => allowed_apps.includes(app));
-
-    if (allSelected) {
-      // Remove all apps in category
-      categoryApps.forEach((app) => removeApp.mutate(app));
-    } else {
-      // Add all apps in category
-      categoryApps.forEach((app) => {
-        if (!allowed_apps.includes(app)) {
-          addApp.mutate(app);
-        }
+  // Handle category toggle using backend expansion
+  const handleToggleCategory = async (categoryId: string) => {
+    try {
+      // Expand category to get all apps using backend command
+      const expandedApps = await invoke<string[]>("expand_focus_time_categories", {
+        items: [categoryId],
       });
+
+      // Check if all apps in the category are already selected
+      const allSelected = expandedApps.every((app) => allowed_apps.includes(app));
+
+      if (allSelected) {
+        // Remove all apps in category
+        for (const app of expandedApps) {
+          removeApp.mutate(app);
+        }
+      } else {
+        // Add all apps in category that aren't already selected
+        for (const app of expandedApps) {
+          if (!allowed_apps.includes(app)) {
+            addApp.mutate(app);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to expand category:", error);
     }
   };
 
@@ -89,19 +102,44 @@ export function FocusTimeOverlay() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowAppSelector(true)}>
-                  <Settings className="h-4 w-4 mr-1" />
-                  Modify
-                </Button>
-                <Button variant="destructive" size="sm" onClick={() => setShowEndConfirm(true)}>
-                  End
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => setShowAppSelector(true)}>
+                      <Settings className="h-4 w-4 mr-1" />
+                      Modify
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    Add or remove apps from your allowed list without ending Focus Time
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="destructive" size="sm" onClick={() => setShowEndConfirm(true)}>
+                      End
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    End Focus Time immediately. You can always restart from a scheduled event.
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
             {/* Allowed apps preview */}
             <div className="mt-3 pt-3 border-t border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Allowed apps:</p>
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                Allowed apps:
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    These apps are currently accessible. All other apps are blocked during this
+                    Focus Time session.
+                  </TooltipContent>
+                </Tooltip>
+              </p>
               <div className="flex flex-wrap gap-1">
                 {allowed_apps.slice(0, 3).map((app) => (
                   <Badge key={app} variant="secondary" className="text-xs">
@@ -109,9 +147,19 @@ export function FocusTimeOverlay() {
                   </Badge>
                 ))}
                 {allowed_apps.length > 3 && (
-                  <Badge variant="secondary" className="text-xs">
-                    +{allowed_apps.length - 3} more
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="text-xs cursor-help">
+                        +{allowed_apps.length - 3} more
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <div className="space-y-1">
+                        <p className="font-medium">All allowed apps:</p>
+                        <p className="text-xs">{allowed_apps.join(", ")}</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </div>
@@ -123,7 +171,17 @@ export function FocusTimeOverlay() {
       <Dialog open={showAppSelector} onOpenChange={setShowAppSelector}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Modify Allowed Apps</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              Modify Allowed Apps
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  Keyboard shortcut: Press Esc to close this dialog
+                </TooltipContent>
+              </Tooltip>
+            </DialogTitle>
             <DialogDescription>
               Add or remove apps for this Focus Time session. Changes apply immediately.
             </DialogDescription>
