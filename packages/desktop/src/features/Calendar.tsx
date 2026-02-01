@@ -28,7 +28,10 @@ import {
   ExternalLink,
   AlertTriangle,
   Info,
+  Target,
 } from "lucide-react";
+import { useFocusTimeEvents } from "@/hooks/useFocusTime";
+import { FOCUS_TIME_INSTRUCTIONS } from "@focusflow/types";
 
 export function Calendar() {
   return (
@@ -46,12 +49,17 @@ export function Calendar() {
       <Tabs defaultValue="schedule">
         <TabsList>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          <TabsTrigger value="focus-time">Focus Time</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
         </TabsList>
 
         <TabsContent value="schedule" className="mt-4">
           <ScheduleView />
+        </TabsContent>
+
+        <TabsContent value="focus-time" className="mt-4">
+          <FocusTimeTabView />
         </TabsContent>
 
         <TabsContent value="insights" className="mt-4">
@@ -483,4 +491,116 @@ function formatRelativeTime(isoString: string): string {
   if (diffHours < 24) return `${diffHours}h ago`;
 
   return date.toLocaleDateString();
+}
+
+function FocusTimeTabView() {
+  const { data: focusTimeEvents, isLoading } = useFocusTimeEvents();
+  const { data: connections } = useCalendarConnections();
+
+  const hasConnection = connections?.some((c) => c.connected);
+  const connectedProvider = connections?.find((c) => c.connected)?.provider;
+
+  if (!hasConnection) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Connect a calendar to use Focus Time</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Automatically block distractions during scheduled Focus Time events
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Setup Instructions */}
+      {connectedProvider && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Info className="h-4 w-4 text-primary" />
+              {FOCUS_TIME_INSTRUCTIONS[connectedProvider].title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol className="list-decimal list-inside space-y-1 text-sm">
+              {FOCUS_TIME_INSTRUCTIONS[connectedProvider].steps.map((step, idx) => (
+                <li key={idx}>{step}</li>
+              ))}
+            </ol>
+            <div className="mt-3 p-3 bg-background rounded-md">
+              <p className="text-xs font-medium mb-1">Example:</p>
+              <pre className="text-xs text-muted-foreground whitespace-pre-line">
+                {FOCUS_TIME_INSTRUCTIONS[connectedProvider].example}
+              </pre>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Focus Time Events */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Focus Time Events</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {focusTimeEvents && focusTimeEvents.length > 0 ? (
+            <div className="space-y-3">
+              {focusTimeEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30"
+                >
+                  <Target className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">{event.title}</p>
+                      {event.is_active && (
+                        <Badge variant="secondary" className="text-xs">
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatTime(event.start_time)} - {formatTime(event.end_time)}
+                    </p>
+                    {event.allowed_apps.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {event.allowed_apps.slice(0, 3).map((app) => (
+                          <Badge key={app} variant="outline" className="text-xs">
+                            {app}
+                          </Badge>
+                        ))}
+                        {event.allowed_apps.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{event.allowed_apps.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No Focus Time events found. Create a calendar event with title starting with "🎯 Focus
+              Time"
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

@@ -269,6 +269,10 @@ fn is_user_owned_process(_process: &sysinfo::Process) -> bool {
 ///
 /// This runs in the background and checks for blocked processes at regular intervals.
 /// Uses efficient delta updates from sysinfo to minimize CPU usage.
+///
+/// Supports two blocking modes:
+/// 1. Standard blocking: Blocks specific apps in the blocklist
+/// 2. Focus Time (inverse blocking): Blocks ALL apps EXCEPT those in the allowed list
 pub async fn start_monitoring_loop(state: AppState) -> Result<()> {
     let mut system = System::new_with_specifics(
         RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()),
@@ -280,17 +284,165 @@ pub async fn start_monitoring_loop(state: AppState) -> Result<()> {
     loop {
         interval.tick().await;
 
-        // Check if blocking is enabled
+        // Check if standard blocking is enabled
         let blocking_enabled = {
             let blocking_state = state.blocking_state.read().await;
             blocking_state.enabled
         };
 
-        if !blocking_enabled {
+        // Check if Focus Time (inverse blocking) is active
+        let focus_time_state = {
+            let ft_state = state.focus_time_state.read().await;
+            if ft_state.active {
+                Some(ft_state.clone())
+            } else {
+                None
+            }
+        };
+
+        // If neither mode is active, clear warnings and continue
+        if !blocking_enabled && focus_time_state.is_none() {
             warned_processes.clear();
             continue;
         }
 
+        // Refresh process list (only updates changed processes)
+        system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+
+        // Handle Focus Time inverse blocking (takes priority when active)
+        if let Some(ref ft_state) = focus_time_state {
+            for (pid, process) in system.processes() {
+                let process_name = process.name().to_string_lossy();
+
+                // Safety check: Skip protected system processes
+                if is_protected_process(&process_name) {
+                    continue;
+                }
+
+                // Safety check: Only terminate user-owned processes
+                if !is_user_owned_process(process) {
+                    continue;
+                }
+
+                // In Focus Time mode, check if app is NOT in the allowed list
+                if !ft_state.is_app_allowed(&process_name) {
+                    let process_key = format!("ft:{}:{}", process_name, pid);
+
+                    if !warned_processes.contains(&process_key) {
+                        tracing::warn!(
+                            "Focus Time: Detected non-allowed process: {} (PID: {})",
+                            process_name,
+                            pid
+                        );
+
+                        if let Err(e) = state
+                            .app_handle
+                            .notification()
+                            .builder()
+                            .title("Focus Time: App Not Allowed")
+                            .body(format!(
+                                "{} is not in your Focus Time allowed list. It will be closed shortly.",
+                                process.name().to_string_lossy()
+                            ))
+                            .show()
+                        {
+                            tracing::warn!("Failed to send notification: {}", e);
+                        }
+
+                        warned_processes.insert(process_key.clone());
+
+                        // Schedule termination after grace period
+                        let pid_copy = *pid;
+                        let process_name_copy = process_name.to_string();
+                        let app_handle = state.app_handle.clone();
+                        let state_clone = state.clone();
+
+                        tokio::spawn(async move {
+                            tokio::time::sleep(Duration::from_millis(GRACE_PERIOD_MS)).await;
+
+                            // Re-check if Focus Time is still active and app is still not allowed
+                            let still_blocked = {
+                                let ft_state = state_clone.focus_time_state.read().await;
+                                ft_state.active && !ft_state.is_app_allowed(&process_name_copy)
+                            };
+
+                            if !still_blocked {
+                                tracing::debug!(
+                                    "Focus Time ended or app now allowed, skipping termination of {}",
+                                    process_name_copy
+                                );
+                                return;
+                            }
+
+                            if let Err(e) = terminate_process(pid_copy) {
+                                tracing::error!("Failed to terminate {}: {}", process_name_copy, e);
+                            } else {
+                                tracing::info!(
+                                    "Focus Time: Terminated non-allowed process: {} (PID: {})",
+                                    process_name_copy,
+                                    pid_copy
+                                );
+
+                                // Record the block attempt
+                                let session_id = {
+                                    let active_session = state_clone.active_session.read().await;
+                                    active_session.as_ref().map(|s| s.id.clone())
+                                };
+
+                                let user_id = state_clone.get_user_id().await;
+
+                                if let Err(e) = queries::record_block_attempt(
+                                    state_clone.pool(),
+                                    "focus_time_app",
+                                    &process_name_copy,
+                                    session_id.as_deref(),
+                                    user_id.as_deref(),
+                                )
+                                .await
+                                {
+                                    tracing::error!("Failed to record block attempt: {}", e);
+                                }
+
+                                let _ = app_handle
+                                    .notification()
+                                    .builder()
+                                    .title("Focus Time: Application Closed")
+                                    .body(format!(
+                                        "{} was closed (not in allowed apps list).",
+                                        process_name_copy
+                                    ))
+                                    .show();
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Clean up Focus Time warned processes and continue to next iteration
+            warned_processes.retain(|key| {
+                if !key.starts_with("ft:") {
+                    return true; // Keep non-focus-time entries
+                }
+                let parts: Vec<&str> = key.split(':').collect();
+                if parts.len() >= 3 {
+                    if let Ok(pid) = parts[2].parse::<usize>() {
+                        return system.process(sysinfo::Pid::from(pid)).is_some();
+                    }
+                }
+                false
+            });
+
+            // Update last check timestamp
+            {
+                let mut blocking_state = state.blocking_state.write().await;
+                blocking_state.update_last_check();
+            }
+
+            // Skip standard blocking when Focus Time is active
+            continue;
+        }
+
+        // Standard blocking mode (only when Focus Time is not active)
         // Get blocked apps from database
         let blocked_items = match queries::get_blocked_items(state.pool(), Some("app")).await {
             Ok(items) => items,
@@ -326,10 +478,7 @@ pub async fn start_monitoring_loop(state: AppState) -> Result<()> {
             continue;
         }
 
-        // Refresh process list (only updates changed processes)
-        system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
-
-        // Check for blocked processes
+        // Check for blocked processes (standard mode)
         for (pid, process) in system.processes() {
             let process_name = process.name().to_string_lossy();
 

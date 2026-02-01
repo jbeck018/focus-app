@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-01-30T19:54:08.431Z",
+  "projectRoot": "/Users/jacob/projects/focus-app",
+  "structure": {
+    "hasPackageJson": true,
+    "hasTsConfig": false,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1769802848431
+}

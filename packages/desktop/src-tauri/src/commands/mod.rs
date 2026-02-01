@@ -13,6 +13,7 @@ pub mod coach;
 pub mod credentials;
 pub mod dimming;
 pub mod focus;
+pub mod focus_time;
 pub mod journal;
 pub mod llm;
 pub mod notification_control;

@@ -2,6 +2,7 @@
 
 use crate::ai::{LlmEngine, ModelConfig};
 use crate::commands::auth::{AuthState, PendingOAuthState};
+use crate::focus_time::FocusTimeState;
 use crate::oauth::{google::GoogleCalendar, microsoft::MicrosoftCalendar, Pkce, TokenManager};
 use crate::trailbase::TrailBaseClient;
 use crate::{db::Database, Error, Result};
@@ -48,6 +49,8 @@ pub struct AppState {
     pub timer_cancellation: Arc<RwLock<Option<oneshot::Sender<()>>>>,
     /// Cancellation sender for break reminder loop
     pub break_reminder_cancellation: Arc<RwLock<Option<oneshot::Sender<()>>>>,
+    /// Focus Time state for calendar-based inverse blocking
+    pub focus_time_state: Arc<RwLock<FocusTimeState>>,
     pub app_handle: tauri::AppHandle,
 }
 
@@ -129,6 +132,7 @@ impl AppState {
             pending_oauth: Arc::new(RwLock::new(None)),
             timer_cancellation: Arc::new(RwLock::new(None)),
             break_reminder_cancellation: Arc::new(RwLock::new(None)),
+            focus_time_state: Arc::new(RwLock::new(FocusTimeState::default())),
             app_handle,
         })
     }

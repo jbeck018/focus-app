@@ -4,6 +4,7 @@ pub mod ai;
 mod commands;
 mod db;
 mod blocking;
+pub mod focus_time;
 mod system;
 mod error;
 mod state;
@@ -181,6 +182,20 @@ pub fn run() {
             commands::calendar::get_calendar_events,
             commands::calendar::get_focus_suggestions,
             commands::calendar::get_meeting_load,
+
+            // Focus Time commands (calendar-based inverse blocking)
+            commands::focus_time::get_focus_time_events,
+            commands::focus_time::get_active_focus_time,
+            commands::focus_time::get_allowed_apps,
+            commands::focus_time::override_focus_time_apps,
+            commands::focus_time::end_focus_time_early,
+            commands::focus_time::start_focus_time_now,
+            commands::focus_time::is_app_allowed_during_focus_time,
+            commands::focus_time::get_focus_time_categories,
+            commands::focus_time::get_focus_time_common_apps,
+            commands::focus_time::expand_focus_time_categories,
+            commands::focus_time::get_focus_time_status,
+            commands::focus_time::sync_focus_time_with_calendar,
 
             // AI Coach commands
             commands::coach::get_coach_response,

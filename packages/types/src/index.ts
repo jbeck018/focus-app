@@ -95,6 +95,7 @@ export * from "./analytics-extended";
 export * from "./auth";
 export * from "./journal";
 export * from "./calendar";
+export * from "./focus-time";
 
 // Coach - explicit exports to avoid conflicts
 export {
